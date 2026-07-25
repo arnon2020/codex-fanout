@@ -1,0 +1,6 @@
+oracle: mason-oracle
+oracle-repo: https://github.com/arnon2020/mason-oracle
+date: 2026-07-25
+mode: default
+source: https://github.com/arnon2020/codex-fanout
+forked-from: https://github.com/nat-build-with-oracle/codex-fanout
