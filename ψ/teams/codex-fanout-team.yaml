@@ -1,26 +1,22 @@
-# NOTE (maw-rs #658): last member's `worktree:`/`branch:` path gets its "agents/" prefix
-# stripped by preflight AND team up (canonicalize fails). codex-1 is listed BEFORE lead
-# so the bug lands on lead (worktree:false) harmlessly.
-#
-# Engine: hound-codex-oracle = codex --model gpt-5.5 --ask-for-approval never --sandbox danger-full-access
-# Worktree: agents/codex-2 — FRESH (no prior session history; codex-1 had history causing -resume suffix issue)
+# Engine: sage-opencode-oracle = opencode --model zai/glm-5.2 --auto
+# Testing opencode as coder instead of codex (2026-07-25)
 name: codex-fanout-team
 project: arnon2020/codex-fanout
 session: 117-codex-fanout
 
 goal: |
-  Lead (Claude) dispatches tasks to a single codex coder in an isolated worktree.
+  Lead (Claude) dispatches tasks to a single opencode coder in an isolated worktree.
   Coder owns the loop to done-criteria. PR -> alpha only, never main.
 
 members:
-  - role: codex-1
-    name: codex-1
-    engine: hound-codex-oracle
-    worktree: agents/codex-2
-    branch: agents/codex-2
+  - role: opencode-1
+    name: opencode-1
+    engine: sage-opencode-oracle
+    worktree: agents/opencode-1
+    branch: agents/opencode-1
     prompt: |
       Coder. WAIT for task via maw hey.
-      Implement MINIMAL precise code in YOUR worktree (agents/codex-2).
+      Implement MINIMAL precise code in YOUR worktree.
       OWN the loop: implement -> test -> fix -> repeat until done-criteria met.
       Report back via: maw hey 117-codex-fanout:codex-fanout "done/blocked — <details>"
       Never touch lead's checkout or other worktrees.
