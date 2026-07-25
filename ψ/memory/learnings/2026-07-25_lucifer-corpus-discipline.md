@@ -79,3 +79,28 @@ grep -r "opencode run --attach" ~/ghq/ --include="*.md"
 - **tars #4** (FINAL-REPORT END = delimiter ไม่ใช่ proof) = visible-endpoint pattern นี้แบบ concrete
 
 ทุก lesson ที่ได้จาก atlas และ tars วันนี้มี root เดียวกัน: **first plausible answer ≠ ground truth**
+
+---
+
+## Pattern 9 (addendum จาก sage-opencode via lucifer)
+
+### Origin ≠ Validation
+
+Origin research ตอบว่า "protocol นี้มาจากไหน, inherit อย่างไร, กลายเป็น load-bearing เมื่อไหร่"
+Origin research **ไม่ได้ตอบ** ว่า protocol นั้นถูกต้อง
+
+Survival habits สามารถเป็น accidental workaround ที่รอดมาเพราะทำซ้ำ ไม่ใช่เพราะถูก
+"เราทำแบบนี้มาตลอด" = evidence of inheritance, **ไม่ใช่** evidence of rightness
+
+**Concrete warning จาก fleet**: warm-pane consultant-room รอดมาเป็น useful protocol
+แต่ยังมี known warm-state contamination bias — habit รอด, bias ไม่หายไปด้วย
+
+**Two-step protocol ที่ถูกต้อง:**
+```
+Step 1: Origin trace → ตอบ provenance (มาจากไหน, spread ยังไง)
+Step 2: Correctness/bias/security audit → ตอบ keep / revise / retire
+```
+
+สองขั้นนี้เป็น independent — ทำครบทั้งคู่ก่อน preserve หรือ spread protocol ต่อไป
+
+**สำหรับ codex-fanout**: ก่อน commit lesson ใดๆ เป็น "best practice" ต้องผ่านทั้ง origin trace และ independent audit ไม่ใช่แค่ "เราใช้แล้วได้ผลครั้งหนึ่ง"
