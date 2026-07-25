@@ -1,43 +1,36 @@
 # NOTE (maw-rs #658): last member's `worktree:`/`branch:` path gets its "agents/" prefix
-# stripped by preflight AND team up (canonicalize fails). codex-1 is last here, so a
-# symlink `codex-1 -> agents/codex-1` was added at repo root as a workaround. Remove once
-# #658 ships; until then keep the symlink or reorder lead to be the last member.
+# stripped by preflight AND team up (canonicalize fails). codex-1 is listed BEFORE lead
+# so the bug lands on lead (worktree:false) harmlessly.
+#
+# Engine: hound-codex-oracle = codex --model gpt-5.5 --ask-for-approval never --sandbox danger-full-access
+# Worktree: agents/codex-2 — FRESH (no prior session history; codex-1 had history causing -resume suffix issue)
 name: codex-fanout-team
-project: nat-build-with-oracle/codex-fanout
-session: codex-fanout
+project: arnon2020/codex-fanout
+session: 117-codex-fanout
 
 goal: |
   Lead (Claude) dispatches tasks to a single codex coder in an isolated worktree.
   Coder owns the loop to done-criteria. PR -> alpha only, never main.
 
-engines:
-  omx-5: "bun $HOME/.claude/skills/oracle-team/scripts/codex-setup.ts 5 && CODEX_HOME=$PWD/.codex OMX_AUTO_UPDATE=0 omx --direct --madmax"
-
 members:
+  - role: codex-1
+    name: codex-1
+    engine: hound-codex-oracle
+    worktree: agents/codex-2
+    branch: agents/codex-2
+    prompt: |
+      Coder. WAIT for task via maw hey.
+      Implement MINIMAL precise code in YOUR worktree (agents/codex-2).
+      OWN the loop: implement -> test -> fix -> repeat until done-criteria met.
+      Report back via: maw hey 117-codex-fanout:codex-fanout "done/blocked — <details>"
+      Never touch lead's checkout or other worktrees.
+      PR -> alpha branch only, never main.
+
   - role: lead
     name: codex-fanout
     engine: claude
     worktree: false
     branch: alpha
-    prompt: |
-      Lead orchestrator. NEVER write code yourself.
-      Dispatch via foreground maw hey only (not background &).
-      DEFINE done-criteria per task. Let the coder OWN the loop.
-      NO-GAP DISPATCH: include next task in same message as confirmation.
-      Peek the coder every 15-20 min. Merge is the lead's job.
-
-  - role: codex-1
-    name: codex-1
-    engine: omx-5
-    worktree: agents/codex-1
-    branch: agents/codex-1
-    prompt: |
-      Coder. WAIT for task via maw hey.
-      Implement MINIMAL precise code in YOUR worktree.
-      OWN the loop: implement -> test -> fix -> repeat.
-      Report back via: maw hey codex-fanout:lead "done/blocked — <details>"
-      Never touch lead's checkout or other worktrees.
-      PR -> alpha branch only, never main.
 
 lifecycle:
   worktree: true
