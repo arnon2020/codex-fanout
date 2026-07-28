@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "arra-oracle": {
+      "type": "stdio",
+      "command": "/home/user/.bun/bin/bun",
+      "args": [
+        "run",
+        "/home/user/ghq/github.com/Soul-Brews-Studio/arra-oracle-v3/src/index.ts"
+      ],
+      "env": {
+        "OLLAMA_BASE_URL": "http://127.0.0.1:11434",
+        "ORACLE_VECTOR_DB": "lancedb",
+        "ORACLE_VECTOR_DB_PATH": "/home/user/.arra-oracle-v2/lancedb",
+        "ORACLE_EMBEDDING_MODEL": "bge-m3",
+        "ORACLE_INDEXER_ENQUEUE": "1"
+      }
+    },
+    "doc-library": {
+      "type": "http",
+      "url": "http://127.0.0.1:47801/mcp/"
+    },
+    "read-website-fast": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@just-every/mcp-read-website-fast"
+      ]
+    }
+  }
+}
