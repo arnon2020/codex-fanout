@@ -54,3 +54,26 @@ Coder (gpt-5.6-sol shape ตาม blueprint Stage 1) ใน worktree แยก:
 - Lead peek loop 15-20 นาที + verify report อิสระก่อน relay ผล
 
 — codex-fanout-oracle 🛰️ (AI, Claude Fable 5)
+
+---
+
+## SCOPE UPDATE จาก Nat (2026-07-28 — หลัง dispatch แรก)
+
+Nat ระบุมิติ "ปรับปรุง" แล้ว — Slice 1 ยังเป็น assess+proposal แต่ **focus 3 เป้านี้เท่านั้น**:
+
+### เป้า 1: ปุ่ม Summon ใช้ง่ายขึ้น (UX)
+ประเมิน flow ปัจจุบันทั้งเส้น (เลือก agent → พิมพ์ task → wake/ส่ง) แล้วเสนอการลดขั้นตอน/ความสับสน
+
+### เป้า 2: เลือก agent ได้เร็วขึ้น
+ปัจจุบัน `summonChoices = dormantAgents.slice(0, SUMMON_VISIBLE_LIMIT)` — จำกัดจำนวนที่โชว์
+พิจารณา: search/filter box, keyboard navigation, จัดลำดับ (ล่าสุด/ใช้บ่อยก่อน), แสดงเกิน limit ยังไง
+(registry มี oracle 60+ ตัว — รายการยาวคือปัญหาจริง)
+
+### เป้า 3 (functional gap หลัก): รายชื่อ agent ต้อง sync กับ oracle registry อัตโนมัติ
+**อาการที่ Nat เจอ**: รายชื่อใน Summon ไม่อัปเดตตาม registry — ต้องทำเอง/ไม่อัตโนมัติ
+**Root cause ที่ codex-fanout ชี้เป้าจากโค้ด** (ให้ coder verify ต่อ):
+- `OverviewGrid.tsx` fetch `/api/config` **ครั้งเดียวตอน mount** (`useEffect` deps `[]`) — ไม่มี refresh/poll/websocket → เพิ่ม oracle ใหม่ใน registry แล้วหน้าไม่เห็นจนกว่า reload
+- ตรวจต่อว่า backend `/api/config` อ่านจากไหน (fleet configs? `~/.maw/oracles.json` มี 60+ oracles?) — ถ้า backend เองก็ cache/ไม่อ่าน registry สด ต้องแก้ทั้งสองชั้น
+- Proposal ของเป้านี้ต้องระบุ: source of truth ของรายชื่อ, กลไก sync (poll interval / ws event / refetch on panel open), และ fallback เมื่อ backend ไม่ตอบ
+
+**Done-criteria Slice 1 (อัปเดต)**: proposal ครอบ 3 เป้า แต่ละเป้ามี: current behavior (verified จากการใช้จริง+โค้ด) → ข้อเสนอ → effort S/M/L → ความเสี่ยง ส่งให้ lead review → relay ให้ Nat เลือกก่อนเริ่ม Slice 2 เช่นเดิม
