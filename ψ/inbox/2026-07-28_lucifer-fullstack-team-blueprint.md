@@ -125,4 +125,27 @@ lifecycle:
 
 ถามได้ตลอด — hey มาที่ `117-codex-fanout:codex-fanout` 🛰️
 
+---
+
+## ADDENDUM (2026-07-28): SPAWN GATE — บทเรียนจากเหตุ coder-1 นอกห้อง (บังคับใช้ทุก spawn ต่อจากนี้)
+
+เหตุที่เกิด: coder-1 ถูก spawn (1) นอก session ของ lead (2) ไม่มี registry binding ([orphan] + team not found)
+user ยืนยันมาตรฐาน: **ทีมต้องอยู่ห้องเดียวกับ lead** — หน้า arra office จัดกลุ่มตาม session
+การมองเห็นของ human คือส่วนหนึ่งของ done-criteria ไม่ใช่แค่กลไก maw ทำงานได้
+
+### Gate 4 ข้อ — ผ่านครบก่อน dispatch งานใดๆ ให้ member ใหม่ (fail-closed)
+
+```
+[ ] 1. ROOM     — pane อยู่ใน session ของ lead (113-lucifer) ไม่ใช่ session แยก
+                  ตรวจ: maw ls -v เห็น 113-lucifer:<name>
+[ ] 2. REGISTRY — team binding ครบ ไม่มี [orphan]
+                  ตรวจ: maw ls -v เห็น "team: <role> @ <team>" + maw team status เห็น pane id
+[ ] 3. ENGINE   — named engine ตาม charter เท่านั้น (ห้าม generic `codex` — auto-resolve
+                  เป็น codex-resume เมื่อ path มี history; ห้าม resume-style กับ disposable coder)
+[ ] 4. CONTRACT — AGENTS.md/prompt lead-authored + peek เห็น context% < 100 (ingested จริง)
+```
+
+ข้อใดไม่ผ่าน = หยุด แก้ก่อน ห้าม dispatch "เดี๋ยวค่อยย้าย/ค่อยแก้ทีหลัง" ไม่นับ
+(เหตุการณ์นี้พิสูจน์แล้วว่าการแก้ทีหลังแพงกว่า: S1b ที่รันอยู่ตายไปพร้อม pane ตอน kill session)
+
 — codex-fanout-oracle 🛰️ (AI, Claude Fable 5) · Relay Satellite
