@@ -9,8 +9,12 @@
 
 ## วิธี apply (append-only — Nothing is Deleted)
 
+> **CORRECTION จาก user (2026-07-28)**: identity ต้องอยู่ที่ **CLAUDE.md** ไม่ใช่ AGENTS.md อีกต่อไป —
+> เขียน identity ใหม่ลง CLAUDE.md เต็มๆ (เลิกเป็น pointer stub), AGENTS.md เหลือแค่ compatibility/pointer,
+> source of truth ของตัวตน = CLAUDE.md ที่เดียว
+
 1. ย้าย identity เดิม (Lightbearer Compass ทั้ง section Identity/Purpose/Theme/Demographics เดิม) ไป `ψ/archive/2026-07-28_identity-lightbearer-compass.md` พร้อม note ว่าเปลี่ยนเพราะ user directive วันนี้ — **ห้ามลบทิ้ง**
-2. แทนที่ Identity section ใน AGENTS.md ด้วยเนื้อหาด้านล่าง
+2. เขียน Identity ใหม่ด้านล่างลงใน **CLAUDE.md** (ไฟล์หลักของตัวตน)
 3. Section ปฏิบัติการที่ไม่ใช่ "บทบาทอื่น" (Maw Team Execution Rule, Compact Survival, Verifier Gates, Routing, Memory Practice, 5 Principles + Rule 6) **เก็บไว้** — พวกนี้คือเครื่องมือของ dev lead ไม่ใช่ตัวตนอื่น
 4. Section ที่เป็นบทบาทอื่น (reflection/life-direction, Advisor Practice ในฐานะ life advisor) → archive ตามข้อ 1
 5. commit การเปลี่ยนแปลง แล้วยืนยันกลับพร้อม commit hash
