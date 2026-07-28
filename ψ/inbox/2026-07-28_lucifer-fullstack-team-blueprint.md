@@ -173,4 +173,36 @@ roster เต็ม 10 role — ทุก role มีงาน LFS-001 จ่อ
 verifier ต้องคนละ family กับผู้เขียน (gpt เขียน → claude ตรวจ) และ architect ≠ verifier (คนออกแบบห้ามตรวจงานตามแบบตัวเอง)
 pane budget: 10 panes มีเจ้าของ+งานครบทุกตัว — ถ้า role ไหนหมดงานต่อเนื่อง ให้ lead รายงาน user ก่อนพิจารณาพัก (ไม่ auto-kill)
 
+---
+
+## ADDENDUM 3 (2026-07-28): OPERATING ORDER หลัง consult sage-codex — verdict ADJUST (แผน B)
+
+Consult ID: consult-20260728071334-ed0ec4 (sage-codex=ok) — user สั่ง "ปรึกษา sage-codex แล้วดำเนินงาน"
+สาระ: **roster ครบ 10 ตาม directive แต่ activate เป็น wave — "ทีมครบ" คือข้อกำหนดเชิงองค์กร ไม่ใช่หลักฐานว่ารัน 10 ทางพร้อมกันแล้วปลอดภัย**
+
+### Phase 0 — READINESS GATE (ทำก่อน spawn เพิ่ม ทุกข้อมี artifact)
+
+1. **Lead context check**: วัด context จริงของคุณตอนนี้ ถ้าไม่พอสำหรับ delivery wave เต็ม → เขียน handoff แล้ว compact/restart ก่อน (ประวัติ ~89% คือ signal ต้องวัดใหม่ ไม่ใช่ข้อเท็จจริงปัจจุบัน)
+2. **Immutable baselines** (devops เจ้าของ): SHA ปัจจุบัน + inventory 20 dirty files ของ maw-ui main, SHA + รายการ local patches ของ maw-js (branch local-patches-20260703) + recovery procedure — ห้าม implementation role แตะ checkout ที่ dirty/live
+3. **Task ledger เดียว**: คอลัมน์ role owner / input artifact / dependency / allowed paths / output path / commit hash / gate status — product-analyst ดูแล ledger ได้ แต่ **lead เท่านั้นที่ dispatch**
+4. **devops = integration/release steward** (ไม่ใช่ infra ทั่วไป): เจ้าของ branch provenance, cross-repo compatibility pairing, การรักษา local patches, vite/port allocation, PR packaging
+
+### Waves (spawn ครบ 10 ผ่าน SPAWN GATE ได้เลย แต่ dispatch ตามนี้)
+
+- **Wave 1 (design)**: product-analyst + architect + ux-designer + qa-tester(เขียน test plan ก่อน implement!) + devops → ส่งมอบ: acceptance criteria, ADR/API contract, UX contract, failing/acceptance test plan, branch/recovery plan
+- **Gate 1**: lead อนุมัติ artifacts + **freeze** contract `registry-changed` (schema/version/fallback)
+- **Wave 2 (implement)**: backend-1 + frontend-1 ทำ **เป้า 3 (registry-sync) เท่านั้น** ใน worktree แยก ตาม contract ที่ freeze แล้ว
+- **Wave 3 (verify)**: qa รัน test → verifier ตรวจ commit hash + compatibility matrix (new/new, new/old fallback, missed-event refetch, out-of-order) → แล้วค่อยเป้า 2 → เป้า 1
+- docs-writer เตรียมโครงได้เร็ว แต่ finalize จาก verified commits เท่านั้น
+
+### กติกาเพิ่มจาก blind spots (10 ข้อของ sage-codex)
+
+- **Task-ingestion ACK**: SPAWN GATE พิสูจน์แค่ admission — ก่อนนับว่า role active ต้อง ACK ทวน task-id + allowed paths + dependency + expected output
+- **Concurrency cap**: มากสุด 1 design wave + 1 implementation pair active พร้อมกัน — report เป็น artifact pointer + hash ไม่ใช่เล่ายาว (กัน orchestration collapse — failure mode อันดับ 1)
+- **Dual naming ทุก dispatch**: "เป้า 3 = registry-sync" เขียนคู่กันเสมอ (กันสลับลำดับ business 3→2→1)
+- **hound-codex ต้องมี bounded contract + stop condition** — ห้ามให้ recon ซ้ำสิ่งที่ proposal สำรวจแล้ว (มัน explore เก่ง เปลือง context)
+- **Verifier gate เฉพาะ merge-relevant**: design artifacts ใช้ lead approve พอ / code ต้อง qa + verifier
+- **Review packet ต่อเป้า**: ส่ง user เป็น 1 integrated PR/review packet ต่อเป้า (แนบ hash ราย commit) ไม่ใช่ 9 approval แยก
+- **Idle-role lifecycle**: นิยาม waiting → /clear refresh ก่อน reuse → ถ้าว่างต่อเนื่อง lead เสนอ user พิจารณาพัก
+
 — codex-fanout-oracle 🛰️ (AI, Claude Fable 5) · Relay Satellite
