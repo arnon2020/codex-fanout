@@ -148,4 +148,29 @@ user ยืนยันมาตรฐาน: **ทีมต้องอยู�
 ข้อใดไม่ผ่าน = หยุด แก้ก่อน ห้าม dispatch "เดี๋ยวค่อยย้าย/ค่อยแก้ทีหลัง" ไม่นับ
 (เหตุการณ์นี้พิสูจน์แล้วว่าการแก้ทีหลังแพงกว่า: S1b ที่รันอยู่ตายไปพร้อม pane ตอน kill session)
 
+---
+
+## ADDENDUM 2 (2026-07-28): FULL ROSTER — user ยืนยัน "full team software ต้องครบทุก function"
+
+directive จาก user สองรอบ: ทีม full stack = ทีม software ครบจริง ไม่ใช่แค่ coder+verifier
+roster เต็ม 10 role — ทุก role มีงาน LFS-001 จ่อทันที (กัน zombie ด้วยงาน ไม่ใช่ด้วยการไม่ spawn):
+
+| # | Role | Engine | งาน LFS-001 แรก |
+|---|------|--------|------------------|
+| 1 | lead | claude (lucifer) — มีแล้ว | dispatch/review/merge + peek loop |
+| 2 | product-analyst | gpt-5.6-sol shape | เขียน acceptance criteria ต่อเป้าจาก proposal + groom backlog ถัดไปกับ user |
+| 3 | architect | claude pane แยก | ADR ของเป้า 3: event schema `registry-changed`, version protocol, compatibility maw-js↔maw-ui, แผน branch ไม่ให้ local-patches หาย |
+| 4 | ux-designer | gpt-5.6-sol shape | ออกแบบ typeahead combobox + summon flow 3 ขั้น (เป้า 1-2) ก่อน frontend ลงมือ |
+| 5 | frontend-1 (=coder-1) | gpt-5.6-sol — มีแล้ว | implement เป้า 3 ฝั่ง UI → เป้า 2 → เป้า 1 ตาม design |
+| 6 | backend-1 (=coder-2) | hound-codex-oracle | implement เป้า 3 ฝั่ง maw-js ตาม ADR ของ architect |
+| 7 | qa-tester | gpt-5.6-sol shape | test plan ต่อเป้า + regression ทุกรอบ implement (ไม่แก้โค้ด) |
+| 8 | verifier | claude pane แยก (ห้ามคนเดียวกับ lead/architect) | verdict ทุก DONE พร้อม target+commit hash (.partial → mv) |
+| 9 | devops | hound-codex-oracle | branch/PR strategy (รวมปม maw-js local patches), vite port allocation, PR hygiene, release note ต่อ merge |
+| 10 | docs-writer | gpt-5.6-sol shape | อัปเดต docs พฤติกรรม Summon ใหม่ + changelog ต่อ PR |
+
+กติกาคงเดิมทั้งหมด: ทุก spawn ผ่าน SPAWN GATE 4 ข้อ, contract ต่อ role ต่างกันจริง (lead-authored),
+ทำงานเรียงตาม dependency: architect+ux-designer ก่อน → coders → qa → verifier → docs
+verifier ต้องคนละ family กับผู้เขียน (gpt เขียน → claude ตรวจ) และ architect ≠ verifier (คนออกแบบห้ามตรวจงานตามแบบตัวเอง)
+pane budget: 10 panes มีเจ้าของ+งานครบทุกตัว — ถ้า role ไหนหมดงานต่อเนื่อง ให้ lead รายงาน user ก่อนพิจารณาพัก (ไม่ auto-kill)
+
 — codex-fanout-oracle 🛰️ (AI, Claude Fable 5) · Relay Satellite
