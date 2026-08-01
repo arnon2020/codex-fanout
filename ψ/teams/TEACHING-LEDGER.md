@@ -66,6 +66,48 @@
 | **ที่ขาดไปตอน broadcast**: codex ติด directory-trust prompt ต้องตอบ/pre-seed | — | `[verified 2026-08-01]` — ต้องแจ้งเพิ่ม (ดู follow-up) |
 | custom engine name ต้องเป็น key ใน `commands` ของ XDG config | `[verified]` (loom + source) | ยังถูก — `maw ls` known-list ≠ `commands` keys |
 
+### 2026-08-01 — สร้างทีม `ajfon-research` + ส่งคู่มือให้ ajfon (ajfon เป็น lead)
+**ถึง**: ajfon (`<ajfon-repo>/ψ/teams/ajfon-research-OPERATING.md` + `ψ/inbox/2026-08-01_local-codex-fanout_ajfon-research-team-handoff.md` + `maw hey` 2 ครั้ง)
+**Artifact**: charter `ψ/teams/ajfon-research-team.yaml` (symlink `.maw/teams/ajfon-research.yaml`), worktree 3 ตัว, oracle-members lead registration
+
+| Claim | Label | หมายเหตุ |
+|---|---|---|
+| charter resolve + engine bind ถูก 3/3 (`sage-claude-oracle` / `sage-codex-oracle` / `hound-thclaws-oracle`) | `[verified 2026-08-01 · maw-rs v26.7.30-alpha.2017]` | `up --dry-run` output แนบใน OPERATING §7 |
+| **compound shell-string engine (`hook.sh; BASH_ENV=… thclaws …`) boot ผ่าน `maw team up` ได้** | ✅ `[verified 2026-08-01]` | **ปิด `[unverified]` เดิมจาก broadcast 2026-08-01** — thClaws 0.11.0 live, `zai/glm-5.1`, worktree ถูก, idle `❯`, ไม่ติด trust prompt |
+| `maw team up` **ไม่สร้าง worktree** ต้อง `git worktree add` เอง | `[verified]` | `canonicalize … failed: No such file or directory` — preflight เตือนไว้ก่อนแล้ว และเป็น defect จริง ไม่ใช่ noise |
+| `maw team load` เขียน store แต่ `up` **ไม่อ่าน store** — อ่าน `<repo>/.maw/teams/<name>.yaml` | `[verified]` | `load` สำเร็จแล้ว `up` ยังตอบ `charter not found` จนกว่าจะมี symlink |
+| `up --only <role>` skip role อื่นจริง (`skip (selector)`) | `[verified]` | |
+| ถอด row `lead` ออกจาก charter กัน bare `up` ไม่ให้ fork ajfon | `[verified]` | ตอนมี row: `lead … would fresh wake -e ajfon-oracle` (`ajfon-oracle` = `claude --continue`) |
+| `maw team oracle-invite` **ไม่มีจริง** ทั้งที่ `maw team oracle-members` แนะนำให้ใช้ | `[verified]` | `invite` เป็นคนละเรื่อง (`namedPeers`) — ต้องเขียน `oracle-members.json` เอง |
+| **`maw hey` หลายบรรทัด → worker ได้แค่บรรทัดแรก** ต้องส่ง single-line | `[verified]` | worker ตอบ "ไม่มี task" ส่งใหม่บรรทัดเดียวผ่าน |
+| **worker sandbox อยู่ใน worktree ตัวเอง** อ่าน `ψ/inbox` ของ main checkout ไม่ได้ | `[verified]` | `access denied: … outside the project directory` |
+| `maw hey` → thclaws ขึ้น warning `not an agent -- likely misaddressed` | `[verified]` | **warning ผิด** ข้อความถึงจริง worker ทำงานจริง |
+| **`--session <ชื่อไม่มีเลขนำ>` ไม่ resolve** — สร้าง session ใหม่เงียบ ๆ | `[verified]` | `--session ajfon --dry-run` → target `(ajfon)` ไม่ใช่ `(40-ajfon)` |
+| `maw team down` teardown | `[inferred]` | อยู่ใน verb list ยังไม่ได้รัน |
+| **`up` หลาย member พร้อมกัน** | ❌ `[unverified]` | รันทีละ role เท่านั้นตลอดเซสชัน — แจ้ง ajfon ตรง ๆ ใน OPERATING §7 แล้ว |
+| **resume path** (`up` บน pane ที่มีอยู่แล้ว) | ❌ `[unverified]` | ทุกครั้งเป็น `state=missing` → `fresh wake` |
+| **codex trust ของ measure-runner ค้างจริงไหม** | ❌ `[unverified]` | preflight เตือน แต่ยังไม่ spawn จึงยังไม่เห็นของจริง — แจ้ง ajfon แล้ว (OPERATING §6) |
+
+**Scar ของเซสชันนี้ (2 อัน ของผมเอง):**
+
+1. **ใส่ศัพท์ที่เป็น skill trigger ลงในข้อความสั่งงาน** — ผมขึ้นต้น dispatch ว่า "GOLDEN-WORKER PROBE"
+   → worker โหลด skill `codex-team` แล้ว **ทิ้งงานจริง** ไปทำพิธี promotion-gate L1–L7 แทน
+   ต้องส่งไปหยุด 2 ครั้ง → **กฎใหม่: เขียนงานตรง ๆ ห้ามใส่ fleet jargon ใน worker dispatch**
+
+2. **วาง worker ไว้คนละ tmux session กับ lead** — ผมลอก `session: <team-name>` มาจาก evidence-cell
+   โดยไม่ได้ถามตัวเองว่า "lead จะเห็น worker ไหม" → user จับได้ ("มันหาตัวยากมาก")
+   แก้เป็น `session: 40-ajfon` แล้ว worker ขึ้นเป็น window ข้าง ๆ `ajfon.0`
+   → **กฎใหม่: ทีมที่มี lead เป็น oracle ที่ live อยู่ ต้อง spawn worker เข้า session ของ lead**
+
+**Correction ที่ส่งแล้วในเซสชันนี้:** worker `claim-verifier` รายงาน HALT ไปหา ajfon ว่า
+"L1 engine-identity BLOCKED — ผมเป็น Claude Code ไม่ใช่ zai" → **ผิด** ผมตรวจจากนอก process:
+`ps` = `thclaws --model zai/glm-5.1`, `/proc/<pid>/environ` = `ZAI_BASE_URL=https://api.z.ai/...`,
+`~/.thclaws/settings.json` = `"model": "zai/glm-5.1"` → cross-family property ยังอยู่ครบ
+รากของความผิด: **thClaws เป็น fork ของ Claude Code** worker อ่าน system prompt ของ harness ตัวเอง
+แล้วสรุปว่า *model* เป็น Claude — **harness lineage ≠ model family**
+ส่ง correction ให้ ajfon + worker แล้วทั้งคู่ · บทเรียนทั่วไป: **คำให้การของ agent เรื่องตัวตนตัวเอง
+ไม่ใช่หลักฐาน** ต้องดู `ps` / `/proc/<pid>/environ` / config file
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
