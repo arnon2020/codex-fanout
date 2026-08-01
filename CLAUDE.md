@@ -95,7 +95,27 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 - Always preserve history
 - Always present options, let human decide
 - Charter role names ≠ tmux window names — resolve the real dispatch target (`maw ls -v`) before telling a coder where to report
+- **`maw hey <short-name>` fuzzy-matches oracle names too** — `maw hey atlas` landed on `54-atlas-codex` (คนละ oracle) 2026-08-01. ใช้ `<session>:<window>` เต็มเมื่อเรื่องสำคัญ
+- **"delivered" ไม่ใช่หลักฐานว่า agent ได้รับ** — ส่งไปยัง pane ที่รัน `bash` maw รายงานเป็น *warning* ไม่ใช่ error อ่าน output ให้จบทุกครั้ง ถ้าสำคัญให้ส่ง inbox file ควบ (durable)
 - Before running a "write N chapters" pipeline on thin material, check whether comparable material already exists — don't pad or duplicate silently
+
+### Teaching discipline (added 2026-08-01 — เกิดจาก scar จริง 4 ครั้งในวันเดียว)
+
+รากของความพลาดทุกครั้ง: **verify คุณสมบัติเดียว → เหมาว่าคำสั่งใช้ได้ทั้งหมด → ส่งต่อ**
+(prism ตั้งชื่อให้; เกิดกับ codex-fanout 1 / prism 2 / loom 1 ในเซสชัน 2026-08-01)
+
+- **ทุก operational claim ต้องมี label** — `[verified: ran on <binary> <version>, output แนบ]` /
+  `[inferred: source only]` / `[unverified]` ไม่มี label = ห้ามส่งต่อ
+- **ห้าม broadcast คำสั่งปฏิบัติการให้ fleet** เว้นแต่มีคนรัน **end-to-end บน binary version ที่ระบุ**
+  และข้อความต้องบอก version + ใครรัน — ถ้ายังไม่มีใครรัน ให้ส่งพร้อม `[unverified]` ตรง ๆ
+- **ก่อน broadcast: `grep -rn "<verb>" ~/.claude/skills/`** หา artifact ของ fleet ที่พูดเรื่องเดียวกัน
+  ก่อน — ถ้าขัดกัน ให้แจ้งเจ้าของ artifact อย่าเงียบแล้วส่งของตัวเอง
+- **บันทึกทุกการสอนลง `ψ/teams/TEACHING-LEDGER.md` ในเซสชันนั้น** — เมื่อ claim ถูกล้ม
+  ต้อง `grep` ได้ว่าใครถืออยู่ แล้วส่ง retraction ให้ครบทุกคน
+  (correction ต้องไหล**ลง**ตาม teaching tree ไม่ใช่จบที่เรา)
+- **ห้ามแก้ skill ของ oracle อื่น** (`codex-team` = atlas) — ส่งหลักฐานให้เจ้าของตัดสินใจ
+  แบบที่ prism ทำกับเรา
+- **อย่าอ้าง skill/script โดยไม่ `ls`** — 2026-08-01 พบว่า 4 ใน 6 skill ที่ CLAUDE.md อ้าง ไม่มีจริง
 
 ## Brain Structure
 
@@ -110,19 +130,25 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 
 ## Installed Skills
 
-- `codex-lead` — spawn + lead a codex coder team (fast path verified, incl. maw-rs #658 workaround)
-- `oracle-team` — vendored `codex-setup.ts` (worktree-local CODEX_HOME setup)
-- `oracle-write-complete-book` — full book pipeline (outline → parallel draft → Thai word-break → typst render)
+> Verified on disk 2026-08-01 (`ls ~/.claude/skills/`). **4 of 6 previously listed here did not
+> exist** — `codex-lead`, `oracle-team`, `oracle-write-complete-book`, `session-recap`. Corrected
+> below. Anything still referencing the missing ones (incl. `CODEX-TEAM-BOOTUP.md`) is stale.
+
+- `codex-team` — gate layer over maw-team (**atlas's artifact**, co-authored with sage-codex — we
+  use it, we don't own it; don't edit without asking atlas). Successor to the missing
+  `oracle-team/scripts/codex-setup.ts` is `codex-team/scripts/seed-codex-home.sh`
 - `rrr` — session retrospective
-- `session-recap` — mine raw transcript JSONL for what actually happened
+- `recap` — mine raw transcript JSONL for what actually happened (was listed as `session-recap`)
 - `awaken` — this ritual
+- ❌ **no book-pipeline skill installed** — the 58-page book (v2026.07.23) was produced without one;
+  don't promise `oracle-write-complete-book`, it isn't here
 
 ## Short Codes
 
 - `/rrr` — Session retrospective
 - `/trace` — Find and discover
 - `/learn` — Study a codebase
-- `/session-recap` — Reconstruct a session from raw transcript
+- `/recap` — Reconstruct a session from raw transcript
 - `/who` — Check identity
 
 ## Escalation

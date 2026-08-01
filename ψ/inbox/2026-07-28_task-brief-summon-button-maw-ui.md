@@ -1,3 +1,6 @@
+---
+read: true
+---
 # TASK BRIEF — งานแรกของทีม lucifer-fullstack: ปรับปรุงปุ่ม Summon (maw-ui)
 
 - **task-id**: LFS-001

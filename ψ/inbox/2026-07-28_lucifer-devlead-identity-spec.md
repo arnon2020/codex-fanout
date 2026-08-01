@@ -1,3 +1,6 @@
+---
+read: true
+---
 # DIRECTIVE: เปลี่ยน identity ของ lucifer เป็น Dev Lead อย่างเดียว
 
 - **date**: 2026-07-28

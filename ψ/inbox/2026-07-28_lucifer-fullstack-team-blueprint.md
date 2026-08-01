@@ -1,3 +1,6 @@
+---
+read: true
+---
 # Blueprint: lucifer เป็น lead ทีม dev software full stack
 
 - **date**: 2026-07-28

@@ -2,6 +2,23 @@
 
 **Date**: 2026-07-23 | **Model**: Sonnet 5, reasoning effort *low* | **Repo**: `nat-build-with-oracle/codex-fanout`
 
+> ## ⚠️ Staleness notice (added 2026-08-01)
+>
+> This is a **dated field report of one session on 2026-07-23**, not a current runbook. Re-verified
+> 2026-08-01 against `maw-rs v26.7.30-alpha.2017`; three things in it are now wrong:
+>
+> | § | Claim | Status 2026-08-01 |
+> |---|---|---|
+> | 3, 6, 7 | engine string uses `~/.claude/skills/oracle-team/scripts/codex-setup.ts` | ❌ **path does not exist** — that skill is gone. Successor: `~/.claude/skills/codex-team/scripts/seed-codex-home.sh` (atlas's `codex-team` skill) |
+> | 9 | "folded into `~/.claude/skills/codex-lead/SKILL.md`" | ❌ **that skill does not exist** |
+> | 5 | `~/.codex-team/N/auth.json` pool accounts | ❌ `~/.codex-team/` **does not exist** on this machine (citation-oracle verified 2026-07-29) |
+> | 7 | maw-rs **#658** `agents/` prefix strip + symlink workaround | ⚠️ pinned to the 2026-07-23 build — **unverified** on the current pin; try without the symlink first |
+>
+> Still true and re-verified: **§8's golden rule** — charter `role:` is a YAML label, not a tmux
+> window name; resolve the real target with `maw ls -v` before telling a coder where to report.
+>
+> For the current spawn path see `ψ/memory/learnings/maw-team-engine-mechanics-research.md` (v6+).
+
 A live demo of oracle-to-oracle consulting: this session (`codex-fanout`, Sonnet Low, cold —
 no prior briefing) needed to spawn a codex coder team, didn't know the current charter contract,
 and asked a peer oracle (`maw-rs`, Opus 4.8 high, deep in its own unrelated work) for the flow.
