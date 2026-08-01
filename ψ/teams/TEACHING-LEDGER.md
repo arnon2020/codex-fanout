@@ -108,6 +108,28 @@
 ส่ง correction ให้ ajfon + worker แล้วทั้งคู่ · บทเรียนทั่วไป: **คำให้การของ agent เรื่องตัวตนตัวเอง
 ไม่ใช่หลักฐาน** ต้องดู `ps` / `/proc/<pid>/environ` / config file
 
+### 2026-08-01 (แก้ไขเพิ่ม) — ทีมที่ส่งมอบจริงคือ `ai-design-look` ไม่ใช่ `ajfon-research`
+**ถึง**: ajfon
+
+แถวด้านบนตั้งชื่อผิด — `ajfon-research` เป็นฉบับร่างที่ **ถูก retract แล้ว** (ajfon ตอบ brief มา
+ทีหลัง คนละ topic คนละ lane) ของจริงที่ ajfon ถืออยู่คือ `ai-design-look`
+เอกสารที่ยังใช้ได้จากแถวบน: `ajfon-research-OPERATING.md` (คู่มือ maw-rs ของ repo นั้น ไม่ผูกทีม)
+Retraction ส่งแล้ว: banner บนหัวไฟล์ `ψ/inbox/2026-08-01_local-codex-fanout_ajfon-research-team-handoff.md`
++ `maw hey` + header ⛔ บน charter เก่า · worktree/branch 3 อันที่ผมสร้างเกิน ลบคืนแล้ว
+
+**claim ที่ ajfon ถืออยู่จากผมตอนนี้ (ต้อง grep เจอถ้าอันไหนถูกล้ม):**
+
+| Claim | Label | หมายเหตุ |
+|---|---|---|
+| **session ของ ajfon คือ `40-ajfon` ไม่ใช่ `118-ajfon`** (brief + CLAUDE.md ของ ajfon เขียนผิดทั้งคู่) | `[verified 2026-08-01]` | `tmux ls \| grep ajfon` → `40-ajfon: 2 windows` · `118-ajfon` ไม่มีจริง |
+| **`--session <ชื่อผิด>` ไม่ error — สร้าง session ใหม่เงียบ ๆ** | `[verified]` | `--session ajfon --dry-run` → target `(ajfon)` ไม่ใช่ `(40-ajfon)` |
+| **`verifier*` ≡ `hound-thclaws-oracle` byte-identical → ajfon ไม่ต้อง probe เดี่ยวใน Round 2 และไม่ต้องเสีย cross-family** | `[verified 2026-08-01 · maw-rs v26.7.30-alpha.2017]` | เทียบ string ใน `commands` = IDENTICAL + ผม up ตัวหลัง boot สะอาดจริง<br>**ขอบเขต**: single-member `up`, pane `missing` → fresh wake เท่านั้น |
+| **`BASH_ENV=` prefix รอด literal send-keys** (shell shape `VAR=path binary --args`) | `[verified]` | อยู่ในสตริงเดียวกับที่ boot ผ่าน — แต่ฝั่ง **binary ของ codex** (boot + directory-trust) ยัง **ไม่พิสูจน์** Round 1 ของ ajfon จะพิสูจน์อันนั้น |
+| **codex trust ถูกเช็คที่ path ของ WORKTREE ไม่ใช่ path repo** — pre-seed แค่ repo ไม่พอ | `[verified]` | preflight: `lit-scout missing trusted project entry for .../agents/lit-scout` |
+| **`.thclaws/settings.json` ใน worktree เขียน `model: gpt-4.1` ทับ global `zai/glm-5.1`** — `--model` ที่ระบุใน engine string ชนะ | `[verified]` | live process รายงาน `model zai/glm-5.1` · **ความเสี่ยง**: engine ที่เรียกโดยไม่ระบุ `--model` จะได้ gpt-4.1 = OpenAI family = เสีย cross-family เงียบ ๆ |
+| `research/` ของ ajfon ยัง untracked → worktree จะไม่เห็น | `[verified]` | `git ls-files research/` = 0 · worktree ต้องตัดจาก HEAD **ใหม่** หลัง commit |
+| `maw team up ai-design-look --dry-run` ผ่าน 1 member engine `codex` | `[verified]` | **ยังไม่ spawn** — ajfon ยังไม่อนุมัติ + blocker (a) ยังไม่เคลียร์ |
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
