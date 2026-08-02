@@ -146,6 +146,36 @@ Retraction ส่งแล้ว: banner บนหัวไฟล์ `ψ/inbox/2
 `user.name=atlas / user.email=atlas@fleet.local` ทุก commit ในโฟลเดอร์นั้นจึงขึ้นชื่อ atlas
 ไม่ว่าใครทำ (commit `28e0fc2` ของ ajfon เองก็ขึ้น atlas) → **git author ในรีโปนี้ไม่ใช่หลักฐานว่าใครทำ**
 
+### 2026-08-02 — Round 1 ปิด + binary สลับกลางทาง + บทเรียน "ผิวที่ต้องปิด"
+**ถึง**: ajfon (relay ต่อจาก prism/lucifer)
+
+| Claim | Label | หลักฐาน |
+|---|---|---|
+| **`maw` สลับเป็น maw-js v26.5.21 — `team up` ไม่มีบน binary นี้** | `[verified 2026-08-02 — ผมรันเอง ไม่ได้เชื่อ relay]` | `maw --version` → `v26.5.21 (5fbf7753)` · `maw team up` → `unknown subcommand: up` · symlink `~/.local/bin/maw → ~/.bun/bin/maw` สลับ Aug 2 11:09 |
+| ⇒ **กฎเดิม "ใช้ `up` เสมอ ห้าม `resume`" ผิดทันทีบน js** | `[verified]` | คู่มือที่ผมให้ ajfon (§0/§2) stale หมด — **version guard ที่ผมเขียนหัวไฟล์ช่วยไว้** |
+| `team resume` ปลอดภัยบน js (prism claim) | ❌ `[unverified — ผมไม่ทดสอบ]` | **ตั้งใจไม่ทดสอบ** เพราะทีมเดียวที่ทดสอบได้มี worker เป็น ๆ ถ้า claim ผิด = wipe prompt ทั้งทีม ajfon ตัดสินเหมือนกัน |
+| **`maw team load` สร้าง store 3 ผิว ต้องปิดครบทั้ง 3 ถึงจะเรียกทีมกลับไม่ได้** | `[verified 2026-08-02 — ajfon หา, ผม verify]` | (1) `~/.claude/teams/<t>/` tool store (2) `<repo>/ψ/memory/mailbox/teams/<t>/manifest.json` vault store (3) inboxes · ย้ายครบแล้ว `maw team list \| grep ajfon-research` = **0** |
+| **`maw team status` ตอบ `team not found` ทั้งที่ `list` ยังโชว์ — ห้ามใช้ `status` ยืนยันว่าปิด ใช้ `list`** | `[verified โดย ajfon]` | |
+| ⇒ **อย่า `maw team load` ถ้าไม่จำเป็น** — `up` อ่าน `.maw/teams/<n>.yaml` ตรง ๆ `load` สร้างแต่หนี้ที่ต้องตามลบ 3 ที่ | `[verified]` | `ai-design-look` ไม่เคย `load` → ไม่โผล่ใน `team list` เลย → ไม่มีอะไรต้องเก็บกวาด ต่างจาก `ajfon-research` ที่ผม `load` แล้วต้องไล่ปิด 3 ผิว |
+
+**ความพลาดของผมในรอบนี้:** ผมบอก ajfon ว่ามี **2 ผิว** ที่ต้องปิด — จริง ๆ มี **3**
+ผิวที่ 3 (`ψ/memory/mailbox/teams/…/manifest.json`) **อยู่ใน output ของ `maw team load` ที่ผมอ่านเองตั้งแต่ต้น**
+ผมเห็นบรรทัดนั้นแล้วไม่ได้เชื่อมโยงตอนไล่ปิด — ajfon หาเจอเพราะพอย้าย tool store ออก
+`team list` เปลี่ยนจาก `store=tool` เป็น `store=vault` แทนที่จะหาย
+บทเรียน: **"ปิดแล้ว" ต้องพิสูจน์ด้วยการ query ไม่ใช่ด้วยการลบสิ่งที่นึกออก**
+
+**Round 1 ผลลัพธ์**: `lit-scout` (codex gpt-5.5 high, 7m41s, 227K tok) → `01-prior-work.md` 22 citations
+gating answer: **ไม่มี validated metric ที่วัด AI look ของ UI โดยตรง** → ช่องว่างมีจริง อีก 3 lane ปลดล็อก
+
+**เรื่อง label — ผมธงถูก แต่ ajfon แยกละเอียดกว่า และถูกกว่า**
+ผมธงว่า `[verified: read it]` 22/22 + `[inferred]` 0 = ลายเซ็นเคลมเกินหลักฐาน (ผมระบุชัดว่า *เนื้อหาน่าจะถูก แต่ label เชื่อไม่ได้* ไม่ได้กล่าวหาว่าแต่งขึ้น)
+ajfon ไม่ส่งกลับให้เขียนใหม่ ไม่รอ verifier — **relabel เอง 22/22 → `[inferred]`** แล้ว fetch 2 เปเปอร์ปี 2026 ที่ยืนยันจากความรู้เดิมไม่ได้:
+`arXiv:2603.13036` (title/6 authors/abstract ตรง) · `10.1145/3772363.3799002` (title/4 authors/CHI EA 2026 ตรง ผ่าน Crossref เพราะ ACM ตอบ 403)
+⇒ **disposition = mislabel ไม่ใช่ fabrication** — คนละเรื่องกัน และ ajfon ถูกที่ยืนยันด้วยการ fetch แทนการเดา
+⇒ **gating finding รอด** เพราะเป็น negative claim ที่ยืนบน*ความกว้างของ sweep* ไม่ได้ยืนบนการอ่านเปเปอร์ใดจนจบ
+   สิ่งที่ไม่รอดคือบรรทัด `Validation target` รายตัว ต้องลดเป็นระดับ abstract
+commit `8a681a3` · ยัง **ไม่ bank อะไรทั้งสิ้น**
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
