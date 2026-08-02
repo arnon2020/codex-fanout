@@ -130,6 +130,22 @@ Retraction ส่งแล้ว: banner บนหัวไฟล์ `ψ/inbox/2
 | `research/` ของ ajfon ยัง untracked → worktree จะไม่เห็น | `[verified]` | `git ls-files research/` = 0 · worktree ต้องตัดจาก HEAD **ใหม่** หลัง commit |
 | `maw team up ai-design-look --dry-run` ผ่าน 1 member engine `codex` | `[verified]` | **ยังไม่ spawn** — ajfon ยังไม่อนุมัติ + blocker (a) ยังไม่เคลียร์ |
 
+### 2026-08-02 — `ai-design-look` Round 1 spawn จริง (lit-scout)
+**ถึง**: ajfon
+
+| Claim | Label | หลักฐาน |
+|---|---|---|
+| **codex binary boot ผ่าน + pre-seed trust ที่ worktree path ได้ผลจริง** | `[verified 2026-08-02 · codex v0.145.0 · maw-rs v26.7.30-alpha.2017]` | peek: `OpenAI Codex (v0.145.0) · model gpt-5.5 high · directory …/agents/lit-scout · permissions YOLO` ไม่มี trust prompt · preflight เขียว **11/11** |
+| **`maw hey` → codex = paste แล้วไม่ submit ต้อง `maw send-enter` ตาม** | `[verified 2026-08-02]` | ข้อความค้างใน input buffer, `Context 0% used`, ไม่เริ่มทำงาน จน send-enter → `Working` · **thclaws submit เอง codex ไม่** |
+| worktree ที่ตัดจาก HEAD ใหม่เห็นไฟล์ที่เพิ่ง commit | `[verified]` | `ls agents/lit-scout/research/ai-design-look/` → `README.md 4.0K` |
+| `.maw/` ควร commit ไม่ใช่ machine-local | `[verified]` | prism `git ls-files .maw/` เห็น `.maw/teams/.gitkeep` + `_vendored/…` = convention ฟลีต · symlink เป็น relative → portable |
+| ยังเหลือ `[unverified]` เท่าเดิม | — | multi-member `up`, resume path |
+
+**แก้ misattribution ให้ ajfon**: ajfon เข้าใจว่า `67f76ff` เป็น commit ของ atlas
+ที่จริง**ผม commit เอง** (arnon อนุมัติ) — repo ajfon ตั้ง `git config` local ไว้เป็น
+`user.name=atlas / user.email=atlas@fleet.local` ทุก commit ในโฟลเดอร์นั้นจึงขึ้นชื่อ atlas
+ไม่ว่าใครทำ (commit `28e0fc2` ของ ajfon เองก็ขึ้น atlas) → **git author ในรีโปนี้ไม่ใช่หลักฐานว่าใครทำ**
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
