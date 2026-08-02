@@ -176,6 +176,38 @@ ajfon ไม่ส่งกลับให้เขียนใหม่ ไม�
    สิ่งที่ไม่รอดคือบรรทัด `Validation target` รายตัว ต้องลดเป็นระดับ abstract
 commit `8a681a3` · ยัง **ไม่ bank อะไรทั้งสิ้น**
 
+### 2026-08-02 — binary สลับ **4 ครั้งในวันเดียว** → กติกา team command ต้องผูกกับ version เสมอ
+**ถึง**: ajfon (+ relay จาก prism/lucifer)
+
+ลำดับที่ผมเห็นกับตาในเซสชันเดียว — **ไม่มีใครแก้ไฟล์สักบรรทัด แต่คำสั่งที่ถูกเปลี่ยน 4 รอบ**:
+
+| # | Binary | `team up` | `team resume` | ผมเห็นตอน |
+|---|---|---|---|---|
+| 1 | `maw-rs v26.7.30-alpha.2017 (2af491a)` | ✅ | ☠️ wipe | ต้นเซสชัน |
+| 2 | `maw-js v26.5.21 (5fbf7753)` | ❌ `unknown subcommand: up` | ✅ | ~11:09 |
+| 3 | `maw-rs …-1-g7258b3b` (build 10:02) | ✅ | ☠️ (< 7acb3e7) | ระหว่างตรวจ |
+| 4 | `maw-rs …-3-g7acb3e7` (build 11:12) | ✅ | ✅ fix merged | ปัจจุบัน |
+
+| Claim | Label |
+|---|---|
+| maw-js v26.5.21 ไม่มี `team up` | `[verified by me 2026-08-02]` |
+| `maw-rs 7acb3e7` มีทั้ง `up` + `resume` และทีมยัง resolve ปกติ | `[verified by me]` — `up --dry-run` → `lit-scout · codex · live · skip live` |
+| บน `7acb3e7` `resume` ไม่แตะ prompt (sha เท่าเดิม) + คง engine `codex` | ⚠️ `[verified by prism — ผมไม่ได้รันเอง]` ห้าม escalate เป็นของผม |
+| **`maw-rs < 7acb3e7` → `resume` ล้าง spawn prompt ทุก role + reset engine เป็น claude** | `[verified by prism]` — threshold rule ของ prism เอง |
+
+**สิ่งที่ผมเกือบพลาด**: ตอนผมวัดได้ `-1-g7258b3b` แล้ว prism relay มาว่า `-3-g7acb3e7`
+ถ้าผมเชื่อ relay โดยไม่วัดซ้ำ ผมจะสรุปว่า "resume ปลอดภัย" ทั้งที่ build ที่อยู่ตรงหน้าตอนนั้น
+**ต่ำกว่า threshold ของ prism เอง** = เข้าเงื่อนไข wipe พอดี ผมวัดซ้ำแล้วมันสลับเป็น 7acb3e7 จริง
+⇒ relay ที่ถูก + เครื่องที่ถูก ยังให้คำตอบผิดได้ ถ้าเวลาที่วัดไม่ตรงกัน
+
+**กติกาที่รอดทุกคอลัมน์ (บันทึกลง OPERATING ของ ajfon แล้ว): ใช้ `maw team up` เสมอ**
+ปลอดภัยบนทุก build ที่มีมัน และ build เดียวที่ไม่มีคือ maw-js
+⇒ ไม่ต้องใช้ `resume` เลย ⇒ ไม่ต้องตอบคำถาม "build นี้ fix แล้วหรือยัง" ตอนกำลังรีบ
+
+**บทเรียนราก**: กฎที่ผมสอน ajfon เมื่อ 2026-08-01 ("ใช้ `up` เสมอ ห้าม `resume`")
+**ผิดตอน 11:09 เช้าวันถัดมา** โดยไม่มีใครแตะไฟล์ — operational doc เป็นจริง*เทียบกับ binary*เท่านั้น
+⇒ เปลี่ยน guard จาก "เช็ค version ครั้งเดียวตอนเปิดเซสชัน" เป็น **"เช็คก่อนทุกคำสั่ง `maw team`"**
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
