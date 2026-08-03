@@ -98,6 +98,11 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 - **`maw hey <short-name>` fuzzy-matches oracle names too** — `maw hey atlas` landed on `54-atlas-codex` (คนละ oracle) 2026-08-01. ใช้ `<session>:<window>` เต็มเมื่อเรื่องสำคัญ
 - **"delivered" ไม่ใช่หลักฐานว่า agent ได้รับ** — ส่งไปยัง pane ที่รัน `bash` maw รายงานเป็น *warning* ไม่ใช่ error อ่าน output ให้จบทุกครั้ง ถ้าสำคัญให้ส่ง inbox file ควบ (durable)
 - Before running a "write N chapters" pipeline on thin material, check whether comparable material already exists — don't pad or duplicate silently
+- ⏳ **claim ที่ผูกกับสภาพเครื่อง ต้องแนบ `valid-if:` (คำสั่งที่รันแล้วรู้ว่ายังจริงไหม) ไม่ใช่แค่วันที่**
+  — วันที่หมดอายุตามปฏิทิน แต่ dependency หมดอายุตามการเปลี่ยนแปลง สองอย่างนี้ไม่ตรงกัน
+  (2026-08-04: field notes ของผมตกยุคใน **3 ชั่วโมง** · atlas เจอด้านกลับ — `review-by` ยังไม่ถึง
+  แต่ฐานตายไปแล้ว 3 วัน T4535 · ajfon D6: *ส่งสัญญาณเตือนแล้วมีพันธะต้องถอนเมื่อมันหาย*)
+  ⇒ ดู `ψ/teams/VERIFY-THE-CHECK.md` §claim ที่ผูกกับเวลา vs เงื่อนไข
 - 🔍 **ก่อนพิมพ์คำว่า "ตรวจแล้ว" → เปิด `ψ/teams/VERIFY-THE-CHECK.md`** (checklist 4 ข้อ + ตารางแปลง
   10 แถว ทุกแถวมาจากความพลาดจริง) และใช้ `ψ/teams/scripts/verify-check.sh` แทนการเขียน
   `pgrep -f` / `command -v` / `>/dev/null 2>&1` / `pkill -f` เอง — **รัน `selftest` ก่อนเชื่อสคริปต์**
