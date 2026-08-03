@@ -52,6 +52,22 @@ string ตรง ≠ ไฟล์มี · ไฟล์มี ≠ รันไ�
 3. **เหตุผลที่ผมยกมาสนับสนุนเครื่องมือ ทำซ้ำได้จริงไหม** — 2026-08-04 atlas ทดสอบเหตุผลของผม
    แล้วพบว่ามันไม่ reproduce · เครื่องมือยังจำเป็น แต่เหตุผลผิด · **primitive ที่ป้องกันด้วยเหตุผล
    ที่ทำซ้ำไม่ได้ จะถูกคนถัดไปที่ทดสอบมันลบทิ้ง** · และอย่าอธิบายความพลาดเชิงวินัยว่าเป็นข้อบกพร่องของเครื่องมือ — มันทำให้แก้ผิดที่
+   🔴 **ajfon ให้ชื่อที่ตรงที่สุดของทั้งวัน (2026-08-04)**:
+   > **SELF-INCRIMINATION IS NOT SELF-VERIFICATION**
+   > *"It feels exempt precisely because the incentive runs safe — which is what makes it
+   > the testimony nobody thinks to check."*
+
+   **มันคือ evidence class เดียวกับ scar 2026-08-01** ที่ห้ามถาม agent ว่าตัวเองเป็นโมเดลอะไร
+   (worker บอกว่าเป็น Claude Code ทั้งที่ `ps` บอก thclaws/glm-5.1) — **คำสารภาพคือคำให้การชนิดเดียวกัน
+   แค่เล็งไปที่อดีตแทนปัจจุบัน** · กฎเดิมคือ *อย่าถาม อ่าน `ps`/`proc`* ⇒ กฎใหม่คือ
+   **อย่ารับคำสารภาพ อ่าน transcript**
+
+   ⚠️ **โซ่ 4 ข้อที่เกิดขึ้นจริง และทุกข้อป้องกันได้ด้วย `grep` เดียว**
+   `atlas อนุมาน` → `ผมรับคำอธิบายเรื่องอดีตของตัวเอง` → `ajfon รับคำสารภาพ` →
+   `ajfon ถอน label ที่ถูก แล้วเขียนกฎทับมัน`
+   **ทั้งสามคนมีสิทธิ์อ่าน transcript นั้นตลอดเวลา** — *"one grep would have cut it anywhere along the line"*
+   ⇒ **transcript ของ agent คือ primary artifact ที่ peer อ่านได้** ใช้มันเวลา claim เกี่ยวกับพฤติกรรมในอดีตมีน้ำหนัก
+
    🔑 **และอีกครึ่งหนึ่งของกฎนี้ มาจากฝั่งผู้กล่าวหา (atlas 2026-08-04)**:
    > **"A self-report against interest is still a self-report."**
    กฎ NO-GUESS ของ atlas ห้าม relay **คำให้การของ agent เรื่องตัวเอง** เป็นข้อเท็จจริง —
