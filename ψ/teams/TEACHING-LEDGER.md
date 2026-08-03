@@ -504,6 +504,35 @@ arnon ไม่พิมพ์ในแชท lucifer เอง → ทางอ
 **ตัวตรวจที่มีสตริงเป้าหมายอยู่ในคำสั่งของตัวเอง จะนับตัวเองเสมอ** — ใช้ `/proc/*/exe` หรือ `pgrep -x`
 และ **ห้ามทิ้ง stderr ตอนทดสอบว่า "ของขึ้นไหม"** เพราะ output คือคำตอบ
 
+### 2026-08-04 — สอน maw team ให้ ajfon + atlas + lucifer (arnon สั่ง)
+**Artifact**: `ψ/teams/MAW-TEAM-FIELD-NOTES-2026-08-04.md` (12 หัวข้อ) +
+`ψ/teams/VERIFY-THE-CHECK.md` + `ψ/teams/scripts/verify-check.sh` (selftest 7/7, stderr 0)
+**ส่ง**: inbox ทั้ง 3 (ฉบับเดียวกัน + cover เฉพาะตัว) + `maw hey` ครบ ·
+**ยืนยันถึง transcript แล้ว**: ajfon 6 · atlas 3 · lucifer 1 ครั้ง (ไม่ใช่แค่คำว่า delivered)
+
+| Claim หลักที่สอนออกไป | Label |
+|---|---|
+| `engine:` ที่ไม่ใช่คีย์ใน `commands` → fall through ไป `default`=claude **เงียบ** และ `up --dry-run` พิมพ์ค่าที่ *ขอ* ไม่ใช่ค่าที่ *bind* | `[verified 284ae4d · รันเอง 2 รอบ]` + source `wake_engine_command.rs:74-97` `[inferred]` |
+| คีย์ที่ใช้ได้จริง 10 ตัว พร้อม model ที่ได้ (รวม thclaws family ที่ผม rebuild คืนมา) | `[verified 2026-08-03/04]` |
+| `maw team preflight` รับ **path** ไม่ใช่ชื่อทีม · ต้องเขียว **ก่อน** `up` · charter ที่ไม่มี member = ตอบ error เป็นปกติ | `[verified]` |
+| CODEX_HOME ชนเมื่อมี codex ≥2 row · schema ไม่มี `env:` · กฎแทน = uncomment ทีละแถว | `[verified]` |
+| worktree: `up` ไม่สร้างให้ · ต้องตัดจาก branch ที่มี input · **ไฟล์ที่ commit ทีหลังจุดตัดไม่อยู่ในกล่อง worker** | `[verified]` |
+| worktree isolation **ไม่ถูกบังคับ** กับ engine ที่ full-access — prompt คือ guard เดียว | `[verified]` |
+| dispatch: ใบสั่งงานเป็น **ไฟล์ใน worktree** + `hey` บรรทัดเดียว · codex/claude ต้อง `send-enter` · **opencode ใช้ได้แล้ว** (supersede บันทึกผมเอง 2026-07-25) | `[verified — ใช้ครบ 4 lane]` |
+| เกณฑ์จบ = **commit hash เปลี่ยน** ห้าม grep จอ (จอมีข้อความ lead ปนอยู่) | `[verified — ผมพลาด 2 ครั้ง]` |
+| spawn ไม่แน่นอน: parallel up หน้าต่างหาย 1/2 · opencode ตกเป็น bash 1/2 | `[verified · n เล็ก]` |
+| background shell ค้าง → ข้อความถูก queue ไม่เคย submit · ghost text ≠ บัฟเฟอร์ | `[verified — pane ของ lucifer 10h29m]` |
+| ห้ามถาม agent ว่าเป็นโมเดลอะไร → `ps` + `/proc/environ` · **cross-family มี 2 แกน model/harness** | `[verified]` (atlas T4537) |
+| `list` ไม่ใช่ `status` · อย่า `load` (3 ผิว) | `[verified by ajfon]` |
+
+**วิธีส่งที่ตั้งใจให้ต่างจาก 2026-08-01 ที่พลาด**
+- ผูก binary version ไว้หัวเอกสาร + บอกตรง ๆ ว่าถ้า version ไม่ตรง **ตารางใช้ไม่ได้**
+- **`grep` skills ของฟลีตก่อนส่ง** — เจอ `codex-team/scripts/preflight.sh` + `lib_launch_identity.sh`
+  ของ atlas · แจ้งเขาตรง ๆ ว่า **ของผมไม่ทับ** เป็น primitive ที่ gate เขาเรียกใช้ได้ ให้เขาตัดสิน
+- ประกาศ n ของทุกข้อ (1–4 ครั้ง) และเขียนว่า **"การมีอยู่จริงของอาการ ไม่ใช่สถิติ"**
+- มีหัวข้อ **"ที่ยังไม่รู้ และผมจะไม่เดา"** ปิดท้าย
+- ไม่แก้ skill/charter/CLAUDE.md ของใคร · ไม่ broadcast เป็นกฎฟลีต · ขอ correction กลับ
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
