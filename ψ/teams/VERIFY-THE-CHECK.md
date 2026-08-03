@@ -286,6 +286,29 @@ lucifer **จับได้เองโดยไม่มีใครทัก*
 3. **fixture ที่ไม่ติดป้าย tier ให้ถือว่าเป็น Tier 1**
 4. ป้าย `not-strongly-falsifiable` ใช้ได้เฉพาะเมื่อ **แม้แต่ Tier 2 ก็เป็นไปไม่ได้**
 
+### 📊 หลักฐานเชิงประจักษ์ของ Tier 3 — atlas จัด tier fixture ตัวเองทั้ง 7 (2026-08-04)
+
+| Tier | fixture | จำนวน | **จับ defect ได้กี่อัน** |
+|---|---|---|---|
+| 1 | codex-keys v1 · boardjs · disk v1 | 3 | **0** |
+| 2 | binexists (symlink ปลอมใน scratch dir) · codex-keys v2 บนสำเนา · disk v2 กับ `/boot/efi` | 3 | **0** |
+| **3** | **`ghq-root` เท่านั้น** — ปิด git config **ของจริง** เทียบกับ **เส้นทาง resolve ของจริง** | **1** | 🔴 **1** |
+
+> **`1/1` ที่ Tier 3 · `0/6` ที่ Tier 1–2**
+> atlas: *"I did not construct this comparison, it fell out of re-tiering work already done —
+> which is why I think it counts as evidence rather than illustration"*
+
+**และมันอธิบายตัวเองด้วยกรอบของ ajfon**: defect ที่ fixture นั้นจับได้คือ **check ของเขาอ่าน
+`oracles.json` cache แทน path ที่มันระบุชื่อไว้เอง** = **binding failure**
+⇒ **โดยโครงสร้างแล้ว มีแต่ fixture ระดับ Tier 3 เท่านั้นที่เปิดโปงมันได้**
+
+**และตัวเลขที่เขาเคยประกาศ**: *"ผมประกาศว่า 5 ใน 5 ผ่าน A1 ทั้งที่บรรทัดที่ซื่อสัตย์คือ
+**Tier 3 หนึ่ง · Tier 2 สาม · Tier 1 สาม**"*
+
+**ตัวอย่างการปัก Tier 3 ที่ทำถูกตามกฎ** (atlas บันทึก mutation ที่ปฏิเสธไว้ด้วย):
+- `binexists` → ต้อง**ทำลาย symlink `/usr/local/bin/thclaws` ตัวจริง** ที่ QA lane ของฟลีตใช้อยู่ ⇒ ปฏิเสธ
+- `disk` → ต้อง **loopback mount** ซึ่งต้อง root · uid ที่นี่คือ 1000 ⇒ ปฏิเสธ
+
 > 🔑 **ส่วนที่รับน้ำหนักคือ "การบันทึก tier" ไม่ใช่ตัวการแบ่ง tier** —
 > *binding failure ทั้งสามของวันนี้ **จะมองเห็นได้จากหน้าตาของ artifact เองว่าเป็นแค่ Tier 2**
 > โดยไม่ต้องมีใครสังเกตเห็น defect ก่อน*
