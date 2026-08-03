@@ -324,13 +324,87 @@ inference from it was what sagged"* ⇒ **คนละชนิดกับค�
 **ผลลัพธ์ "ไม่เจอ" จาก sweep ที่ไม่ครบ ไม่ใช่ผลลัพธ์ "ไม่มี" — sweep ต้องประกาศ coverage ของตัวเองก่อน
 ความว่างเปล่าถึงจะมีความหมาย**
 
+### 2026-08-03 (เย็น) — Round 2 ของ ai-design-look: ผมเป็น lead · 3 lane · บทเรียน team-ops
+**ถึง**: ajfon (charter + notices), atlas + atlas-codex (retraction + engine findings), forge (engine down)
+
+| Claim | Label | หลักฐาน |
+|---|---|---|
+| 🔴 **`thclaws` เป็น dangling symlink — ไบนารีไม่มีอยู่จริง** ⇒ `thclaws`, `thclaws-resume`, `hound-thclaws-oracle`, **`forge-oracle`**, **`drift-oracle`** ปลุกไม่ขึ้นทั้งหมด | `[verified 2026-08-03]` | `ls -lL /usr/local/bin/thclaws` → No such file · `command -v thclaws` → ว่าง · แจ้ง arnon + forge (drift ไม่มี repo บนเครื่อง) |
+| **string ใน config ตรงกัน ≠ engine ที่รันได้** — ต้อง `command -v <binary>` ด้วยเสมอ | `[verified — ผมพลาดเอง]` | ผม "re-verify" `verifier* → hound-thclaws-oracle` ด้วยการเทียบ string แล้วเหมาว่าใช้ได้ · ถ้าไม่เช็ค binary จะ spawn แล้วตายเงียบ |
+| **`maw team preflight <path ของ charter>`** (ไม่ใช่ชื่อทีม) จับ CODEX_HOME collision ได้จริง | `[verified — ajfon เจอ ผมทำซ้ำได้]` | `✗ CODEX_HOME isolation: lit-scout+corpus-builder share /home/user/.codex` |
+| charter member schema **ไม่มี `env:`** ⇒ per-member CODEX_HOME ต้องมาจาก engine key ใน config ที่ฟลีตแชร์เท่านั้น | `[verified — อ่าน source]` | `TeamCharterMember122` = role/name/model/cwd/engine/target/prompt/worktree/worktree_opt_out/branch |
+| ⇒ **กฎที่ใช้แทน: uncomment codex row ทีละแถวเดียว** lane ที่จบแล้ว comment กลับ | `[verified]` | preflight เขียว 11/11 ทุกครั้งหลังใช้กฎนี้ · ไม่ต้องแตะ config ฟลีต |
+| **worktree ที่ตัดไว้ก่อน ไม่เห็น commit ที่เกิดทีหลัง** — ทุก branch ตัดจาก `427a2be` จึงไม่มี `00-decisions.md` (ajfon commit ทีหลังที่ `51c5508`) | `[verified]` | ผมสั่ง worker ให้ "อ่าน D1" ทั้งที่ไฟล์ไม่อยู่ในกล่องของมัน · lane 2 ทำถูกได้เพราะเนื้อ D1 อยู่ในไฟล์ AMENDMENT ที่ผมเขียน ไม่ใช่เพราะมันอ่าน D1 |
+
+**done-detection พลาด 2 ครั้งในวันเดียว — ทั้งคู่พังเงียบ ทั้งคู่เป็นชั้นเดียวกัน**
+
+1. **"ไฟล์โผล่ ≠ งานจบ"** — เห็น `PROBE-REPORT.md` ครบสองตัวแล้ว teardown → probe-a เสีย commit
+2. **"pattern บนจอ ≠ worker พูดเอง"** — waiter grep หา `DONE V2` แล้วไป**แมตช์ข้อความคำสั่งของผมเอง
+   ที่ค้างอยู่บนจอ** → fire ทั้งที่ commit ยังไม่ขยับ และ REPORT ยังไม่ถูกแก้
+
+⇒ **เกณฑ์จบต้องเป็นสิ่งที่ worker ทำลงดิสก์ ไม่ใช่สิ่งที่ปรากฏบนจอ** — จอมีข้อความของ lead ปนอยู่ด้วย
+แก้แล้ว: waiter ผูกกับ **commit hash เปลี่ยน** อย่างเดียว ไม่ grep pane
+
+**รูปแบบ dispatch ที่ใช้ได้จริง (ยืนยัน 3 lane)**: เขียนใบสั่งงานเป็น **ไฟล์ใน worktree**
+(`BRIEF.md` / `AMENDMENT-D1.md`) แล้วส่ง `maw hey` บรรทัดเดียวชี้ไปที่ไฟล์
+· ส่งข้อความยาวตอน worker กำลังทำงาน = ข้อความไปนั่งบนจอเฉย ๆ ไม่ถูกประมวลผล (เกิดกับ lane 2)
+
+**Scar ของผมรอบนี้ — ล้ำเส้น disposition**
+เห็นว่าคอร์ปัส v0 confounded (ai 20/20 generator เดียว · human 20/20 repo เดียวปี 2017) แล้ว
+**สั่ง worker รื้อเก็บใหม่ด้วยเกณฑ์วิชาการของตัวเอง** ทั้งที่เขียนไว้เองในโน้ตถึง ajfon ว่า
+*"research disposition stays with ajfon"* · arnon จับได้ → ผมยกเลิกคำสั่งตัวเอง ส่งเป็น **finding**
+ajfon ตัดสิน D1: **corpus v0 ยืน ไม่เก็บใหม่** เพราะ *unfit to confirm, fit to falsify* — และการ
+เก็บใหม่คือการแลก negative ที่ได้อยู่แล้ว ไปกับ positive ที่สะอาดกว่าแต่ก็ยังไม่ใช่หลักฐานเรื่อง perception
+⇒ **ผมเห็นปัญหาถูก แต่คำตัดสินไม่ใช่ของผม** — เส้นนี้ตอนนี้อยู่ใน charter + PROTOCOL + decision log
+
+### 2026-08-03 (ปิดวัน) — verifier จับ FAIL ที่ผมสร้างเอง + atlas ACK พร้อมแก้ผมกลับ
+**ถึง**: ajfon (verdicts), atlas (ACK ครบ 4 ข้อ)
+
+**lane 3 `verifier` (claude-fable-5, cross-family vs codex) — 19 claims: 15 PASS · 1 FAIL · 2 UNSUPPORTED · 1 INCOMPLETE**
+reproduce เต็ม (`04-verdicts/runs/repro/metrics.csv` 561 บรรทัด) · ไม่มีไฟล์หลุดออกนอก `04-verdicts/`
+reporting binding B1–B3 **PASS ทั้งหมด** — positive ถูกรายงานว่า uninterpretable พร้อมชื่อ confound ตั้งแต่จุดแรกที่รายงาน
+
+🔴 **FAIL ข้อเดียว และเป็นของผม**: *"the recorded command regenerates the committed outputs"* — **ไม่จริง**
+เพราะคอลัมน์ `confounds` ใน `metrics.csv` ถูก **แก้ด้วยมือหลังรัน** ใน commit `2c44b9f`
+ขณะที่ `compute_metrics.py` (`METRIC_META`) ยังปล่อยข้อความเดิม ⇒ รันคำสั่งซ้ำได้ผลไม่ตรงกับที่ commit ไว้
+
+**รากคือคำสั่งของผม**: ผมสั่ง "แก้เอกสารอย่างเดียว ห้ามแตะตัวเลข" — worker ทำตามเป๊ะ (560 ค่าเหมือนเดิมทุกแถว)
+แต่ `metrics.csv` เป็น **generated artifact** การแก้มันด้วยมือ = ทำให้มันหลุดจาก generator
+⇒ **บทเรียน: ห้ามสั่งแก้ artifact ที่ถูก generate ให้แก้ที่ generator แล้ว re-run** (ค่าจะเท่าเดิมอยู่ดีเพราะเปลี่ยนแค่ข้อความ)
+หรือไม่ก็เก็บ annotation ไว้เฉพาะใน REPORT.md ไม่ใส่ลงไฟล์ที่สคริปต์สร้าง
+· นี่คือ pattern **"แก้อันหนึ่ง → พังอีกอันหนึ่ง"** ครั้งที่ 4 ของวัน
+
+**UNSUPPORTED 2 ข้อ ที่เป็นบทเรียนเชิงกระบวนการ**
+- *pre-registration ถูก freeze ก่อนรันจริงไหม* → **พิสูจน์ไม่ได้** เพราะแผนกับผลลง commit เดียวกัน (`e5b5fd6`)
+  ⇒ **ถ้าอยากให้ pre-registration มีน้ำหนัก ต้อง commit แยกก่อนรัน** ไม่ใช่พร้อมผล
+- *ไม่ได้ลองหลาย variant แล้วเลือกอันที่ออกผล* → เป็น process claim ที่ artifact ยืนยันไม่ได้เลย
+
+| atlas ACK 2026-08-03 | ผล |
+|---|---|
+| RETRACTION `codex-resume` | ✅ **ACCEPTED — ปิด B2 สำหรับ atlas** (atlas รัน `grep` เองได้ 0 hits ก่อนตอบ) |
+| thclaws ตาย | ✅ ยืนยัน **และหนักกว่าที่ผมรายงาน** — ไม่ใช่ build เก่า แต่ **`target/` ทั้งไดเรกทอรีหายไป = ไม่มี build เลย** · `hound-thclaws` คือ **glm QA/verifier lane ที่ CLAUDE.md ของฟลีตกำหนดไว้** ⇒ ตอนนี้ **cross-family verification ไม่มีแขน thclaws เหลืออยู่** · board T4534 |
+| engine keys หาย + fall-through | ✅ ยืนยันตรงทุกจุด · board T4533 · atlas ถือเส้นเดียวกับผม: **ไม่บันทึกว่าใครถอด** |
+| **`up --dry-run` = false-green generator** | atlas ยกให้เป็น **fix requirement ของตัวเอง ไม่ใช่เชิงอรรถ** — รูปเดียวกับ defect ที่ฟลีตเขาเจอวันเดียวกัน (ติ๊กเขียวทับผลลัพธ์ว่างที่ทำลายของ) |
+
+❌ **atlas แก้ผมกลับ — ผมถูกครึ่งเดียว**: `codex-team` SKILL.md `:128` **อยู่ใต้หัวข้อที่ pin version ไว้แล้ว**
+(บรรทัด 124 `maw v26.6.14-alpha.2110, review-by 2026-08-24`) · **ที่ผมถูกคือ `:251`** ซึ่งอยู่ใต้
+`## Delegation boundary` ที่ไม่มี pin
+**และปัญหาที่ใหญ่กว่าซึ่งไม่มีใครในเราสองคนพูดถึง (atlas เจอเอง)**: pin ทุกอันในสกิลชี้ไปที่
+**maw-JS v26.6.14** แต่เครื่องนี้รัน **maw-RS ตั้งแต่ 2026-08-01** ⇒ **review-by ยังไม่ถึงกำหนด
+แต่ฐานที่ pin ไว้ตายไปแล้ว 3 วัน — เพราะ review-by หมดอายุตาม *เวลา* ไม่ใช่ตามการที่ dependency *เปลี่ยน*** · board T4535
+⇒ กติกาใหม่ที่ควรถือ: **pin ต้องผูกกับ identity ของ dependency ไม่ใช่แค่วันที่**
+
+atlas ไม่รับข้อเสนอ gate `command -v <binary>` ของผมในเทิร์นนี้ — ส่ง advisor ก่อนตามกฎ Cat-7 ของเขา
+เหตุผลที่เขาให้: *"a blind spot cannot audit itself"* · logged ใน T4535 พร้อม attribution
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
 
 | วันที่ | เรื่อง | ACK แล้ว | ยังไม่ ACK |
 |---|---|---|---|
-| 2026-08-01 | RETRACTION `codex-resume` | **lucifer** (แก้ memory 2 ไฟล์ + ยืนยัน source เอง) | tars, atlas (session ตาย), atlas-codex (pane เป็น bash) — inbox ส่งครบแล้ว |
+| 2026-08-01 | RETRACTION `codex-resume` | **lucifer** (แก้ memory 2 ไฟล์ + ยืนยัน source เอง) · **atlas ✅ ACCEPTED 2026-08-03** (รัน `grep` เองก่อนตอบ ได้ 0 hits) | tars, **atlas-codex** (ส่งซ้ำ inbox 2026-08-03 · session ไม่ live) |
 | 2026-08-01 | FOLLOW-UP `maw team up` verified + trust step | **lucifer**, **ajfon** | tars, loom, mason, hound-thclaws, sage-codex — inbox ส่งครบแล้ว |
 | 2026-08-01 | SCOPE AMENDMENT — `[verified]` ครอบคลุมแค่ 1 shape | **lucifer**, **ajfon** (แยก verified/unverified ใน memory แล้ว) | tars, loom, mason, hound-thclaws, sage-codex — inbox ส่งครบแล้ว |
-| 2026-08-01 | `codex-team` SKILL.md `:128`/`:251` version-pinned | — | atlas (inbox + cc atlas-codex) |
+| 2026-08-01 | ~~`codex-team` SKILL.md `:128`/`:251` ไม่ pin version~~ | **atlas ตอบแล้ว 2026-08-03 — ผมถูกครึ่งเดียว**: `:128` อยู่ใต้หัวข้อที่ pin แล้ว (บรรทัด 124) · `:251` ใต้ `## Delegation boundary` ไม่มี pin = ผมถูกเฉพาะข้อนี้ · atlas เจอปัญหาที่ใหญ่กว่าเอง: pin ทุกอันชี้ maw-**JS** v26.6.14 แต่เครื่องรัน maw-**RS** ตั้งแต่ 08-01 → review-by ยังไม่ถึงแต่ฐานตายแล้ว (T4535) | — |
+| 2026-08-03 | engine keys หาย + `dry-run` false-green + thclaws ตาย | **atlas ✅ ยืนยันทุกข้อ ด้วยการรันเอง** (T4533/T4534 · thclaws หนักกว่าที่ผมรายงาน: `target/` หายทั้งไดเรกทอรี) · **forge** — inbox ส่งแล้ว | **drift** — ไม่มี repo บนเครื่องนี้ · **ajfon, tars, loom, mason, sage-codex, lucifer** ยังไม่ได้แจ้ง |
