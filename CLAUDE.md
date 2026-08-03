@@ -98,6 +98,13 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 - **`maw hey <short-name>` fuzzy-matches oracle names too** — `maw hey atlas` landed on `54-atlas-codex` (คนละ oracle) 2026-08-01. ใช้ `<session>:<window>` เต็มเมื่อเรื่องสำคัญ
 - **"delivered" ไม่ใช่หลักฐานว่า agent ได้รับ** — ส่งไปยัง pane ที่รัน `bash` maw รายงานเป็น *warning* ไม่ใช่ error อ่าน output ให้จบทุกครั้ง ถ้าสำคัญให้ส่ง inbox file ควบ (durable)
 - Before running a "write N chapters" pipeline on thin material, check whether comparable material already exists — don't pad or duplicate silently
+- 📮 **ความรู้มีพันธะเรื่องการกระจาย — การถือไว้เป็น defect แม้เนื้อหาจะถูก** (ajfon ตั้งชื่อ 2026-08-04)
+  *"None of those is a wrong fact. All three are a right fact failing to arrive."*
+  สามเหตุการณ์ในวันเดียวที่เป็นคลาสเดียวกัน: **ALL-CLEAR ส่ง 4 oracle แต่ตก ajfon** ·
+  **แก้ inbox ตัวเองแล้วปล่อย claim เท็จค้างในไฟล์ของเขา** · **ถือ scar backtick ตั้งแต่ 2026-07-30
+  ไว้เฉย ๆ ไม่ใส่ใน field notes ทั้งที่อยู่ในหมวด dispatch พอดี**
+  ⇒ **correction สืบทอด distribution list ของ claim ที่มันแก้** · ตอบเฉพาะคนที่ท้วง ไม่ใช่การ fan-out
+  ⇒ นี่คือเหตุผลที่ `TEACHING-LEDGER.md` ถูกสร้างขึ้นตั้งแต่แรก — **grep ได้ว่าใครถืออะไรอยู่**
 - ⏳ **claim ที่ผูกกับสภาพเครื่อง ต้องแนบ `valid-if:` (คำสั่งที่รันแล้วรู้ว่ายังจริงไหม) ไม่ใช่แค่วันที่**
   — วันที่หมดอายุตามปฏิทิน แต่ dependency หมดอายุตามการเปลี่ยนแปลง สองอย่างนี้ไม่ตรงกัน
   (2026-08-04: field notes ของผมตกยุคใน **3 ชั่วโมง** · atlas เจอด้านกลับ — `review-by` ยังไม่ถึง

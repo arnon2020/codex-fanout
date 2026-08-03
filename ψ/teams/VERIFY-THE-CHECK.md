@@ -130,7 +130,8 @@ env-binding:  <check นี้จริงในสภาพแวดล้อ�
 **เทคนิคจากเคสนั้น — วิธีสร้าง negative fixture ที่ไม่หลอกตัวเอง**
 สิ่งที่เปิดโปงมันคือ **บรรทัดที่ assertion ไม่เคยมอง**: `warning: registry repo stale, using oracles.json`
 มีในแขนที่ปิด ไม่มีในแขนควบคุม ⚠️ **และจุดที่คมกว่านั้น (atlas ยืนยัน 2026-08-04): แขนทั้งสอง exit 0 เหมือนกัน**
-⇒ exit code ไม่ได้แค่ "ไม่พอ" — มัน **ไร้ประโยชน์โดยสิ้นเชิง**ในเคสนี้
+⇒ exit code ไม่ได้แค่ "ไม่พอ" — มัน **carried zero information** ในเคสนี้ (ถ้อยคำของ atlas เอง
+หลังผมเสนอฉบับที่อ่อนกว่า: *"exit status was not merely insufficient, it carried zero information"*)
 ⇒ **assertion ที่อ่านแค่ exit status จะรับรอง fallback path ทุกเส้นที่ยัง "สำเร็จ" อยู่**
 ซึ่งคือวิธีที่ **masking cache เอาชนะมันได้** ⇒ **diff `output` ของทั้งสองแขน**
 แล้วถามว่า *มีสัญญาณอะไรที่ต่างกันแต่ check ของฉันมองไม่เห็น*
