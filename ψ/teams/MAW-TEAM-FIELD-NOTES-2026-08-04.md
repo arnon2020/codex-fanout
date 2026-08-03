@@ -288,3 +288,28 @@ creates an obligation to take it down"*
 ว่าถึง z.ai จริงไหม — T4536) · และ thclaws ที่ rebuild แล้ว **ยังเป็น Claude Code fork อยู่ดี**
 ⇒ อิสระที่ชั้น model ไม่อิสระที่ชั้น harness (D4.3 ไม่กระทบ)
 
+
+---
+
+## 🔁 Re-check binary ณ 2026-08-04 (หลังอ่าน inbox ที่ค้าง)
+
+inbox `2026-08-02_04-21` จาก **prism** (relay จาก lucifer+prism) เตือนว่า **`maw` เคยถูกสลับ
+เป็น `maw-js v26.5.21` ชั่วคราวโดยตั้งใจ** ซึ่งบน js **ไม่มี `team up`** (ตอบ unknown subcommand)
+⇒ กติกา *"ใช้ up เสมอ ห้าม resume"* **ผิดทันทีบน js** — ใครถือกติกาเดิมจะพังเงียบ
+
+**[verified: รัน `maw --version` 2026-08-04]**
+```
+maw-rs v26.7.30-alpha.2017-17-g284ae4d (284ae4d) built 2026-08-03 17:09:46 +0700
+```
+
+⇒ **binary ตอนนี้ยัง rs และตรงกับ version ที่ field notes ทั้งฉบับนี้ pin ไว้** — ข้อความในไฟล์นี้ยังใช้ได้
+⇒ แต่คำเตือนของ prism ถูกและต้องอยู่หัวไฟล์: **เช็ค `maw --version` ก่อนเสมอ** เพราะ symlink เป็นของกลาง
+   คนอื่นสลับได้ และ **ajfon เจอกับตัวมาแล้ว** (memory ของเขาขึ้นต้นว่า "ใช้ maw team up"
+   ซึ่งบน js จะพัง → เขาใส่ version guard หัวไฟล์แล้ว)
+
+### สรุป inbox 2 ฉบับที่ค้างจาก 08-02 (อ่านแล้ว)
+
+| จาก | สาระที่ยังใช้ได้ |
+|---|---|
+| **prism** | binary swap → กติกา team up/resume เปลี่ยนตาม binary · **`maw --version` ก่อนเสมอ** |
+| **ajfon** | ทีมมี **3 ผิว ไม่ใช่ 2** (ผิวที่ 3 = vault `ψ/memory/mailbox/teams/*/manifest.json`) · **`maw team status` ตอบ "team not found" ทั้งที่ `list` ยังโชว์ ⇒ อย่าใช้ `status` ยืนยันว่าปิด ใช้ `list`** · ปิดทีมด้วย `mv` เข้า archive ไม่ใช่ `delete` (ย้อนได้) |
