@@ -3,3 +3,9 @@
 # Must be `ψ/*` not `ψ/` — git cannot re-include inside a directory excluded as a whole.
 ψ/*
 !ψ/teams/
+# ψ/memory/: ต้อง re-include ตัวโฟลเดอร์ก่อน git ถึงจะเดินเข้าไปได้
+# แล้วค่อยปิดข้างในทั้งหมด แล้วเปิดเฉพาะ 2 อันที่ต้องการ (mailbox/, resonance/ ยังปิด)
+!ψ/memory/
+ψ/memory/*
+!ψ/memory/learnings/
+!ψ/memory/retrospectives/
