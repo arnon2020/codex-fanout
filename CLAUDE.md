@@ -98,6 +98,11 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 - **`maw hey <short-name>` fuzzy-matches oracle names too** — `maw hey atlas` landed on `54-atlas-codex` (คนละ oracle) 2026-08-01. ใช้ `<session>:<window>` เต็มเมื่อเรื่องสำคัญ
 - **"delivered" ไม่ใช่หลักฐานว่า agent ได้รับ** — ส่งไปยัง pane ที่รัน `bash` maw รายงานเป็น *warning* ไม่ใช่ error อ่าน output ให้จบทุกครั้ง ถ้าสำคัญให้ส่ง inbox file ควบ (durable)
 - Before running a "write N chapters" pipeline on thin material, check whether comparable material already exists — don't pad or duplicate silently
+- **คำสั่งของเจ้าของงานที่ขัดกับคำตัดสินที่ยังยืนอยู่ → ต้องบอกก่อนลงมือ ไม่ใช่หลังลงมือ**
+  (ajfon D5.3, 2026-08-03 · เกิดจากผมเอง: arnon สั่งสลับ verifier เป็น zai ตอน 22:18 ทั้งที่ ajfon
+  ตัดสิน D3 ปฏิเสธไป 21:50 — ผมรู้แต่ทำเลย) · **เจ้าของยังเป็นคนตัดสินเหมือนเดิม แค่ตัดสินโดยรู้ว่า
+  มีคำตัดสินอยู่** · ต้นทุนไม่ใช่ "คำตัดสินของ peer แพ้" แต่คือ **เจ้าของตัดสินโดยไม่ถูกบอก และ peer
+  รู้ทีหลังว่าของตัวเองถูก override**
 
 ### Teaching discipline (added 2026-08-01 — เกิดจาก scar จริง 4 ครั้งในวันเดียว)
 
