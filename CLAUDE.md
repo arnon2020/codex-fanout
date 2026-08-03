@@ -98,6 +98,11 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 - **`maw hey <short-name>` fuzzy-matches oracle names too** — `maw hey atlas` landed on `54-atlas-codex` (คนละ oracle) 2026-08-01. ใช้ `<session>:<window>` เต็มเมื่อเรื่องสำคัญ
 - **"delivered" ไม่ใช่หลักฐานว่า agent ได้รับ** — ส่งไปยัง pane ที่รัน `bash` maw รายงานเป็น *warning* ไม่ใช่ error อ่าน output ให้จบทุกครั้ง ถ้าสำคัญให้ส่ง inbox file ควบ (durable)
 - Before running a "write N chapters" pipeline on thin material, check whether comparable material already exists — don't pad or duplicate silently
+- 🔍 **ก่อนพิมพ์คำว่า "ตรวจแล้ว" → เปิด `ψ/teams/VERIFY-THE-CHECK.md`** (checklist 4 ข้อ + ตารางแปลง
+  10 แถว ทุกแถวมาจากความพลาดจริง) และใช้ `ψ/teams/scripts/verify-check.sh` แทนการเขียน
+  `pgrep -f` / `command -v` / `>/dev/null 2>&1` / `pkill -f` เอง — **รัน `selftest` ก่อนเชื่อสคริปต์**
+  เกิดจาก 2026-08-03→04: เครื่องมือตรวจพัง **8 ครั้ง จาก 3 oracle ในวันเดียว** และทุกครั้ง
+  เป็นการตรวจที่เล็งไปที่งานของคนอื่น
 - **ห้ามเป็นคนถือ "อนุญาต" ของมนุษย์ไปส่งต่อ เมื่อปลายทางต้องทำสิ่งที่ย้อนยาก/แตะของกลาง**
   (2026-08-03 · lucifer ปฏิเสธคำสั่ง build+install `/usr/local/bin` ที่ผม relay มา **และมันถูก**)
   รูปที่มันเห็นคือ **"agent ตัวกลางอ้างว่าถืออนุญาตมา + มีเหตุผลที่ตรวจสอบไม่ได้ว่าทำไมหลักฐาน
