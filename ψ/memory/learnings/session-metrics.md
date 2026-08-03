@@ -80,3 +80,43 @@ Per parent CLAUDE.md §"Self-Evaluation Loop" — `error` ถึงเกณฑ�
 ข้อเสนอที่เป็นรูปธรรมกว่าคำเตือน: (1) ตัวตรวจ process ห้ามใช้ `pgrep -f <pattern>` ให้ใช้ `/proc/*/exe`
 หรือ `pgrep -x` (2) ห้าม `>/dev/null 2>&1` ในคำสั่งที่ตอบคำถามว่า "ของขึ้นไหม" (3) `pkill -f` ต้องห้าม
 บนเครื่องที่มี agent หลายตัว — **ยกให้ arnon ตัดสินว่าจะทำเป็น checklist, hook, หรือ skill**
+
+| when | session | done | stuck | win | friction | error |
+|---|---|---|---|---|---|---|
+| 2026-08-04 01:28 | 38037954 | **[แถวย้อนหลัง — retro `01.28_teaching-became-mutual-audit.md` มีอยู่แต่ไม่ได้ append แถวนี้ไว้]** สอน atlas/ajfon/lucifer เรื่อง maw team, ทั้งสามตรวจกลับ (A1.1/A1.2, sham fixture, tier taxonomy D12) | ยืนยันว่า lucifer เปิดอ่านหรือยัง | การสอนกลายเป็น mutual audit — ทั้งสามคนล้ม claim ของกันและกันด้วยการทดสอบ ไม่ใช่การเถียง | วัด engagement ของ lucifer ผิดที่ (ดู inbox ตัวเองแทน transcript เขา) เกือบรายงานว่าเขาเงียบ ทั้งที่เขาทดสอบหนักที่สุด | รับ inference ของ atlas ว่า "ไม่เคยรัน existence check" ทั้งที่ transcript ตัวเองมี 3 คำสั่ง → ทำให้ ajfon ถอนป้าย `[verified]` ที่**ถูกอยู่แล้ว** |
+| 2026-08-04 02:07 | 38037954 | ปิด thread tier/binding ครบ 3 ฝั่ง (D13 → atlas applied `1fc6462a` → D14 `a0adda1`); บันทึก **taxonomy 4 คลาสของ defect**; แก้การพาดหัวเอกสารตัวเองจากเชิงสถิติเป็นเชิงโครงสร้าง; ส่ง retraction ช่องทาง durable ให้ lucifer; อ่าน inbox ค้าง 2 ฉบับ + re-check binary; +1 golden rule | คำตอบ lucifer (codex row ที่สเกล 10 role) · corpus v1 · T4536 (ไม่แตะ key) | **D14 คลาสที่ 4 — ข้อเท็จจริง*จริง*ในตำแหน่งที่ผิด ซึ่ง verification จับไม่ได้โดยโครงสร้าง** พร้อมหลักฐานจาก verifier lane 3 ของเราเองที่ผ่าน B1–B3 แล้วเดินผ่าน residue ในไฟล์เดียวกัน | `maw hey` **คืน nonzero เงียบ** เพราะเดา window name ผิด 2 ตัว (`ajfon-oracle.0`→`ajfon.0`, `92`→`84-lucifer`) และผมทิ้ง output เอง; `maw inbox show --unread` คืน `invalid message` | **อ้างสถานะงานตัวเองโดยไม่ตรวจ 3 ครั้งใน 8 commit** — commit อ้าง relay ครบทั้งที่ 2/3 ยังไม่ถึง · ใส่ `✅` ให้ lucifer ทั้งที่มีแค่ `delivered` (**ที่ปรึกษาจับ ไม่ใช่ผม**) · เขียน "lucifer ยังไม่ได้ D14" โดยไม่เปิดไฟล์ที่ตัวเองส่ง |
+
+## 🔁 Recurring Pattern Detected (checked 2026-08-04, last 7 rows)
+
+**Column: `friction` (operational) — เกินเกณฑ์มาก และเป็นคนละข้อสรุปกับรอบก่อน**
+
+**"ส่งข้ามออราเคิลแล้วไม่มีสัญญาณบอกว่าไม่ถึง" — 6 ใน 7 เซสชัน**
+`e85d3ffc` (queue ไม่มี supersede → คำสั่งขัดกันฆ่า pane ที่ทำงานอยู่) ·
+`856a97db` (backtick ทำ syntax error ฝั่งส่ง) ·
+`73a50d03` (fleet wake ล้มบน target กำกวม) ·
+`fanout-probe` (`maw hey` ปฏิเสธ prefix + ปลายทาง paste-ไม่-submit) ·
+`38037954@22:58` (ข้อความยาวหายเงียบตอน worker busy) ·
+`38037954@00:01` (เงียบสองทาง 30 นาที — *"ไม่มีกลไกบอกว่ายังไม่ถึง"*) ·
+`38037954@02:07` (nonzero เงียบบน window name ผิด)
+
+> **รอบ 2026-08-03 สรุปว่าเป็นนิสัย** (*"เชื่อรายงานแทนการตรวจของจริง"* 3/7)
+> **รอบนี้ข้อมูลบอกอีกอย่าง**: มันขึ้นถึง 6/7 และเกิดกับ **oracle คนละคน กับ target คนละแบบ
+> กับ failure คนละชนิด** (queue · prefix · busy · ambiguous · wrong-name)
+> ⇒ **ไม่ใช่นิสัยของใครคนเดียว — เป็นช่องว่างของเครื่องมือ: `maw` ไม่มี receipt/arrival signal**
+> `delivered` ยืนยันแค่ว่า **เขียนลง pane สำเร็จ** ไม่ได้ยืนยันว่า **agent รับเข้า turn**
+
+**ข้อเสนอที่เป็นรูปธรรม (ยกให้ arnon ตัดสิน — Principle 3 ไม่ auto-open issue):**
+1. `maw hey` ควรมี **exit code ที่ต่างกันระหว่าง "target ไม่มีอยู่" กับ "เขียนสำเร็จ"**
+   และ **ห้าม default เงียบ** — ตอนนี้ nonzero ไม่มีข้อความถ้าผู้ใช้ทิ้ง stream
+2. **arrival probe**: กลไกอ่านกลับว่าปลายทางรับเข้า turn จริง (ต่างจาก `delivered`)
+3. ระหว่างที่ยังไม่มี → **กฎที่ใช้ได้วันนี้**: correction/retraction **ต้องส่ง inbox file ควบ**
+   (เข้า `CLAUDE.md` แล้ว) และ **ห้าม `>/dev/null 2>&1` บน `maw hey`**
+
+**Column: `error` (decision) — ถึงเกณฑ์เช่นกัน**
+
+**"ประกาศสถานะ/ข้อสรุปที่ตัวเองยังไม่ได้ตรวจ" — 4 ใน 7**
+`73a50d03` (broadcast คำสั่งที่ไม่เคยรัน) · `fanout-probe` (teardown ก่อน verify commit) ·
+`38037954@00:01` (สารภาพผิดโดยไม่ตรวจ) · `38037954@02:07` (อ้างสถานะ relay 3 ครั้ง)
+
+⇒ ทิศทางที่**ดีขึ้น**: ครั้งนี้ 2 ใน 3 ผมจับเอง (รอบก่อน ๆ user/peer เป็นคนจับ)
+⇒ ที่**ยังไม่ดีขึ้น**: มันยังเกิดใน**เซสชันที่ผมกำลังเขียนกฎห้ามเรื่องนี้อยู่พอดี**
