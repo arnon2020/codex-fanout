@@ -35,6 +35,28 @@ procs() {
   echo "$n"
 }
 
+# ── procs_cmd <pattern> ─────────────────────────────────────────────────────
+# สำหรับเป้าหมายที่รันเป็นสคริปต์ (exe จริงคือ python3/node/bash) ⇒ `procs` จะมองไม่เห็น
+# ตัวนี้แมตช์ cmdline **แต่ตัดตัวเองและบรรพบุรุษของตัวเองออก** จึงไม่นับคำสั่งตรวจเอง
+# (นี่คือกับดักที่ทำให้ `pgrep -c -f` ตอบ 2 ทั้งที่เหลือ 0 เมื่อ 2026-08-03)
+procs_cmd() {
+  local pat="${1:?usage: procs_cmd <pattern>}" n=0 pid cl
+  # สร้างเซ็ตของ pid ตัวเองและบรรพบุรุษ
+  local self=$$ chain=" " p=$$
+  while [ -n "$p" ] && [ "$p" != "0" ] && [ "$p" != "1" ]; do
+    chain="$chain$p "; p=$(awk '{print $4}' "/proc/$p/stat" 2>/dev/null) || break
+  done
+  for pid in /proc/[0-9]*; do
+    pid=${pid#/proc/}
+    case "$chain" in *" $pid "*) continue ;; esac       # ข้ามตัวเอง/พ่อแม่
+    # NB: process หายระหว่างวนลูปได้ (race) — ถ้าไม่ปิด stderr ตรงนี้ เครื่องมือจะพ่น noise
+    #     แล้วคนใช้จะเติม 2>/dev/null ครอบทั้งคำสั่ง = กลับไปทิ้ง output ซึ่งคือนิสัยที่ไฟล์นี้ห้าม
+    cl=$( { tr '\0' ' ' < "/proc/$pid/cmdline"; } 2>/dev/null ) || continue
+    case "$cl" in *"$pat"*) n=$((n+1)) ;; esac
+  done
+  echo "$n"
+}
+
 # ── alive <binary-basename> ─────────────────────────────────────────────────
 alive() { [ "$(procs "$1")" -gt 0 ] && echo "RUNNING  $1 ($(procs "$1"))" || echo "NONE     $1"; }
 
@@ -71,6 +93,9 @@ selftest() {
   echo "5) bootprobe เก็บ output จริง"
   local out5; out5=$(bootprobe 'echo hello-from-probe' 3)
   case "$out5" in *hello-from-probe*) ;; *) echo "   ✗ ไม่เห็น output ที่คาดไว้"; fail=1 ;; esac
+  echo "6b) procs_cmd ต้องไม่นับคำสั่งตรวจของตัวเอง"
+  local n7; n7=$(procs_cmd "__selftest_unique_marker__")
+  [ "$n7" = "0" ] || { echo "   ✗ procs_cmd นับได้ $n7 ทั้งที่ควรเป็น 0"; fail=1; }
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
@@ -78,7 +103,7 @@ selftest() {
 }
 
 case "${1:-}" in
-  binexists|procs|alive|bootprobe|selftest) "$@" ;;
-  "") echo "fn: binexists <bin> | procs <bin> | alive <bin> | bootprobe '<cmd>' [s] [bin] | selftest" ;;
+  binexists|procs|procs_cmd|alive|bootprobe|selftest) "$@" ;;
+  "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | selftest" ;;
   *) echo "unknown fn: $1"; exit 2 ;;
 esac
