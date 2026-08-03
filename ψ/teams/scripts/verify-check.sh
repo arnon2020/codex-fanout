@@ -96,11 +96,11 @@ bootprobe() {
 # ⚠️ ข้อจำกัดที่ต้องพูดตรง ๆ: ตัวนี้ยืนยันได้แค่ว่า **เขียนลง pane สำเร็จ**
 #    มันยัง **ยืนยันไม่ได้ว่า agent รับเข้า turn** — ยังต้องดูการตอบกลับที่มีเนื้อหา
 #
-# 🏷️ **สถานะการทดสอบ = Tier 1–2 เท่านั้น** (ใช้ taxonomy ของ 2026-08-04 กับตัวเอง)
-#    ✅ พิสูจน์แล้ว: ปฏิเสธชื่อสั้น · ปฏิเสธ session ที่ไม่มี · ปฏิเสธ window ที่ไม่มี
-#    ❌ **ยังไม่พิสูจน์: เส้นทางสำเร็จบน oracle จริง** — จงใจไม่ยิงข้อความทดสอบใส่ peer
-#    ⇒ **Tier 3 จะได้ก็ต่อเมื่อ relay จริงครั้งถัดไปเดินผ่านฟังก์ชันนี้** ไม่ใช่ก่อนหน้านั้น
-#    ⇒ ห้ามอ้างว่า "แก้แล้ว" จนกว่าจะถึงตอนนั้น
+# 🏷️ **Tier 3 แล้ว [verified 2026-08-04 02:43 · ส่งจริงถึง 40-ajfon:ajfon.0]**
+#    Tier 1–2 (ปฏิเสธของปลอม) ผ่านตั้งแต่แรก — **และมันมองไม่เห็นบั๊กที่มีอยู่จริง**
+#    การใช้จริงครั้งแรกล้มทันที: `exit 2` เงียบ เพราะ dispatcher ท้ายไฟล์ยิงตอนถูก `source`
+#    ⇒ **fixture ที่ไม่แตะตัวประธานจริง มองไม่เห็น defect ที่ผูกกับตัวประธาน** — ของจริง
+#      หนึ่งครั้ง เจอสิ่งที่เทสต์ปลอมสามอันมองข้าม (selftest 5d ปิดช่องนี้แล้ว)
 relay() {
   local target="${1:?usage: relay <session:window.pane> '<msg>' [--durable <slug>]}"
   local msg="${2:?message required}"; shift 2
@@ -177,11 +177,21 @@ selftest() {
   echo "5c) relay ต้องปฏิเสธ target ที่ไม่เต็ม และ target ที่ไม่มีอยู่"
   relay "ajfon" "x" >/dev/null 2>&1 && { echo "   ✗ relay รับชื่อสั้น"; fail=1; }
   relay "99-nosuch:nosuch.0" "x" >/dev/null 2>&1 && { echo "   ✗ relay รับ session ที่ไม่มี"; fail=1; }
+  echo "5d) source พร้อม positional arg ต้องไม่ทำให้ dispatcher ยิง exit"
+  local r5d; r5d=$(bash -c 'source '"$PWD"'/ψ/teams/scripts/verify-check.sh; echo SOURCED-OK' _ "ข้อความยาวที่ไม่ใช่ชื่อ fn" 2>&1)
+  case "$r5d" in *SOURCED-OK*) ;; *) echo "   ✗ source แล้วเชลล์ตาย: $r5d"; fail=1 ;; esac
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
+
+# **สำคัญ**: dispatcher ต้องทำงาน *เฉพาะตอนถูกเรียกเป็นสคริปต์* เท่านั้น
+# บั๊กจริง 2026-08-04: `bash -c 'source verify-check.sh; relay ... ' _ "<ข้อความ>"` →
+# dispatcher เห็น $1 = ข้อความ → `unknown fn` → **`exit 2` ฆ่าเชลล์ก่อน relay จะได้รัน**
+# เทสต์ Tier 1-2 ทั้งหมดมองไม่เห็น เพราะมัน source โดยไม่ส่ง positional arg
+# ⇒ **เจอตอนใช้จริงครั้งแรก** — ซึ่งคือประเด็นทั้งหมดของ Tier 3
+if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 
 case "${1:-}" in
   binexists|procs|procs_cmd|alive|bootprobe|relay|selftest) "$@" ;;
