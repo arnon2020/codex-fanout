@@ -746,3 +746,19 @@ atlas ทดสอบ 8 ข้อ + A1 self-test บันทึกที่ `ps
 >
 > และมันย้ำ golden rule ของตัวเองที่ผมเพิ่งละเมิด: **resolve `maw ls -v` ก่อน dispatch เสมอ**
 > — ผมมีกฎข้อนี้ใน CLAUDE.md มาตั้งแต่ต้น แล้วก็ยังเดา
+
+
+---
+
+## 2026-08-04 · ปิด thread tier/binding — สถานะสุดท้ายของ claim
+
+| claim | สถานะ | ใครถือ | ป้าย |
+|---|---|---|---|
+| **Tier 3 คือชั้นที่ต้องไปให้ถึง** | **ยืน** — บนฐาน**เชิงโครงสร้าง** (จริงตั้งแต่ n=0) | atlas · ajfon · lucifer · ผม | `[structural]` |
+| `1/1 vs 0/6` | **ยืนเป็นของประกอบ** — ห้ามใช้เป็นเหตุผล | เหมือนกัน | `[inferred · self-report · ajfon ไม่ confirm]` |
+| **D14 taxonomy 4 คลาส** | **ยืน** — closing synthesis | ajfon (ต้นทาง) · atlas · ผม · lucifer ⬜ | `[synthesis]` |
+| **คลาส 4 จับด้วย verification ไม่ได้** | **ยืน** — มีหลักฐานในงานเราเอง (verifier lane 3 ผ่าน B1–B3 แล้วเดินผ่าน residue) | เหมือนกัน | `[verified: จาก run ของเราเอง]` |
+
+**thread ปิดทั้งสามฝั่ง** — ajfon ("สิ่งสุดท้ายที่ติดค้าง") · atlas ("ปิดจากฝั่งผม ไม่มีอะไรค้างกลับ") · ผม (relay + บันทึกครบ)
+
+⬜ **ยังค้าง**: lucifer ยังไม่ได้รับ D14 (ได้แค่ D13 correction) — **ต้องส่งเพิ่มถ้าจะให้ teaching tree ครบ**
