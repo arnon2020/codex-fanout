@@ -38,6 +38,7 @@ in the message that announced it.
 
 Suggested: raise both with Boss at next standup. Theme B in particular is not a knowledge gap —
 it is not finishing what I report as finished.
+| 2026-08-04 00:01 | 38037954 | ปิด shell ค้าง 10h29m ของ lucifer (ต้นเหตุที่ข้อความไม่ถูก submit); **build thclaws สำเร็จ** (a593374 · 1m25s · 320 crates · 0 errors · 34.8MB) หลัง lucifer ปฏิเสธคำสั่งที่ relay มา (ถูกต้อง) และ arnon สั่งผมทำเอง; stash งานค้างของคนอื่นแบบตั้งชื่อให้ตามเจอ (`b0b1d06`); ทดสอบครบ 5 engine ยืนยันด้วย ps + /proc; ALL-CLEAR ถึง 4 oracle; golden rule 2 ข้อ | T4536 ZAI key (ไม่แตะตามกติกาความลับ) · atlas-codex ACK · corpus v1 | **หลักฐานที่ยกระดับ T4536**: process จริงใช้ key 49 จาก env ไม่ใช่ 23 จาก config ⇒ `set-verifier-key.sh` **ทำลาย verifier ที่ดีอยู่แล้วได้** ไม่ใช่แค่ซ่อมไม่ได้ (atlas ว่าคมกว่าที่เขา file เอง) | ปุ่ม Enter ไม่ส่ง 4 วิธี ต้องไล่หาเอง; ข้อความข้าม oracle เงียบสองทาง 30 นาทีโดยไม่มีสัญญาณ; ไม่มีกลไกบอกว่า 'ยังไม่ถึง' | **สารภาพผิดโดยไม่ตรวจ** — ประกาศว่าทำข้อความ arnon หาย ทั้งที่บัฟเฟอร์ว่างมาแต่แรก และคำสารภาพนั้นไปอยู่ในเหตุผลที่ lucifer ใช้ปฏิเสธ = ป้อนหลักฐานเท็จเข้าการตัดสินใจของคนอื่น · เครื่องมือตรวจของผมพัง 4 แบบในงานเดียว |
 
 ## 🔁 Recurring Pattern Detected (checked 2026-08-03, last 7 rows)
 
@@ -60,3 +61,22 @@ Suggested issue: `root-cause: maw success signals are not evidence of delivery o
 false-green generator) และ **T4536** (`set-verifier-key.sh` fallback ไม่เคยทำงาน)
 ⇒ ควรผูกเรื่องนี้เข้ากับ board ของ atlas แทนที่จะเปิดใหม่แยก — **ยกให้ arnon ตัดสินว่าจะเปิดที่ไหน**
 (Principle 3: surface only, Boss decides)
+
+## 🔁 Recurring Pattern Detected (checked 2026-08-04, last 7 rows)
+
+**Column: `error` (agent decision) — ธีมใหม่ถึงเกณฑ์ทันทีในวันเดียว**
+
+**"เครื่องมือตรวจเองเป็นตัวพัง / ตรวจผิดชั้น" — 3 ใน 7 แถว และ 8 ครั้งถ้านับรายเหตุการณ์**
+(`fanout-probe` ไฟล์โผล่ ≠ commit · `38037954` (22:58) waiter grep เจอข้อความตัวเอง + string ตรงแต่ไม่มีไบนารี
+· `38037954` (00:01) pkill กว้างไปฆ่า probe ตัวเอง + ps filter ไม่แมตช์ + ทิ้ง stderr + pgrep นับตัวเอง)
+
+**และไม่ใช่แค่ผม** — วันเดียวกัน atlas 3 ครั้ง (`/usr/bin/command` กับ shell builtin ·
+`git describe` ไม่ใส่ `--tags` · `maw wake` กับ command key ที่ไม่ใช่ repo) และ ajfon 2 ครั้ง
+(glob ไม่ครบ · grep chain ให้ false negative) — **ทุกครั้งเป็นการตรวจที่เล็งไปที่งานของคนอื่น**
+
+Per parent CLAUDE.md §"Self-Evaluation Loop" — `error` ถึงเกณฑ์ ⇒ **escalation: raise at standup**
+
+สิ่งที่ควรยกคุย: กฎ **verify the check** ตอนนี้อยู่ใน ledger ของ 3 oracle แล้ว แต่ยัง**ไม่มีกลไก** —
+ข้อเสนอที่เป็นรูปธรรมกว่าคำเตือน: (1) ตัวตรวจ process ห้ามใช้ `pgrep -f <pattern>` ให้ใช้ `/proc/*/exe`
+หรือ `pgrep -x` (2) ห้าม `>/dev/null 2>&1` ในคำสั่งที่ตอบคำถามว่า "ของขึ้นไหม" (3) `pkill -f` ต้องห้าม
+บนเครื่องที่มี agent หลายตัว — **ยกให้ arnon ตัดสินว่าจะทำเป็น checklist, hook, หรือ skill**
