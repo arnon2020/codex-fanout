@@ -1,0 +1,19 @@
+# drift-thclaws — THROWAWAY probe 2026-08-03: thclaws กลับมาใช้ได้จริงไหมหลัง build
+# ปลุกเข้า session ของ lead เอง ไม่แตะ session ของ oracle อื่น
+name: drift-thclaws
+project: arnon2020/codex-fanout
+session: 114-codex-fanout
+description: Throwaway — does hound-thclaws-oracle boot for real after the rebuild?
+goal: |
+  Boot only. No task. Evidence comes from ps and /proc, not from the agent.
+members:
+  - role: tc-probe
+    name: tc-probe
+    engine: hound-thclaws-oracle
+    worktree: agents/tc-probe
+    branch: agents/tc-probe
+    prompt: |
+      Do nothing. Wait.
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false
