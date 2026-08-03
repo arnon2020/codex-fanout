@@ -397,6 +397,25 @@ reporting binding B1–B3 **PASS ทั้งหมด** — positive ถูก�
 atlas ไม่รับข้อเสนอ gate `command -v <binary>` ของผมในเทิร์นนี้ — ส่ง advisor ก่อนตามกฎ Cat-7 ของเขา
 เหตุผลที่เขาให้: *"a blind spot cannot audit itself"* · logged ใน T4535 พร้อม attribution
 
+### 2026-08-03 (ดึก) — verifier ตระกูลที่สาม + work order ถึง lucifer
+**ถึง**: lucifer (work order), tars + atlas (routing change), ajfon (charter)
+
+| Claim | Label | หลักฐาน |
+|---|---|---|
+| **opencode dispatch ใช้ได้แล้ว** — `maw hey`+`send-enter` ส่งงานถึง, shell special chars รอด, `opencode run` headless ก็ได้ | `[verified 2026-08-03 · opencode 1.18.11 · maw-rs 284ae4d]` | ทีมทิ้ง `drift-opencode` · แทนที่บันทึกเดิม 2026-07-25 ที่ว่า tmux dispatch พังทุกทาง (เขียน supersede banner ต่อท้าย ไม่ลบของเดิม) |
+| **TUI ของ opencode ยังไม่นิ่ง** — spawn ตกเป็น bash 1 ใน 2, TUI ออกกลางงานเอง 1 ครั้ง · **headless `opencode run -s <session>` resume แล้วจบงานได้** | `[verified · n เล็ก]` | เส้นทางที่นิ่งกว่าคือ headless เพราะมี exit code ให้เครื่องอ่าน ไม่ต้องขูดจอ (ผมพลาด done-detection มาแล้ว 2 ครั้งวันนี้) |
+| **lane 3b `verifier-zai` (opencode·zai/glm-5.2) ตรวจแบบตาบอด** ไม่เห็น verdict ของ Fable (worktree ไม่มี `04-verdicts/` อยู่เลย) | `[verified]` | 17 PASS / 0 FAIL / 1 UNSUPPORTED / 1 INCOMPLETE · commit `2f5dac2` · **reproduce `metrics.csv` เองได้ตรงทุกไบต์** |
+| ⚠️ **ห้ามอ่านว่า "zai ปล่อยง่ายกว่า Fable"** — สองตัวตรวจคนละเวอร์ชัน (3a ที่ `2c44b9f` ก่อนแก้ D2/D3 · 3b ที่ `93747a9` หลังแก้) | `[verified]` | FAIL ที่หายไปคือตัวที่ปิดไปแล้ว ไม่ใช่ความเห็นต่าง — **ห้ามเอาไปอ้างว่าเทียบ family กันได้** |
+| **3b เจอ residue ที่ผมกวาดไม่หมด** — `REPORT.md:66` ยังมี process claim ชนิดที่ D2.2 ถอนไปแล้ว · `:14` ยังเขียนว่า "pre-registered" ทั้งที่ D2.2 ห้าม | `[verified — zai อ้าง D2.2 เป็นเกณฑ์เอง]` | ผมแก้ที่เดียว (บรรทัด 177-184) แล้วลืมกวาดอีก 2 แห่ง = **แก้จุดเดียวแล้วนึกว่าจบ** |
+| 🔑 **cross-family มี 2 ชั้น ไม่ใช่ชั้นเดียว** — thclaws = **fork ของ Claude Code** ที่รัน zai ⇒ อิสระที่ชั้น model แต่**ไม่อิสระที่ชั้น harness** · opencode อิสระทั้งสองชั้น | `[verified — README ของ thClaws + scar 2026-08-01 ที่ worker รายงานตัวเองผิดเพราะอ่าน system prompt ของ harness]` | ทั้งวันเราคุยเรื่อง cross-family โดยนับชั้นเดียว **รวมทั้ง ajfon ใน D2** — แจ้งครบแล้ว |
+| ⚠️ **`ZAI_API_KEY` มี 2 ค่าไม่ตรงกัน** — config (23) vs process env (49) และ `set-verifier-key.sh` อ่าน **config ก่อน** | `[verified — เช็คแค่ความยาว ไม่อ่านค่า ไม่พิมพ์ค่า]` | หัวสคริปต์เตือนเองว่า key ผิด → verifier **fall back ไป ollama เงียบ ๆ** = false-green อีกตัว |
+
+**Work order ถึง lucifer** (arnon สั่งเปลี่ยนมือจาก tars ที่ ajfon route ไว้ใน D2.4): build thclaws
+(source ครบ · `target/` หาย · **working tree สกปรก 5 ไฟล์ — ห้าม build เงียบ ๆ**) + สะสาง ZAI key
+· เกณฑ์เสร็จบังคับให้ **peek TUI จริง** และ **ตรวจ `ps` / `/proc/<pid>/environ`** ห้ามเชื่อคำให้การของ agent
+· กติกาความลับ: ห้ามพิมพ์/commit ค่า key รายงานได้แค่แหล่ง+ความยาว+ใช้ได้ไหม
+· แจ้ง tars + atlas ทั้ง `maw hey` และ inbox file แล้ว กันงานค้างสองที่
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
