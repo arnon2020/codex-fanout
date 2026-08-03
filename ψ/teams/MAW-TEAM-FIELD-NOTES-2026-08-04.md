@@ -43,10 +43,17 @@ maw ไล่ resolve: `engine` → `window_name` → `<oracle>-oracle` → glob
 | `cipher-codex-oracle` | codex `gpt-5.4-mini` | lane เบา |
 | `sage-claude-oracle` | Claude Code `claude-fable-5` | verifier ฝั่ง Anthropic |
 | `sage-opencode-oracle` | opencode `zai/glm-5.2` | **แขนที่ไม่ใช่ทั้ง OpenAI และ Anthropic** |
-| `hound-thclaws-oracle` / `thclaws` / `thclaws-resume` / `forge-oracle` / `drift-oracle` | thclaws zai/glm-5.1 (drift: 4.7) | **เพิ่งกลับมาใช้ได้ 2026-08-03 23:53** ผม rebuild เอง — ก่อนหน้านั้นตายทั้งตระกูล |
+| `hound-thclaws-oracle` / `thclaws` / `thclaws-resume` / `forge-oracle` / `drift-oracle` | thclaws zai/glm-5.1 (drift: 4.7) | **กลับมาใช้ได้ 2026-08-03 23:53** ผม rebuild เอง · ยืนยันซ้ำโดย ajfon 2026-08-04
+⚠️ **นี่คือ claim ที่หมดอายุได้** — `binexists thclaws` ก่อนใช้ทุกครั้ง (ajfon D6) |
 
 **วิธีตรวจก่อนใช้**: `bash <codex-fanout>/ψ/teams/scripts/verify-check.sh binexists <binary>`
-— `command -v` อย่างเดียว **จับ dangling symlink ไม่ได้** (thclaws หลอกผมมาแล้ว: string ตรง ไบนารีไม่มี)
+— ⚠️ **แก้เหตุผล 2026-08-04 (atlas ทดสอบแล้วผมผิด · ผมทำซ้ำเองยืนยัน)**:
+`command -v` / `type -P` / `which` / dash `command -v` **จับ dangling symlink ได้ทั้งหมด**
+เคสที่ `command -v` โกหกจริงคือ **bash hash cache** — รันไบนารีครั้งหนึ่ง ลบไฟล์ทิ้ง แล้วถามใหม่
+มันยังคืน `rc=0` พร้อม path เดิม ⇒ ปิดด้วย `[ -x "$(command -v X)" ]` ซึ่งคือสิ่งที่ `binexists` ทำ
+**และเคส thclaws ของผมไม่ใช่หลักฐานเรื่อง `command -v` เลย** — ผม**ไม่เคยรัน existence check**
+ผมเทียบแค่ string ใน config แล้วสร้างเหตุผลทางเทคนิคมาอธิบายทีหลัง
+⇒ **บทเรียนแยกอีกข้อ: อย่าอธิบายความพลาดเชิงวินัยว่าเป็นข้อบกพร่องของเครื่องมือ** เพราะมันทำให้แก้ผิดที่
 
 ---
 
@@ -105,7 +112,14 @@ role/name/model/cwd/engine/target/prompt/worktree/worktree_opt_out/branch) `[ver
 
 รายละเอียดต่อ engine `[verified 2026-08-03]`
 - **codex**: `maw hey` = paste แล้ว**ไม่ submit** ต้อง `maw send-enter` ตาม
-- **claude**: มักต้อง `send-enter` เหมือนกัน · ถ้า pane ยุ่งจะขึ้น `Press up to edit queued messages`
+- **claude**: ผมส่ง `send-enter` ตามทุกครั้ง **จึงไม่เคยทดสอบว่าไม่ส่งแล้วได้ไหม (n=0 สำหรับเคสนั้น)**
+  ⚠️ **แก้ 2026-08-04 จากผลของ ajfon**: worker `sage-claude-oracle` ของเขา **ไม่ต้องใช้ send-enter เลย**
+  — `maw hey` บรรทัดเดียว ไม่มี send-enter แล้ว peek เห็นมันรันอยู่แล้ว (`Elucidating… 12s`) จนจบและ commit
+  ตัวแปรที่แยกไม่ออกด้วย n=1: pane **เพิ่ง spawn และ idle** (ไม่ได้ยุ่ง) และข้อความ **บรรทัดเดียว**
+  ⇒ ประโยคเดิมของผม ("มักต้อง send-enter") **เกินหลักฐานที่ผมมี** · ที่ปลอดภัยคือ:
+  **ส่งแล้ว peek — ถ้ายังไม่ขยับค่อย send-enter** ไม่ใช่ส่ง send-enter ดะ
+- **codex — ต้อง `send-enter` และบางครั้ง 2 ครั้ง** `[ajfon 2026-08-04]` ครั้งแรกไปถึงตอน paste
+  ยังลงไม่เสร็จ ⇒ ถ้ากดครั้งเดียวแล้วไม่ขยับ **ให้กดซ้ำก่อนสรุปว่าพัง** (ผมเจอเคสกดครั้งเดียวพอ n=4)
 - **opencode**: `maw hey` + `send-enter` **ใช้ได้แล้ว** (แม้ข้อความมี `(a;b) $HOME & "q" |pipe|`)
   ⇒ **บันทึกเก่าของผม 2026-07-25 ที่ว่า "tmux dispatch พังทุก mechanism" ตกยุคแล้ว**
   และ `opencode run "<task>"` / `opencode run -s <session> "..."` แบบ headless ก็ทำงานจบได้จริง
@@ -202,3 +216,23 @@ n ของทุกข้อในเอกสารนี้เล็ก (1–
   ⇒ `set-verifier-key.sh` ที่อ่าน config ก่อน จะ **inject ค่าผิดทับของที่ใช้งานได้อยู่**
   (atlas ยกระดับเป็น T4536 แล้ว — **ผมไม่แตะ key**)
 - `maw team up` บน **multi-member พร้อมกัน** และ **resume path** ยัง `[unverified]` เหมือนเดิม
+
+---
+
+## 13. เอกสารนี้เองก็หมดอายุ — และมันหมดอายุไปแล้วหนึ่งข้อภายใน 3 ชั่วโมง
+
+`[ajfon D6 · 2026-08-04]` ajfon เอา §11 มารันกับ §12 ของผมเอง แล้วพบว่า **thclaws กลับมาแล้ว**
+ทั้งที่ตอนผมเขียนมันยังตาย — เขาถอน escalation ที่ส่งให้ tars ไปแล้ว *"having raised an alarm
+creates an obligation to take it down"*
+
+> **infrastructure claim มีวันหมดอายุ — timestamp บอกว่ามันจริง*ตอนไหน*
+> มีแต่การวัดซ้ำ ณ จุดใช้งาน ที่บอกว่ามัน*ยังจริงอยู่ไหม***
+
+ซึ่งเป็นกฎเดียวกับหัวเอกสารนี้เรื่อง `maw --version` — แค่หันมาเล็งตัวเอกสารเอง
+⇒ **ทุกแถวในเอกสารนี้ให้ถือเป็น "จริง ณ 2026-08-04 บน 284ae4d" ไม่ใช่ "จริง"**
+⇒ ที่ทำให้ราคาถูก: `verify-check.sh` ทำให้การวัดซ้ำเหลือคำสั่งเดียว — **นั่นคือหน้าที่ของมัน**
+
+**สิ่งที่ ajfon ระวังไว้และถูก**: ไบนารีมีอยู่ ≠ แขนใช้งานได้ (ยังต้องอ่าน `/proc/<pid>/environ`
+ว่าถึง z.ai จริงไหม — T4536) · และ thclaws ที่ rebuild แล้ว **ยังเป็น Claude Code fork อยู่ดี**
+⇒ อิสระที่ชั้น model ไม่อิสระที่ชั้น harness (D4.3 ไม่กระทบ)
+
