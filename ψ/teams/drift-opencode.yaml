@@ -1,0 +1,34 @@
+# drift-opencode — THROWAWAY probe, 2026-08-03
+# ปิดคำถามที่ค้างมาตั้งแต่ ψ/memory/learnings/2026-07-25_opencode-dispatch-discovery.md:41
+#   "task delivery via opencode run/ACP: 🔲 ยังไม่ทดสอบ — session ถัดไป"
+# และตรงกับ ajfon D3: พิสูจน์ dispatch path บนทีมทิ้ง ตอนที่ไม่มีอะไรแขวนอยู่ ก่อนที่จะต้องใช้
+#
+# คำถามที่ต้องการคำตอบ:
+#   Q1 opencode spawn ผ่าน maw team up ได้ไหม (2026-07-25 บอกว่าได้ — ยืนยันซ้ำบน binary ปัจจุบัน)
+#   Q2 `maw hey` ส่งงานเข้า opencode pane ได้ไหม (2026-07-25 บอกว่า ❌ eval hook — ยืนยันซ้ำ)
+#   Q3 ถ้า Q2 ไม่ได้ แล้ว lead จะสั่งงานยังไง
+# disposable: teardown = kill window + rm worktree. ไม่มีอะไรผูกกับงานจริง
+
+name: drift-opencode
+project: arnon2020/codex-fanout
+session: 114-codex-fanout
+
+description: Throwaway probe — does the opencode dispatch path work end-to-end on the current binary?
+
+goal: |
+  Answer three things and stop: does it spawn, can it be dispatched to, and if not, what works.
+
+members:
+  - role: oc-probe
+    name: oc-probe
+    engine: sage-opencode-oracle    # BASH_ENV=… opencode --model zai/glm-5.2 --auto
+    worktree: agents/oc-probe
+    branch: agents/oc-probe
+    prompt: |
+      You are oc-probe. Write a file OC-REPORT.md in your current directory with three lines:
+      the output of pwd, the model you are running as, and the output of date +%H:%M:%S.
+      Then print OC-PROBE DONE and stop. Work only in your own directory.
+
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false
