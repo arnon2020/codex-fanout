@@ -12,6 +12,7 @@ Rule (parent CLAUDE.md §"Self-Evaluation Loop"): same friction 3 sessions → f
 | 2026-08-01 22:12 | 73a50d03 | research doc v1→v6 (maw team engine routing, for prism); retractions to 4 oracles on a false rule; **first end-to-end `maw team up` exec proof on maw-rs v26.7.30** (throwaway probe, Codex v0.145.0 UI live, no residue); TEACHING-LEDGER.md created; CLAUDE.md skill list corrected (4 of 6 were fictional); CODEX-TEAM-BOOTUP.md staleness notice; teaching-discipline golden rules; scope amendment to 7; commit 31e1fde (11 files) | `maw team up` dead-pane/resume branch + compound-shell-string engines still untested; atlas + atlas-codex retractions unconfirmed (maw hey landed on a bash pane, sessions since died) | teaching ledger — first mechanism that turns "who is holding this false claim?" from unanswerable into a grep; it is what was missing when citation's 2026-07-29 correction dead-ended here for 3 days | binary restore cost ~40min to undo a ~10min edit (reverting source ≠ reverting a build); fleet wake failed on ambiguous registry targets, needed numbered session names + explicit --repo; `maw hey <short-name>` fuzzy-matched to a different oracle and reported "delivered" into a bash pane (warning, not error) | broadcast `maw team up` to 7 oracles having never run it — the run took 4 minutes and found a gap (silent trust-prompt stall) source-reading had missed; also edited maw-rs source without approval; also over-generalized past my own probe **inside the message announcing the label rule** |
 | 2026-08-03 17:35 | drift-test | รันการทดสอบ drift ตาม PROBE หลัง `/clear` — ตอบ 12 ข้อจากดิสก์ล้วน (ประกาศเงื่อนไข: ไม่แตะ SEALED / transcript วันนี้ / `git show` เต็ม), commit `c90fc99` ก่อนเปิดเฉลย, diff แล้ว **ชุด A = PASS** (ข้อ 2/3/4 ตรงสนิท · ข้อ 1 มี divergence 1 จุด: เติมเงื่อนไข "ยืนยันกับ arnon+ajfon ก่อน spawn" ที่หัวหน้าเดิมตัดสินไปแล้ว), ชุด B ตรงทุกตัวเลข, blob SEALED ยืนยันไม่ถูกแก้ | เป้าหมาย+ข้อห้ามอยู่ใน PROBE ไฟล์เดียว — ยังไม่ได้ย้ายไปที่ถาวร (รอ arnon) | version guard ทำงานจริง: รัน `maw --version` ก่อนตอบ เจอ binary สลับ **ครั้งที่ 6** (`c7241b6` 16:16 → `284ae4d` 17:09) = SEALED เก่าไปใน 53 นาที ⇒ ANSWERS แม่นกว่า SEALED 1 ข้อ | เซสชัน 2026-08-02 (Round 1 + binary สลับ 4 ครั้ง) ไม่มีทั้ง retro และแถวที่นี่ — บันทึกอยู่ใน TEACHING-LEDGER ที่เดียว; B3 หมดอายุเพราะ build เปลี่ยน | ที่หายไปกับ `/clear` คือ **"ทำไม" ล้วน ๆ 3 จุด** (D1 fanout สูงสุดที่เคยรันเอง = 1 worker · D2 arnon ถาม "พร้อมหรือยัง" → ตอบ "ยังไม่พร้อม ไม่เคยวัด" · D3 "ผมคุมเอง" = ไม่ใช่สอนให้คนอื่นคุม) → D3 ทำให้ hedge ขอยืนยันซ้ำทั้งที่หัวหน้าเดิมตัดสินไปแล้ว |
 | 2026-08-03 20:10 | fanout-probe | **fanout > 1 ครั้งแรก** — 2 ทีมแยกขึ้นพร้อมกัน engine ผูกถูกคนละตัว (gpt-5.6-sol xhigh / gpt-5.5 high) ทั้งคู่รับงานและส่งรายงานจริง; วงจรเต็ม สร้าง→ลบ→ทำใหม่พร้อมกัน→ปิดครบทุกผิว; config เครื่องแชร์คืนสภาพ byte-identical; relay ถึง ajfon (inbox file + hey + peek ยืนยันว่าเริ่มอ่านจริง) | ยังไม่รู้เงื่อนไขที่ทำให้ `up` ขนานแล้วหน้าต่างหาย (n=2) | จับได้ว่า **`engine: codex` fall through ไป `default`=claude เงียบ ๆ** และ **`up --dry-run` ไม่จับ** — กระทบ Round 2 ของ ajfon ตรง ๆ ส่งเตือนก่อน spawn ทัน | `maw hey` ปฏิเสธข้อความที่ขึ้นต้นด้วย `[...]` (reserved prefix) ต้องส่งใหม่; ปลายทาง claude ก็ paste-ไม่-submit ต้อง send-enter ตาม | **teardown ก่อน verify commit** — สั่ง worker ว่า "เขียนไฟล์แล้ว commit" แต่เช็คแค่ไฟล์แล้วฆ่า pane → probe-a เสีย commit (เนื้อไฟล์ไม่หาย) = "ไฟล์โผล่ ≠ งานจบ" |
+| 2026-08-03 22:58 | 38037954 | **นำ ai-design-look Round 2 เองครบ 4 lane** (corpus-builder · metric-prober · verifier-Fable · verifier-zai) ทุก lane peek ยืนยัน engine + ใช้ commit เป็นเกณฑ์จบ; แก้ engine key ที่พังทั้ง charter; ทำตาม ajfon D1/D2/D3/D4 ครบ; พิสูจน์ opencode dispatch แล้ว supersede บันทึกตัวเองที่ตกยุค; work order thclaws+ZAI key ถึง lucifer; atlas เปิด T4533-T4537 | corpus v1 (lane ใหม่ตาม D1) ยังไม่เริ่ม · atlas-codex ยังไม่ ACK · thclaws build ส่งต่อ lucifer | **cross-family มี 2 ชั้น (model + harness)** — atlas ว่าเป็นสิ่งที่มีค่าที่สุดที่ได้รับวันนี้ เพราะกฎฟลีตนิยามด้วย model ล้วน ⇒ verify ผ่าน thclaws แชร์ harness กับสิ่งที่ตรวจ แล้วผ่านกฎตัวเอง (T4537) | `maw hey` ข้อความยาวหายเงียบตอน worker busy (เสีย 1 commit กว่าจะรู้) · infra ขยับใต้เท้าทั้งเซสชัน (engine key หาย 4, thclaws dangling, dry-run พิมพ์ค่าที่ขอไม่ใช่ค่าที่ bind, spawn ตกเป็น bash 1/2 สองรอบ) ⇒ ทุก spawn ต้อง peek มือ | **ล้ำเส้น disposition** — สั่ง worker รื้อคอร์ปัสด้วยเกณฑ์วิชาการตัวเอง ทั้งที่เพิ่งเขียนเองว่าเป็นของ ajfon; user ต้องจับ · และ **done-detection พังเอง 2 ครั้ง** (ไฟล์โผล่ ≠ commit · waiter grep ไปแมตช์ข้อความคำสั่งตัวเอง) |
 
 ## 🔁 Recurring Pattern Detected (checked 2026-08-01, all 6 rows)
 
@@ -37,3 +38,25 @@ in the message that announced it.
 
 Suggested: raise both with Boss at next standup. Theme B in particular is not a knowledge gap —
 it is not finishing what I report as finished.
+
+## 🔁 Recurring Pattern Detected (checked 2026-08-03, last 7 rows)
+
+**Column: `friction` (operational) — one theme at threshold.**
+
+**"เชื่อรายงานแทนการตรวจของจริง" — 3 ใน 7 เซสชัน**
+(`73a50d03` `maw hey` fuzzy-match แล้วรายงาน "delivered" ลง bash pane เป็น *warning* ไม่ใช่ error ·
+`fanout-probe` claude paste-ไม่-submit ต้อง send-enter ตาม · `38037954` `maw hey` ข้อความยาว
+หายเงียบตอน worker busy + `up --dry-run` พิมพ์ค่าที่ขอไม่ใช่ค่าที่ bind + spawn ตกเป็น bash 1/2)
+
+ทุกกรณีมีรูปเดียวกัน: **เครื่องมือคายสัญญาณที่อ่านว่า "สำเร็จ" ทั้งที่ยังไม่มีอะไรเกิดขึ้น**
+และทุกครั้งจับได้ด้วยการไปดู artifact ปลายทาง (pane จริง / commit / ไฟล์) ไม่ใช่ด้วยการอ่าน output
+
+Per parent CLAUDE.md §"Self-Evaluation Loop" — friction ระดับ operational ที่ถึงเกณฑ์
+⇒ **escalation: file issue** ไม่ใช่หา workaround รอบที่สี่
+
+Suggested issue: `root-cause: maw success signals are not evidence of delivery or binding`
+— ครอบคลุม `hey` (delivered ≠ received/processed), `team up` (fresh wake ≠ window exists ≠ engine bound),
+`--dry-run` (asked ≠ bound) · atlas เปิดประเด็นเดียวกันฝั่งเขาแล้วที่ **T4533** (dry-run เป็น
+false-green generator) และ **T4536** (`set-verifier-key.sh` fallback ไม่เคยทำงาน)
+⇒ ควรผูกเรื่องนี้เข้ากับ board ของ atlas แทนที่จะเปิดใหม่แยก — **ยกให้ arnon ตัดสินว่าจะเปิดที่ไหน**
+(Principle 3: surface only, Boss decides)
