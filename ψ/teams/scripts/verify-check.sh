@@ -82,6 +82,66 @@ bootprobe() {
   else echo "VERDICT   NO-OUTPUT-NO-TIMEOUT (น่าสงสัย — อ่าน $out ก่อนสรุปว่าพัง)"; return 1; fi
 }
 
+# ── relay <session:window.pane> '<message>' [--durable <inbox-slug>] ────────
+# **root-cause fix 2026-08-04** — กฎ "delivered ไม่ใช่ได้รับ" อยู่ใน CLAUDE.md ตั้งแต่ 2026-08-01
+# และเป็นข้อ 12 ของ drift test ที่เราตอบถูกเมื่อวาน — แล้ววันนี้ยังพลาดทั้งสองท่า
+# ⇒ เขียนกฎเป็นครั้งที่ 4 ไม่ใช่การแก้ · บังคับที่จุดใช้งานแทน
+#
+# บังคับ 4 ข้อที่ `maw hey` เปล่า ๆ ไม่บังคับ:
+#   1. ต้องเป็น target เต็ม `session:window.pane` — ปฏิเสธชื่อสั้น (fuzzy-match ข้าม oracle ได้)
+#   2. ตรวจว่า target มีอยู่จริงใน `maw ls -v` ก่อนส่ง  (เดาผิด 2 ตัวรวดเมื่อ 2026-08-04)
+#   3. **ไม่ทิ้ง output** และตรวจ exit code — nonzero = ล้ม ไม่ใช่ "น่าจะถึง"
+#   4. `--durable` เขียน inbox file ควบ สำหรับ correction/retraction
+#
+# ⚠️ ข้อจำกัดที่ต้องพูดตรง ๆ: ตัวนี้ยืนยันได้แค่ว่า **เขียนลง pane สำเร็จ**
+#    มันยัง **ยืนยันไม่ได้ว่า agent รับเข้า turn** — ยังต้องดูการตอบกลับที่มีเนื้อหา
+#
+# 🏷️ **สถานะการทดสอบ = Tier 1–2 เท่านั้น** (ใช้ taxonomy ของ 2026-08-04 กับตัวเอง)
+#    ✅ พิสูจน์แล้ว: ปฏิเสธชื่อสั้น · ปฏิเสธ session ที่ไม่มี · ปฏิเสธ window ที่ไม่มี
+#    ❌ **ยังไม่พิสูจน์: เส้นทางสำเร็จบน oracle จริง** — จงใจไม่ยิงข้อความทดสอบใส่ peer
+#    ⇒ **Tier 3 จะได้ก็ต่อเมื่อ relay จริงครั้งถัดไปเดินผ่านฟังก์ชันนี้** ไม่ใช่ก่อนหน้านั้น
+#    ⇒ ห้ามอ้างว่า "แก้แล้ว" จนกว่าจะถึงตอนนั้น
+relay() {
+  local target="${1:?usage: relay <session:window.pane> '<msg>' [--durable <slug>]}"
+  local msg="${2:?message required}"; shift 2
+  local durable="" slug=""
+  while [ $# -gt 0 ]; do
+    case "$1" in --durable) durable=1; slug="${2:?--durable needs a slug}"; shift 2 ;; *) shift ;; esac
+  done
+
+  case "$target" in
+    *:*.*) ;;
+    *) echo "REFUSED   '$target' ไม่ใช่ target เต็ม — ต้องเป็น session:window.pane"
+       echo "          (maw hey fuzzy-match ข้าม oracle ได้ · CLAUDE.md golden rule)"
+       echo "          หาได้จาก: maw ls -v"; return 2 ;;
+  esac
+
+  local sess="${target%%:*}" win="${target#*:}"; win="${win%%.*}"
+  if ! maw ls -v 2>&1 | grep -qF "$sess"; then
+    echo "REFUSED   ไม่พบ session '$sess' ใน maw ls -v"; return 2
+  fi
+  if ! maw ls -v 2>&1 | grep -qF "$win"; then
+    echo "REFUSED   ไม่พบ window '$win' ใน maw ls -v  (session '$sess' มีอยู่)"
+    echo "          window name ของ charter role != tmux window name"; return 2
+  fi
+
+  local out; out=$(maw hey "$target" "$msg" 2>&1); local rc=$?
+  echo "$out" | head -1 | cut -c1-100
+  if [ $rc -ne 0 ]; then echo "FAILED    maw hey exit=$rc — ยังไม่ถึง อย่าอ้างว่าส่งแล้ว"; return 1; fi
+  case "$out" in *delivered*) ;; *) echo "SUSPECT   ไม่เห็นคำว่า delivered ใน output — อ่าน output เต็มก่อนสรุป"; return 1 ;; esac
+
+  local eout; eout=$(maw send-enter "$target" 2>&1); local erc=$?
+  [ $erc -ne 0 ] && { echo "FAILED    send-enter exit=$erc"; return 1; }
+
+  if [ -n "$durable" ]; then
+    local f="ψ/inbox/$(date +%Y-%m-%d_%H-%M)_codex-fanout_${slug}.md"
+    { printf -- '---\nfrom: codex-fanout\nto: %s\ntimestamp: %s\nchannel: tmux + durable inbox\n---\n\n' \
+        "$sess" "$(date -Iseconds)"; printf '%s\n' "$msg"; } > "$f"
+    echo "DURABLE   $f"
+  fi
+  echo "SENT      $target  [delivered · ยังไม่ยืนยันว่า agent รับเข้า turn]"
+}
+
 # ── selftest ────────────────────────────────────────────────────────────────
 # **ตัวสคริปต์เองก็ต้องถูกตรวจ** — นี่คือประเด็นทั้งหมดของไฟล์นี้
 selftest() {
@@ -114,6 +174,9 @@ selftest() {
   echo "6b) procs_cmd ต้องไม่นับคำสั่งตรวจของตัวเอง"
   local n7; n7=$(procs_cmd "__selftest_unique_marker__")
   [ "$n7" = "0" ] || { echo "   ✗ procs_cmd นับได้ $n7 ทั้งที่ควรเป็น 0"; fail=1; }
+  echo "5c) relay ต้องปฏิเสธ target ที่ไม่เต็ม และ target ที่ไม่มีอยู่"
+  relay "ajfon" "x" >/dev/null 2>&1 && { echo "   ✗ relay รับชื่อสั้น"; fail=1; }
+  relay "99-nosuch:nosuch.0" "x" >/dev/null 2>&1 && { echo "   ✗ relay รับ session ที่ไม่มี"; fail=1; }
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
@@ -121,7 +184,7 @@ selftest() {
 }
 
 case "${1:-}" in
-  binexists|procs|procs_cmd|alive|bootprobe|selftest) "$@" ;;
+  binexists|procs|procs_cmd|alive|bootprobe|relay|selftest) "$@" ;;
   "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | selftest" ;;
   *) echo "unknown fn: $1"; exit 2 ;;
 esac
