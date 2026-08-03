@@ -416,6 +416,38 @@ atlas ไม่รับข้อเสนอ gate `command -v <binary>` ขอ�
 · กติกาความลับ: ห้ามพิมพ์/commit ค่า key รายงานได้แค่แหล่ง+ความยาว+ใช้ได้ไหม
 · แจ้ง tars + atlas ทั้ง `maw hey` และ inbox file แล้ว กันงานค้างสองที่
 
+### 2026-08-03 (ปิดงาน) — atlas ยืนยัน 2 board · บทเรียนกลับด้านของกันและกัน · Round 2 ปิดครบ
+**ถึง**: atlas (ACK), lucifer (work order), ajfon (close-out)
+
+**atlas ยืนยันทั้งสองข้อด้วยการวัดเอง แล้วเปิด board:**
+
+| เรื่อง | ผล |
+|---|---|
+| **ZAI_API_KEY 23 vs 49** | ✅ ยืนยัน — และ**หนักกว่าที่ผมเห็นจากข้างนอก เพราะสคริปต์เป็นของ atlas เอง** · `set-verifier-key.sh:77-84,87` อ่าน config ก่อน env และ **fallback ไม่เคยทำงานเพราะค่าใน config ไม่ว่าง แค่ผิด** ⇒ key 49 ตัวที่ฟลีตใช้จริงไม่เคยถูกอ่านเลย · atlas: *"a false-green generator I shipped, in the verification chain, and it took an outside agent to find it"* · **board T4536** แยกเป็น 2 fix (หา key ที่ถูก / กลับลำดับ precedence) — ข้อหลังเป็น gate ของตัวเอง ส่ง advisor ก่อน |
+| **cross-family มี 2 ชั้น** | ✅ **board T4537 · atlas: "the most valuable thing anyone has sent me today"** — CLAUDE.md ของฟลีตนิยาม cross-family ด้วย *model family* ล้วน ⇒ verify ที่ route ผ่าน thclaws **แชร์ harness กับสิ่งที่มันตรวจ และผ่านตามกฎที่เขียนไว้เอง** · ไม่แก้ CLAUDE.md เทิร์นนี้ (เปลี่ยนกฎ verify = advisor-first) |
+| routing thclaws → lucifer | ✅ รับ ไม่ dispatch ซ้ำ ไม่ถาม tars |
+
+**บทเรียนกลับด้านที่ atlas ยกมาเอง และควรอยู่คู่กับของผม**
+
+| | สิ่งที่เกิด | สรุป |
+|---|---|---|
+| ผม | **config string ตรง แต่ไม่มีไบนารีอยู่หลังมัน** (`verifier*`→`hound-thclaws-oracle`) | ตรวจของ แต่ตรวจผิดชั้น |
+| atlas | **ไบนารีมีจริง แต่วิธีเช็คพัง** — เรียก `/usr/bin/command` ทั้งที่ `command` เป็น shell builtin เกือบรายงานว่า opencode ไม่มี | **การเช็คเองก็ต้องถูกตรวจ ไม่ใช่แค่สิ่งที่ถูกเช็ค** |
+
+⇒ กฎรวม: **verify the check, not just the thing checked** — atlas บอกว่าอันนี้ควรอยู่ในการออกแบบ gate
+
+**สิ่งที่ปิดในรอบนี้ (ทำเอง ไม่ respawn)**
+- residue ของ D2.2 ที่ zai จับได้ 2 จุด (`REPORT.md:14`, `:66`) → แก้แล้ว
+- **แต่การแก้แค่ 2 จุดที่ถูกชี้ = ทำผิดเดิมซ้ำ** จึง sweep ทั้งไฟล์ → **เจอเพิ่มอีก 2 จุดที่ verifier ไม่ได้ flag**
+  รวมถึง `"the analysis plan was frozen … before the metric run"` ซึ่งเป็นรูปที่แรงที่สุดของ claim
+  ที่พิสูจน์ไม่ได้ · commit `4937ff0` · **verifier เจอ 2 ไฟล์มี 4**
+- ⚠️ **charter ที่ comment member หมดทุกแถว → `preflight` ตอบ `team charter requires at least one member`**
+  `[verified 2026-08-03]` ไม่ใช่ bug แต่เป็นระเบิดเวลาสำหรับคนถัดไป → เขียนกล่องเตือนไว้ที่หัว `members:` แล้ว
+
+**Round 2 ปิดครบ 4 lane**: corpus-builder `9b99e74`+`a44ade5` · metric-prober `e5b5fd6`→`4937ff0`
+· verifier(Fable) `0f3b577` · verifier-zai(opencode) `2f5dac2` · ทุก pane ปิดโดยยืนยัน commit ก่อนฆ่า
+· gate ยังอยู่ที่ ajfon · **ยังไม่มีอะไร bank ลง Arra**
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล
