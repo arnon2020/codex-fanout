@@ -1,0 +1,47 @@
+# drift-fanout-b — THROWAWAY probe team (B of 2), 2026-08-03
+# Twin of drift-fanout-a. Same shape, different team + different worktree, brought up at the
+# same time. If the two interfere, this is where it shows.
+# Disposable: teardown = kill window + mv stores to archive + git worktree remove. Never rm -rf.
+
+name: drift-fanout-b
+project: arnon2020/codex-fanout
+session: 114-codex-fanout
+
+description: Throwaway concurrency probe B — one codex worker, own worktree, reports its own environment.
+
+goal: |
+  Same three questions as team A, answered independently. The value of B is that it is NOT A:
+  if engine binding, cwd, or sandbox leaks between teams, the two reports will disagree with
+  their own charters.
+
+members:
+  - role: probe-b
+    name: probe-b
+    # ROUND 2 ของ probe นี้: เปลี่ยนจาก `codex` (ซึ่ง **ไม่ใช่** key ใน commands ของ XDG config)
+    # เป็น key ที่มีจริง เพื่อแยกสาเหตุ: "engine ถูกเมิน" vs "engine key ไม่รู้จัก → falls back to default"
+    engine: hound-codex-oracle
+    worktree: agents/probe-b
+    branch: agents/probe-b
+    prompt: |
+      You are probe-b. Do not load any skill. Do not read or write outside your own directory
+      except where step 4 explicitly tells you to try.
+
+      Write a file PROBE-REPORT.md in your current directory containing exactly these lines,
+      each answered from what you actually observe right now — never from memory or assumption:
+
+      1. cwd: run `pwd` and paste the output.
+      2. branch: run `git branch --show-current` and paste the output.
+      3. engine: state the model name and version your own harness reports for itself, and say
+         plainly whether you had to answer a directory-trust prompt before you could start.
+      4. isolation: run `cat ../probe-a/PROBE-REPORT.md`. Paste the FULL result whether it
+         succeeds or is denied. "Denied" is a valid and useful answer — do not retry, do not
+         work around it, do not use any other tool to get at that file.
+      5. clock: run `date +%H:%M:%S` and paste the output.
+
+      Then commit that one file on your branch with message "probe-b report".
+      Print the single line: PROBE-B DONE
+      Then stop and wait. Do not start any other work.
+
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false

@@ -208,6 +208,25 @@ commit `8a681a3` · ยัง **ไม่ bank อะไรทั้งสิ้
 **ผิดตอน 11:09 เช้าวันถัดมา** โดยไม่มีใครแตะไฟล์ — operational doc เป็นจริง*เทียบกับ binary*เท่านั้น
 ⇒ เปลี่ยน guard จาก "เช็ค version ครั้งเดียวตอนเปิดเซสชัน" เป็น **"เช็คก่อนทุกคำสั่ง `maw team`"**
 
+### 2026-08-03 — two-team concurrent probe: `engine: codex` ตายเงียบ + fanout 2 ทีมสำเร็จครั้งแรก
+**ถึง**: ajfon (เร่งด่วน — กระทบ Round 2 ก่อน spawn) · รายละเอียดเต็ม: `ψ/teams/2026-08-03_two-team-fanout-probe.md`
+
+| Claim | Label | หลักฐาน |
+|---|---|---|
+| 🔴 **`engine: codex` ไม่ใช่คีย์ใน `commands` แล้ว → `maw` fall through ไป `default` = `claude --model claude-opus-5 --continue` เงียบ ๆ แล้วตาย (`No conversation found to continue`)** | `[verified 2026-08-03 · maw-rs 284ae4d · รันเอง 2 รอบ · pane output แนบ]` | config mtime **2026-08-03 16:10:54** · 27 คีย์ ไม่มี `codex` · source chain `wake_engine_command.rs:74-97` |
+| 🔴 **`up --dry-run` พิมพ์ `-e codex` ทั้งที่ exec จะได้ claude — dry-run ไม่ใช่หลักฐานว่า engine ผูกถูก** | `[verified]` | dry-run vs pane ขัดกันตรง ๆ ในรอบเดียวกัน |
+| ⇒ **charter `ai-design-look` ใช้ `codex` + `codex-xhigh` ทั้งคู่ไม่ใช่คีย์ → Round 2 จะได้ claude ทั้งลาน = เสีย cross-family เงียบ ๆ** | `[verified ว่าคีย์ไม่มี]` + `[inferred ว่าผลจะเป็นแบบเดียวกับ probe]` | ยังไม่ได้รันบน charter ของ ajfon จริง — **ห้าม escalate เกินนี้** |
+| แก้ด้วยการใช้คีย์ที่มีจริง (`hound-codex-oracle` = gpt-5.5, `sage-codex-oracle` = gpt-5.6-sol xhigh) | `[verified]` | เปลี่ยนคีย์อย่างเดียว → codex v0.145.0 บูตทันทีทั้งสองทีม |
+| ✅ **2 ทีมแยก ทีมละ 1 worker ขึ้นพร้อมกันได้ engine ผูกถูกคนละตัว** — fanout > 1 ครั้งแรกของผม | `[verified 2026-08-03 · 284ae4d]` | `up` ขนาน 3 วินาที · peek: gpt-5.6-sol xhigh @probe-a / gpt-5.5 high @probe-b · ทั้งคู่ทำงานจริงพร้อมกัน |
+| ⚠️ **`up` ขนานเข้า session เดียว หน้าต่างหายเงียบ 1 ใน 2 รอบ** — log พิมพ์ `fresh wake` เหมือนกันทั้งคู่ | `[verified — n=2 ยังไม่รู้เงื่อนไข]` | รอบแรกได้หน้าต่างเดียว รอบสองครบ ⇒ ยืนยันด้วย `tmux list-windows` เสมอ |
+| 🔴 **worktree isolation ไม่ถูกบังคับเมื่อ engine ใช้ `--sandbox danger-full-access`** — probe-a อ่านไฟล์ของ probe-b ข้าม worktree ได้เต็ม ๆ | `[verified 2026-08-03]` | จำกัดขอบเขต claim 2026-08-01 (`worker อ่านนอก worktree ไม่ได้`) → **จริงเฉพาะ engine ที่จำกัดสิทธิ์** · ของ probe-b ที่ขึ้น No such file คือ ENOENT ไม่ใช่ permission |
+| warning `not an agent -- likely misaddressed` ขึ้นกับ **codex** ที่ live อยู่ด้วย ไม่ใช่แค่ thclaws | `[verified]` | pane `cmd=node` title `⠇ probe-a` กำลังทำงาน แต่ยังขึ้น warning |
+
+**Scar ของผมในรอบนี้**: สั่ง worker ให้ "เขียนไฟล์ **แล้ว commit**" → ผมเห็นไฟล์ครบ 2 ตัวแล้ว teardown เลย
+ผล: `probe-b` มี commit `eeaf8a1` · **`probe-a` ไม่มี** — ฆ่า pane ตอนยังไม่ commit เสร็จ
+⇒ รากเดียวกับ "delivered ≠ ได้รับ" ย้ายไปอีกชั้น: **"ไฟล์โผล่ ≠ งานจบ"**
+done-criteria ต้องเช็ค*ปลายทางสุดท้าย*ของงาน ไม่ใช่ของกลางทาง
+
 ---
 
 ## Broadcast ที่ยังต้องตามผล

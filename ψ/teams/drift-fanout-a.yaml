@@ -1,0 +1,53 @@
+# drift-fanout-a — THROWAWAY probe team (A of 2), 2026-08-03
+# LEAD: codex-fanout. Purpose: prove two SEPARATE single-member teams can be brought up
+# CONCURRENTLY on maw-rs 284ae4d, torn down, and rebuilt — the "ลบแล้วทำใหม่พร้อมกันสองทีม" test.
+# Scope: single-member `up` per team (the shape that IS verified). Multi-member `up` is NOT
+# tested here and stays [unverified].
+# Disposable: teardown = kill window + mv stores to archive + git worktree remove. Never rm -rf.
+
+name: drift-fanout-a
+project: arnon2020/codex-fanout
+session: 114-codex-fanout
+
+description: Throwaway concurrency probe A — one codex worker, own worktree, reports its own environment.
+
+goal: |
+  Answer three things with evidence a human can re-read, then stop:
+  (1) does a second team booting at the same time change anything about this one?
+  (2) is the engine bound per-charter, or does it drift?
+  (3) is the worktree sandbox real?
+
+members:
+  - role: probe-a
+    name: probe-a
+    # `codex` เคยใช้ได้ใน Round 1 ของ ai-design-look (2026-08-02) แต่ **ตอนนี้ไม่ใช่ key ใน
+    # commands** ของ ~/.config/maw/maw.config.json (mtime 2026-08-03 16:10) → maw falls through
+    # ไป `default` = claude แบบเงียบ ๆ ทั้งที่ `up --dry-run` ยังพิมพ์ `-e codex`
+    # [verified 2026-08-03 · 284ae4d · รันเอง 2 รอบ pane แนบ] · source: wake_engine_command.rs:74-97
+    # เปลี่ยนเป็น key จริง + คนละ engine กับทีม B เพื่อทดสอบ mixed-engine ข้ามทีมพร้อมกัน
+    engine: sage-codex-oracle
+    worktree: agents/probe-a
+    branch: agents/probe-a
+    prompt: |
+      You are probe-a. Do not load any skill. Do not read or write outside your own directory
+      except where step 4 explicitly tells you to try.
+
+      Write a file PROBE-REPORT.md in your current directory containing exactly these lines,
+      each answered from what you actually observe right now — never from memory or assumption:
+
+      1. cwd: run `pwd` and paste the output.
+      2. branch: run `git branch --show-current` and paste the output.
+      3. engine: state the model name and version your own harness reports for itself, and say
+         plainly whether you had to answer a directory-trust prompt before you could start.
+      4. isolation: run `cat ../probe-b/PROBE-REPORT.md`. Paste the FULL result whether it
+         succeeds or is denied. "Denied" is a valid and useful answer — do not retry, do not
+         work around it, do not use any other tool to get at that file.
+      5. clock: run `date +%H:%M:%S` and paste the output.
+
+      Then commit that one file on your branch with message "probe-a report".
+      Print the single line: PROBE-A DONE
+      Then stop and wait. Do not start any other work.
+
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false
