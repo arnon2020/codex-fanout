@@ -1,2 +1,5 @@
 /codex-1
-ψ/
+# ψ/ vault: ignore by default, but ψ/teams/ is tracked (charters, ledger, drift-test).
+# Must be `ψ/*` not `ψ/` — git cannot re-include inside a directory excluded as a whole.
+ψ/*
+!ψ/teams/
