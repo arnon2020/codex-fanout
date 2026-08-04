@@ -138,73 +138,115 @@ relay() {
     { printf -- '---\nfrom: codex-fanout\nto: %s\ntimestamp: %s\nchannel: tmux + durable inbox\n---\n\n' \
         "$sess" "$(date -Iseconds)"; printf '%s\n' "$msg"; } > "$f"
     echo "DURABLE   $f"
+    # 🩹 2026-08-04: `.gitignore` มี `ψ/*` ⇒ ไฟล์นี้ **ไม่เข้า git** ถ้าไม่ `-f`
+    #    วันที่ผมเลิกใช้ `git add -f ψ/` ไฟล์ durable ตัวแรกหลังกฎใหม่ตกทันที **เงียบสนิท**
+    #    `git commit` exit 0 · ledger เขียนว่า durable ครบ · ไม่มีอะไรเตือน
+    #    ⇒ ไฟล์บนดิสก์อย่างเดียว = durable ต่อ session **ไม่ใช่ต่อประวัติ**
+    if git rev-parse --git-dir >/dev/null 2>&1 && git check-ignore -q -- "$f" 2>/dev/null; then
+      echo "WARN      $f ถูก .gitignore — ต้อง 'git add -f' ไม่งั้น durable แค่ต่อ session"
+    fi
   fi
   echo "SENT      $target  [delivered · ยังไม่ยืนยันว่า agent รับเข้า turn]"
 }
 
 # ── teamclosed <team> ───────────────────────────────────────────────────────
-# ตอบว่า "ทีมนี้ปิดจริงไหม" ไม่ใช่ "คำสั่ง status พูดว่าอะไร"
+# ตอบว่า "ทีมนี้ปิดจริงไหม" ไม่ใช่ "คำสั่งไหนพูดว่าอะไร"
 #
-# 🏷️ ที่มา: ajfon แจ้ง 2026-08-02 ว่า `maw team status` ตอบ "team not found"
-#    ทั้งที่ `maw team list` ยังโชว์ทีมอยู่ ⇒ "อย่าใช้ status ยืนยันว่าปิด ใช้ list"
+# 🏷️ ที่มา 1 — ajfon 2026-08-02: `maw team status` ตอบ "team not found" ทั้งที่ `list`
+#    ยังโชว์ ⇒ "อย่าใช้ status ยืนยันว่าปิด ใช้ list"
+#    **repro บนเครื่องนี้ ได้คนละอาการ แต่เจอของที่แรงกว่า**
+#    [verified 2026-08-04 · maw-rs v26.7.30-alpha.2017-17-g284ae4d · ajfon ทำซ้ำยืนยันแล้ว]
+#      · status vs list **ตรงกัน** ทั้ง 3 ทีม ⇒ อาการของ ajfon ผูกกับ binary ของเขา
+#      · **`maw team status <ทีมที่ไม่มีอยู่>` คืน rc=0** พิมพ์ "⚠ team not found" ลง
+#        **stdout** ⇒ `status X >/dev/null 2>&1 && echo CLOSED` **พิมพ์ CLOSED จริง**
+#        (ajfon ยืนยันด้วยการแยกสตรีมสองทาง) — รูปเดียวกับ `maw hey` warning-ไม่ใช่-error
+#    ⇒ ข้อห้ามของเขาถูก **ด้วยเหตุผลที่ไม่พึ่ง binary**: `status` ไม่มีช่องบอกความล้มเหลวเลย
 #
-#    **repro บนเครื่องนี้แล้ว ได้คนละผล — และเจอของที่แย่กว่า**
-#    [verified 2026-08-04 · maw-rs v26.7.30-alpha.2017-17-g284ae4d (284ae4d)]
-#      · status vs list **ตรงกัน** ทั้ง 3 ทีมที่ลอง (atlas / teaching-media-cell / bug-fix-v1)
-#        ⇒ อาการที่ ajfon เจอ **ผูกกับ binary ของเขา ไม่ใช่กฎสากล** — เป็นรูปเดียวกับที่
-#          prism เตือน (กติกา team เปลี่ยนตาม binary · เช็ค `maw --version` ก่อนเสมอ)
-#      · **`maw team status <ทีมที่ไม่มีอยู่>` คืน rc=0** พิมพ์ "⚠ team not found"
-#        ลง **stdout** (ไม่ใช่ stderr) ⇒ `maw team status X && echo closed-ok` **โกหกเสมอ**
-#        และ `maw team status X >/dev/null` กลบหลักฐานทิ้งทั้งหมดโดยที่ rc ยังเขียว
-#        รูปเดียวกับ `maw hey` ที่รายงาน warning ไม่ใช่ error (golden rule 2026-08-01)
-#    ⇒ ข้อสรุปของ ajfon **ใช้ได้ด้วยเหตุผลที่แรงกว่าที่เขาให้ไว้**: ไม่ใช่เพราะ status
-#      ขัดกับ list แต่เพราะ **status ไม่มีช่องบอกความล้มเหลวเลย**
+# 🏷️ ที่มา 2 — ajfon 2026-08-04 (ล้มเวอร์ชันแรกของฟังก์ชันนี้ ภายในไม่กี่นาทีหลังผมส่งไป):
+#    **`maw team up` เป็น charter-driven reconciliation — ไม่ลงทะเบียนใน tool store**
+#    ⇒ ทีมที่ `up` สร้าง **ไม่โผล่ใน `list` เลยขณะมีชีวิต** ⇒ เวอร์ชันที่ดูแต่ `list`
+#    ตอบ **false-CLOSED บนทีมที่กำลังรัน** — แย่กว่าเคส rc โกหก เพราะ list ไม่รู้จักทีม*ทั้งประเภท*
+#    [verified 2026-08-04 · ผมทำซ้ำเอง ไม่ได้รับป้ายเขามาใช้ต่อ]
+#      `maw team list | grep -c person-lookup` → **0**
+#      `tmux list-windows -t team-person-lookup-r2` → **4 windows** (anchor + 3 worker)
+#      `teamclosed person-lookup-r2` (เวอร์ชันแรก) → **CLOSED** ← false-CLOSED ของจริง
+#    ⇒ เพิ่มผิว tmux · **ajfon บอกตรงว่าเขายังไม่ได้ทดสอบ rc ของ `has-session` ให้**
+#      ผมทดสอบเอง: มีจริง **rc=0** · ไม่มี **rc=1** `[verified 2026-08-04]`
 #
-# ⚠️ ขอบเขต: ตอบเรื่อง **การมีอยู่ของทีมใน registry** เท่านั้น
-#    ไม่ได้ตอบว่า pane ตายหมดแล้วหรือยัง (นั่นคือคอลัมน์ STATUS/ZOMBIES ของ list)
+# 🏷️ ที่มา 3 — ที่ปรึกษาจับได้ว่า selftest 5e เดิมเลือกตัวประธานเป็น **header row `TEAM`**
+#    (`awk NR>1` ข้ามแค่บรรทัดว่างบรรทัดแรก) ⇒ กับดัก substring ที่โฆษณาไว้ว่าทดสอบ
+#    `atlas` vs `atlas-codex` จริง ๆ ทดสอบ `TEAM` vs `TEA` = **fixture Tier 1 ในไฟล์ที่
+#    ทั้งเล่มพูดว่า Tier 1 มองไม่เห็น defect ที่ผูกกับตัวประธาน** — แก้ให้ข้าม header ตรง ๆ แล้ว
+#
+# ⚠️ ขอบเขตที่ตอบไม่ได้ (พิมพ์ออกมาเองเมื่อตรวจไม่ถึง ไม่เงียบ):
+#    · vault + charter เป็น path **เทียบ CWD** ⇒ ถามถึงทีมของ oracle อื่น ผิวนี้ไม่ถึง
+#    · ตอบเรื่อง "มีอยู่/มีชีวิตไหม" ไม่ได้ตอบว่า worker มีงานทำไหม (ajfon ข้อ 4: `up`
+#      ปลุก pane ได้โดยไม่ส่ง prompt — exit 0, preflight 11/11, และ worker นั่งว่าง)
 teamclosed() {
   local t="${1:?usage: teamclosed <team-name>}"
-  binexists maw >/dev/null || { echo "UNKNOWN   ไม่มี maw เรียกได้ — ตอบไม่ได้ ไม่ใช่ปิด"; return 2; }
+  local unreachable="" found="" rc_open=0
 
-  local lout lrc
-  lout=$(maw team list 2>&1); lrc=$?
-  # **output ว่าง/คำสั่งล้ม ต้องไม่ถูกอ่านว่า "ปิดแล้ว"** — นี่คือความพลาดที่ไฟล์นี้มีไว้กัน
-  if [ $lrc -ne 0 ] || [ -z "$lout" ]; then
-    echo "UNKNOWN   maw team list exit=$lrc / output ว่าง — ยังตอบไม่ได้ว่าปิด"; return 2
+  # ── ผิว 1: tmux (ทีมจาก `up` โผล่ที่นี่ที่เดียว) ─────────────────────────
+  if binexists tmux >/dev/null 2>&1; then
+    local sess
+    for sess in "$t" "team-$t"; do
+      if tmux has-session -t "=$sess" 2>/dev/null; then
+        local nw; nw=$(tmux list-windows -t "=$sess" 2>/dev/null | wc -l)
+        echo "LIVE      $t  tmux session '$sess' มีอยู่จริง ($nw windows)"
+        tmux list-windows -t "=$sess" -F '          #{window_index}: #{window_name}' 2>/dev/null
+        echo "          ⇒ ทีมจาก \`maw team up\` ไม่ลงทะเบียนใน store — list/status มองไม่เห็น"
+        return 1
+      fi
+    done
+  else
+    unreachable="$unreachable tmux(ไม่มีไบนารี)"
   fi
 
-  # exact-match คอลัมน์แรก · ห้าม grep -F เพราะ 'atlas' จะไปโดน 'atlas-codex'
-  local row
-  row=$(printf '%s\n' "$lout" | sed 's/\x1b\[[0-9;]*m//g' \
-        | awk -v n="$t" 'NR>1 && $1==n {print; exit}')
-
-  # ผิวที่ 2 และ 3: ไดเรกทอรีค้างในสองสโตร์ (ajfon เจอผิวที่ 3 เพราะย้ายสโตร์แรกออกแล้ว
-  # list เปลี่ยนเป็น store=vault แทนที่จะหาย) — path มาจาก string ในตัว maw เอง
-  # ⚠️ vault เป็น path **เทียบ CWD** = vault ของ oracle ที่รันอยู่เท่านั้น
-  #    ถามถึงทีมของ oracle อื่น → ผิวนี้ตรวจไม่ถึง ต้องบอกออกมาตรง ๆ ไม่ใช่เงียบ
-  local ghosts="" vault_seen=""
-  [ -d "$HOME/.claude/teams/$t" ] && ghosts="$ghosts ~/.claude/teams/$t"
-  if [ -d "ψ/memory/mailbox/teams" ]; then
-    vault_seen=1
-    [ -d "ψ/memory/mailbox/teams/$t" ] && ghosts="$ghosts ψ/memory/mailbox/teams/$t"
+  # ── ผิว 2: maw team list (store-registered) ──────────────────────────────
+  if binexists maw >/dev/null 2>&1; then
+    local lout lrc
+    lout=$(maw team list 2>&1); lrc=$?
+    if [ $lrc -ne 0 ] || [ -z "$lout" ]; then
+      echo "UNKNOWN   maw team list exit=$lrc / output ว่าง — ยังตอบไม่ได้ว่าปิด"; return 2
+    fi
+    local plain; plain=$(printf '%s\n' "$lout" | sed 's/\x1b\[[0-9;]*m//g')
+    # ต้องเห็น header จริงก่อน ไม่งั้นถือว่าอ่านฟอร์แมตไม่ออก → UNKNOWN ไม่ใช่ CLOSED
+    printf '%s\n' "$plain" | awk '$1=="TEAM" && $2=="STORE"{f=1} END{exit !f}' || {
+      echo "UNKNOWN   อ่าน header ของ maw team list ไม่ออก — ฟอร์แมตเปลี่ยน ยังตอบไม่ได้"; return 2; }
+    local row
+    row=$(printf '%s\n' "$plain" | awk -v n="$t" '$1=="TEAM" && $2=="STORE"{h=1;next} h && $1==n {print; exit}')
+    if [ -n "$row" ]; then
+      echo "OPEN      $t  ยังอยู่ใน maw team list"
+      printf '          %s\n' "$row"; return 1
+    fi
+  else
+    unreachable="$unreachable maw(ไม่มีไบนารี)"
   fi
 
-  if [ -n "$row" ]; then
-    echo "OPEN      $t  ยังอยู่ใน maw team list"
-    printf '          %s\n' "$row"
-    return 1
-  fi
+  # ── ผิว 3+4: ไดเรกทอรีค้าง 2 สโตร์ + charter (ทั้งคู่เทียบ CWD ยกเว้น tool store) ──
+  # ⚠️ ไดเรกทอรี "ไม่มี" ≠ "ตรวจไม่ได้" — ไม่มี = ตรวจแล้วไม่เจอ ต้องไม่ดันไปเป็น UNKNOWN
+  #    ไม่งั้นฟังก์ชันนี้จะตอบ UNKNOWN ตลอดกาลจาก repo ที่ไม่มี .maw/teams/ =
+  #    **ตัวตรวจที่ไม่มีวันตอบ CLOSED ก็คือตัวตรวจที่ไม่มีใครเรียก** (รูปเดียวกับกฎที่ไม่มีใครอ่าน)
+  #    ที่ "ตรวจไม่ได้" จริงมีอย่างเดียวคือ **ไบนารีหาย** — ผิวนั้นเงียบโดยไม่รู้ผล
+  local ghosts=""
+  [ -d "$HOME/.claude/teams/$t" ]    && ghosts="$ghosts ~/.claude/teams/$t"
+  [ -d "ψ/memory/mailbox/teams/$t" ] && ghosts="$ghosts ψ/memory/mailbox/teams/$t"
+  [ -f ".maw/teams/$t.yaml" ]        && ghosts="$ghosts .maw/teams/$t.yaml"
+
   if [ -n "$ghosts" ]; then
-    echo "GHOST-DIR $t  ไม่อยู่ใน list แล้ว แต่ยังมีไดเรกทอรีค้าง:$ghosts"
+    echo "GHOST     $t  ไม่มี session และไม่อยู่ใน list แต่ยังมีของค้าง:$ghosts"
     echo "          (ย้ายเข้า archive ด้วย mv — ย้อนกลับได้ ต่างจาก delete)"
     return 1
   fi
-  if [ -n "$vault_seen" ]; then
-    echo "CLOSED    $t  ไม่อยู่ใน list · ไม่มี dir ค้างใน tool store + vault ของ CWD นี้"
-  else
-    echo "CLOSED    $t  ไม่อยู่ใน list · ไม่มี dir ค้างใน tool store"
-    echo "          [ผิว vault ตรวจไม่ถึง — CWD นี้ไม่มี ψ/memory/mailbox/teams/]"
+
+  # ── ไม่เจอที่ไหนเลย — แต่ต้องบอกด้วยว่าผิวไหนตรวจไม่ถึง ───────────────────
+  if [ -n "$unreachable" ]; then
+    echo "UNKNOWN   $t  ไม่เจอในผิวที่ตรวจได้ แต่ตรวจไม่ครบ:$unreachable"
+    echo "          ⇒ **ไม่ใช่ CLOSED** — ผิวที่ตรวจไม่ถึงอาจถือทีมนี้อยู่"
+    return 2
   fi
+  echo "CLOSED    $t  ไม่มี tmux session · ไม่อยู่ใน list · ไม่มีของค้างใน store/vault/charter"
+  echo "          [ขอบเขต: vault + charter อ่านจาก CWD ปัจจุบัน — ทีมของ oracle อื่นอยู่ใน repo เขา]"
   return 0
 }
 
@@ -246,24 +288,46 @@ selftest() {
   echo "5d) source พร้อม positional arg ต้องไม่ทำให้ dispatcher ยิง exit"
   local r5d; r5d=$(bash -c 'source '"$PWD"'/ψ/teams/scripts/verify-check.sh; echo SOURCED-OK' _ "ข้อความยาวที่ไม่ใช่ชื่อ fn" 2>&1)
   case "$r5d" in *SOURCED-OK*) ;; *) echo "   ✗ source แล้วเชลล์ตาย: $r5d"; fail=1 ;; esac
-  echo "5e) teamclosed: ทีมที่มีจริงต้องเป็น OPEN · ชื่อที่เป็นสตริงย่อยต้องไม่ติด"
+  echo "5e) teamclosed: ตัวประธานต้องเป็น *ชื่อทีมจริง* ไม่ใช่ header row"
+  # ⚠️ เวอร์ชันแรกของเทสต์นี้ใช้ `awk NR>1` → ได้ **`TEAM`** (บรรทัดแรกเป็นบรรทัดว่าง)
+  #    ⇒ กับดัก substring ที่โฆษณาว่าทดสอบ atlas/atlas-codex จริง ๆ ทดสอบ TEAM/TEA
+  #    = fixture Tier 1 ในไฟล์ที่ทั้งเล่มบอกว่า Tier 1 มองไม่เห็น defect ที่ผูกกับตัวประธาน
   if binexists maw >/dev/null 2>&1; then
-    local first; first=$(maw team list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk 'NR>1 && NF>1 {print $1; exit}')
-    if [ -n "$first" ]; then
-      teamclosed "$first" >/dev/null 2>&1 && { echo "   ✗ teamclosed บอกว่า '$first' ปิด ทั้งที่ list โชว์อยู่"; fail=1; }
-      # กับดัก substring: ตัดท้ายชื่อจริง 1 ตัว → ชื่อที่ไม่มีอยู่ แต่ grep -F จะติด
-      local sub="${first%?}"
-      if [ -n "$sub" ] && [ "$sub" != "$first" ]; then
-        teamclosed "$sub" >/dev/null 2>&1 || { echo "   ✗ teamclosed ติดกับดัก substring ที่ '$sub'"; fail=1; }
-      fi
-      # เอกสารบั๊กที่เป็นเหตุให้มีฟังก์ชันนี้ — ถ้าวันไหน maw แก้แล้ว เทสต์นี้จะดังให้รู้
-      maw team status "__no_such_team_$$__" >/dev/null 2>&1 \
-        || echo "   (หมายเหตุ: maw team status คืน rc!=0 กับทีมที่ไม่มีแล้ว — พฤติกรรมเปลี่ยนจาก 08-04)"
-    else
-      echo "   (maw team list ว่าง — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
-    fi
+    local first
+    first=$(maw team list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
+            | awk '$1=="TEAM" && $2=="STORE"{h=1;next} h && NF>1 {print $1; exit}')
+    case "$first" in
+      ""|TEAM) echo "   (ไม่ได้ชื่อทีมจริงจาก list [ได้: '${first:-ว่าง}'] — ข้าม ไม่นับผ่าน/ตก)" ;;
+      *)
+        teamclosed "$first" >/dev/null 2>&1 && { echo "   ✗ teamclosed บอกว่า '$first' ปิด ทั้งที่ list โชว์อยู่"; fail=1; }
+        local sub="${first%?}"
+        if [ -n "$sub" ] && [ "$sub" != "$first" ] && ! tmux has-session -t "=$sub" 2>/dev/null \
+           && ! tmux has-session -t "=team-$sub" 2>/dev/null; then
+          teamclosed "$sub" >/dev/null 2>&1 || { echo "   ✗ teamclosed ติดกับดัก substring ที่ '$sub'"; fail=1; }
+        fi ;;
+    esac
+    # header row ต้องไม่ถูกอ่านเป็นทีม
+    teamclosed TEAM >/dev/null 2>&1 || { echo "   ✗ teamclosed อ่าน header row 'TEAM' เป็นทีม"; fail=1; }
+    # เอกสารบั๊กที่เป็นเหตุให้มีฟังก์ชันนี้ — ถ้าวันไหน maw แก้แล้ว เทสต์นี้จะดังให้รู้
+    maw team status "__no_such_team_$$__" >/dev/null 2>&1 \
+      || echo "   (หมายเหตุ: maw team status คืน rc!=0 กับทีมที่ไม่มีแล้ว — พฤติกรรมเปลี่ยนจาก 08-04)"
   else
     echo "   (ไม่มี maw — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
+  fi
+  echo "5f) teamclosed ต้องเห็นทีมที่ live ใน tmux แต่ไม่อยู่ใน store (เคส maw team up)"
+  # ajfon 2026-08-04: `up` ไม่ลงทะเบียนใน store ⇒ เวอร์ชันที่ดูแต่ list ตอบ false-CLOSED
+  # **Tier 3**: ตัวประธานคือ session จริงที่รันอยู่ ไม่ใช่ fixture
+  if binexists tmux >/dev/null 2>&1; then
+    local ls_out; ls_out=$(tmux list-sessions -F '#{session_name}' 2>/dev/null)
+    local tsess; tsess=$(printf '%s\n' "$ls_out" | grep -m1 '^team-' || true)
+    if [ -n "$tsess" ]; then
+      teamclosed "${tsess#team-}" >/dev/null 2>&1 \
+        && { echo "   ✗ teamclosed บอกว่า '${tsess#team-}' ปิด ทั้งที่ session '$tsess' รันอยู่"; fail=1; }
+    else
+      echo "   (ไม่มี session ขึ้นต้น team- อยู่ตอนนี้ — ข้าม ไม่นับผ่าน/ตก)"
+    fi
+  else
+    echo "   (ไม่มี tmux — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
   fi
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?

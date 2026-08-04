@@ -49,7 +49,9 @@ string ตรง ≠ ไฟล์มี · ไฟล์มี ≠ รันไ�
 | ส่งข้อความถึงแล้วไหม | คำว่า `delivered` / กล่อง input ว่าง | **transcript ฝั่งปลายทาง** (`~/.claude/projects/<repo>/*.jsonl`) | ข้อความ arnon ไม่เคยถึง lucifer ทั้งที่จอดูปกติ · "ghost text" ในกล่อง ≠ ตัวอักษรในบัฟเฟอร์ |
 | agent เป็นโมเดลอะไร | ถาม agent | `ps` + `/proc/<pid>/environ` | worker รายงานตัวเองว่าเป็น Claude เพราะ **thClaws เป็น fork ของ Claude Code** — harness ≠ model |
 | `cmd \| grep -q` ผ่านไหม | ใช้ตรง ๆ ใต้ `set -o pipefail` | เก็บลงตัวแปรก่อนแล้วค่อย match | `grep -q` ปิด pipe → ต้นทางโดน SIGPIPE → รายงานล้มเหลวทั้งที่สำเร็จ **(บั๊กใน selftest ของไฟล์นี้เอง)** |
-| ทีมปิดแล้วจริงไหม | `maw team status <t>` แล้วดู exit / เชื่อคำว่า `team not found` | `verify-check.sh teamclosed <t>` (อ่านคอลัมน์แรกของ `maw team list` แบบ exact + เช็ค dir ค้าง 2 สโตร์) | **`maw team status <ทีมที่ไม่มีอยู่> คืน rc=0`** พิมพ์ `⚠ team not found` ลง **stdout** ⇒ `status X && echo closed` โกหกเสมอ · `status X >/dev/null` กลบหลักฐานทิ้งโดย rc ยังเขียว `[verified 2026-08-04 · maw-rs v26.7.30-alpha.2017-17-g284ae4d]` · ajfon เจอจากอีกด้าน (status ขัดกับ list) บน binary ของเขา — **อาการต่างกัน ข้อสรุปเดียวกัน** |
+| ทีมปิดแล้วจริงไหม | `maw team status <t>` แล้วดู exit / เชื่อคำว่า `team not found` | `verify-check.sh teamclosed <t>` — **tmux ก่อน** แล้วค่อย `list` + dir ค้าง 3 ผิว | **`maw team status <ทีมที่ไม่มีอยู่> คืน rc=0`** พิมพ์ `⚠ team not found` ลง **stdout** ⇒ `status X >/dev/null 2>&1 && echo CLOSED` **พิมพ์ CLOSED จริง** `[verified 2026-08-04 · maw-rs v26.7.30-alpha.2017-17-g284ae4d · ajfon ทำซ้ำยืนยัน]` · ajfon เจอจากอีกด้าน (status ขัด list) บน binary ของเขา — **อาการต่างกัน ข้อสรุปเดียวกัน** |
+| ทีมปิดแล้วจริงไหม **(ทีมจาก `maw team up`)** | `maw team list` อย่างเดียว | **ต้องดู tmux ด้วย** — `tmux has-session -t "=<name>"` และ `"=team-<name>"` | 🔴 **false-CLOSED บนทีมที่กำลังรัน** — `maw team up` เป็น charter-driven reconciliation **ไม่ลงทะเบียนใน tool store** ⇒ `list` ไม่เห็นทีมทั้งประเภท · `list \| grep -c person-lookup` = **0** ขณะที่ `tmux list-windows` = **4 windows** และ worker commit ไปแล้ว 3 ก้อน `[ajfon แจ้ง + ผมทำซ้ำเอง 2026-08-04]` · `has-session` rc: มี=**0** ไม่มี=**1** `[ผมทดสอบเอง — ajfon บอกตรงว่าเขายังไม่ได้ทดสอบให้]` |
+| ผิวตรวจ "ไม่เจอ" แปลว่าอะไร | ไม่มีไดเรกทอรี → ตอบ `UNKNOWN` ไปหมด | แยก **"ไม่มี" (ตรวจแล้วไม่เจอ)** ออกจาก **"ตรวจไม่ได้" (ไบนารีหาย)** | เวอร์ชันกลางทางของ `teamclosed` ตอบ `UNKNOWN` ทุกเคสเพราะ CWD ไม่มี `.maw/teams/` ⇒ **ตัวตรวจที่ไม่มีวันตอบ CLOSED = ตัวตรวจที่ไม่มีใครเรียก** ซึ่งพังแบบเดียวกับกฎที่ไม่มีใครอ่าน |
 | ทีมชื่อนี้มีไหม (เทียบชื่อ) | `maw team list \| grep -qF "$t"` | exact-match คอลัมน์แรก (`awk '$1==n'`) | `grep -F atlas` ติด **`atlas-codex`** ด้วย — ในลิสต์นี้มี 3 ชื่อที่เป็นสตริงย่อยของกันและกัน |
 
 ---
@@ -121,8 +123,15 @@ bash $S bootprobe "$ENGINE_CMD" 8 thclaws # เก็บ output เสมอ + �
 bash $S teamclosed ajfon-research         # OPEN / GHOST-DIR / CLOSED / UNKNOWN — ไม่แตะ status
 ```
 
-`selftest` ปัจจุบัน: **11 ข้อ ผ่านครบ · stderr 0 บรรทัด**
-`[verified 2026-08-04 · นับด้วย grep -cE '^[0-9]+[a-z]?\)' · เพิ่มข้อ 5e (teamclosed)]`
+`selftest` ปัจจุบัน: **12 ข้อ ผ่านครบ · stderr 0 บรรทัด**
+`[verified 2026-08-04 · นับด้วย grep -cE '^[0-9]+[a-z]?\)' · เพิ่ม 5e + 5f (teamclosed)]`
+
+> ⚠️ **5e เวอร์ชันแรกเล็งผิดตัวประธาน** — `awk NR>1` ข้ามแค่บรรทัดว่าง ⇒ ได้ **header row `TEAM`**
+> กับดัก substring ที่โฆษณาว่าทดสอบ `atlas`/`atlas-codex` จริง ๆ ทดสอบ `TEAM`/`TEA`
+> = **fixture Tier 1 ในไฟล์ที่ทั้งเล่มบอกว่า Tier 1 มองไม่เห็น defect ที่ผูกกับตัวประธาน**
+> และตัวเลข "ผ่านครบ" ถูกประกาศทับมันไปแล้วหนึ่งรอบ (ที่ปรึกษาจับได้ ไม่ใช่ผม)
+> ตอนนี้ 5e ข้าม header ตรง ๆ + ยืนยันว่าได้ชื่อทีมจริง · **5f เป็น Tier 3** —
+> ตัวประธานคือ tmux session ที่รันอยู่จริง ไม่ใช่ string ที่ป้อนเข้าไป
 
 > 🔁 บรรทัดนี้เคยเขียนว่า "8 ข้อ" ซึ่ง**ผิดตั้งแต่ก่อนเพิ่ม 5e** (ของจริงตอนนั้นคือ 10) —
 > เลขถูกพิมพ์จากความจำ ไม่ได้นับจาก output · **ตัวเลขก็เป็น claim** เหมือนคำว่า "ตรวจแล้ว**
