@@ -122,8 +122,12 @@ bash $S procs codex                       # นับจาก /proc/*/exe — �
 bash $S procs_cmd 'bin/codex'             # แมตช์ cmdline แต่ตัดตัวเอง+บรรพบุรุษออก
 bash $S alive thclaws
 bash $S bootprobe "$ENGINE_CMD" 8 thclaws # เก็บ output เสมอ + บอก VERDICT
-bash $S teamclosed ajfon-research         # OPEN / GHOST-DIR / CLOSED / UNKNOWN — ไม่แตะ status
+bash $S teamclosed ajfon-research         # LIVE / OPEN / GHOST / CLOSED / UNKNOWN — ไม่แตะ status
 ```
+
+> ⚠️ **`selftest` สร้างและฆ่า tmux session จริง** (ข้อ 5f/5g · ชื่อ `team-zz-vc-*-$$`)
+> บนเครื่องที่แชร์กัน — มันเก็บกวาดเองและยืนยันว่าไม่มีตกค้าง แต่ควรรู้ก่อนรัน
+> `[verified 2026-08-04 · leftover = 0 ทุกครั้งที่รัน]`
 
 `selftest` ปัจจุบัน: **13 ข้อ ผ่านครบ · stderr 0 บรรทัด**
 `[verified 2026-08-04 · นับด้วย grep -cE '^[0-9]+[a-z]?\)' · เพิ่ม 5e + 5f + 5g (teamclosed)]`
