@@ -142,6 +142,72 @@ relay() {
   echo "SENT      $target  [delivered · ยังไม่ยืนยันว่า agent รับเข้า turn]"
 }
 
+# ── teamclosed <team> ───────────────────────────────────────────────────────
+# ตอบว่า "ทีมนี้ปิดจริงไหม" ไม่ใช่ "คำสั่ง status พูดว่าอะไร"
+#
+# 🏷️ ที่มา: ajfon แจ้ง 2026-08-02 ว่า `maw team status` ตอบ "team not found"
+#    ทั้งที่ `maw team list` ยังโชว์ทีมอยู่ ⇒ "อย่าใช้ status ยืนยันว่าปิด ใช้ list"
+#
+#    **repro บนเครื่องนี้แล้ว ได้คนละผล — และเจอของที่แย่กว่า**
+#    [verified 2026-08-04 · maw-rs v26.7.30-alpha.2017-17-g284ae4d (284ae4d)]
+#      · status vs list **ตรงกัน** ทั้ง 3 ทีมที่ลอง (atlas / teaching-media-cell / bug-fix-v1)
+#        ⇒ อาการที่ ajfon เจอ **ผูกกับ binary ของเขา ไม่ใช่กฎสากล** — เป็นรูปเดียวกับที่
+#          prism เตือน (กติกา team เปลี่ยนตาม binary · เช็ค `maw --version` ก่อนเสมอ)
+#      · **`maw team status <ทีมที่ไม่มีอยู่>` คืน rc=0** พิมพ์ "⚠ team not found"
+#        ลง **stdout** (ไม่ใช่ stderr) ⇒ `maw team status X && echo closed-ok` **โกหกเสมอ**
+#        และ `maw team status X >/dev/null` กลบหลักฐานทิ้งทั้งหมดโดยที่ rc ยังเขียว
+#        รูปเดียวกับ `maw hey` ที่รายงาน warning ไม่ใช่ error (golden rule 2026-08-01)
+#    ⇒ ข้อสรุปของ ajfon **ใช้ได้ด้วยเหตุผลที่แรงกว่าที่เขาให้ไว้**: ไม่ใช่เพราะ status
+#      ขัดกับ list แต่เพราะ **status ไม่มีช่องบอกความล้มเหลวเลย**
+#
+# ⚠️ ขอบเขต: ตอบเรื่อง **การมีอยู่ของทีมใน registry** เท่านั้น
+#    ไม่ได้ตอบว่า pane ตายหมดแล้วหรือยัง (นั่นคือคอลัมน์ STATUS/ZOMBIES ของ list)
+teamclosed() {
+  local t="${1:?usage: teamclosed <team-name>}"
+  binexists maw >/dev/null || { echo "UNKNOWN   ไม่มี maw เรียกได้ — ตอบไม่ได้ ไม่ใช่ปิด"; return 2; }
+
+  local lout lrc
+  lout=$(maw team list 2>&1); lrc=$?
+  # **output ว่าง/คำสั่งล้ม ต้องไม่ถูกอ่านว่า "ปิดแล้ว"** — นี่คือความพลาดที่ไฟล์นี้มีไว้กัน
+  if [ $lrc -ne 0 ] || [ -z "$lout" ]; then
+    echo "UNKNOWN   maw team list exit=$lrc / output ว่าง — ยังตอบไม่ได้ว่าปิด"; return 2
+  fi
+
+  # exact-match คอลัมน์แรก · ห้าม grep -F เพราะ 'atlas' จะไปโดน 'atlas-codex'
+  local row
+  row=$(printf '%s\n' "$lout" | sed 's/\x1b\[[0-9;]*m//g' \
+        | awk -v n="$t" 'NR>1 && $1==n {print; exit}')
+
+  # ผิวที่ 2 และ 3: ไดเรกทอรีค้างในสองสโตร์ (ajfon เจอผิวที่ 3 เพราะย้ายสโตร์แรกออกแล้ว
+  # list เปลี่ยนเป็น store=vault แทนที่จะหาย) — path มาจาก string ในตัว maw เอง
+  # ⚠️ vault เป็น path **เทียบ CWD** = vault ของ oracle ที่รันอยู่เท่านั้น
+  #    ถามถึงทีมของ oracle อื่น → ผิวนี้ตรวจไม่ถึง ต้องบอกออกมาตรง ๆ ไม่ใช่เงียบ
+  local ghosts="" vault_seen=""
+  [ -d "$HOME/.claude/teams/$t" ] && ghosts="$ghosts ~/.claude/teams/$t"
+  if [ -d "ψ/memory/mailbox/teams" ]; then
+    vault_seen=1
+    [ -d "ψ/memory/mailbox/teams/$t" ] && ghosts="$ghosts ψ/memory/mailbox/teams/$t"
+  fi
+
+  if [ -n "$row" ]; then
+    echo "OPEN      $t  ยังอยู่ใน maw team list"
+    printf '          %s\n' "$row"
+    return 1
+  fi
+  if [ -n "$ghosts" ]; then
+    echo "GHOST-DIR $t  ไม่อยู่ใน list แล้ว แต่ยังมีไดเรกทอรีค้าง:$ghosts"
+    echo "          (ย้ายเข้า archive ด้วย mv — ย้อนกลับได้ ต่างจาก delete)"
+    return 1
+  fi
+  if [ -n "$vault_seen" ]; then
+    echo "CLOSED    $t  ไม่อยู่ใน list · ไม่มี dir ค้างใน tool store + vault ของ CWD นี้"
+  else
+    echo "CLOSED    $t  ไม่อยู่ใน list · ไม่มี dir ค้างใน tool store"
+    echo "          [ผิว vault ตรวจไม่ถึง — CWD นี้ไม่มี ψ/memory/mailbox/teams/]"
+  fi
+  return 0
+}
+
 # ── selftest ────────────────────────────────────────────────────────────────
 # **ตัวสคริปต์เองก็ต้องถูกตรวจ** — นี่คือประเด็นทั้งหมดของไฟล์นี้
 selftest() {
@@ -180,6 +246,25 @@ selftest() {
   echo "5d) source พร้อม positional arg ต้องไม่ทำให้ dispatcher ยิง exit"
   local r5d; r5d=$(bash -c 'source '"$PWD"'/ψ/teams/scripts/verify-check.sh; echo SOURCED-OK' _ "ข้อความยาวที่ไม่ใช่ชื่อ fn" 2>&1)
   case "$r5d" in *SOURCED-OK*) ;; *) echo "   ✗ source แล้วเชลล์ตาย: $r5d"; fail=1 ;; esac
+  echo "5e) teamclosed: ทีมที่มีจริงต้องเป็น OPEN · ชื่อที่เป็นสตริงย่อยต้องไม่ติด"
+  if binexists maw >/dev/null 2>&1; then
+    local first; first=$(maw team list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk 'NR>1 && NF>1 {print $1; exit}')
+    if [ -n "$first" ]; then
+      teamclosed "$first" >/dev/null 2>&1 && { echo "   ✗ teamclosed บอกว่า '$first' ปิด ทั้งที่ list โชว์อยู่"; fail=1; }
+      # กับดัก substring: ตัดท้ายชื่อจริง 1 ตัว → ชื่อที่ไม่มีอยู่ แต่ grep -F จะติด
+      local sub="${first%?}"
+      if [ -n "$sub" ] && [ "$sub" != "$first" ]; then
+        teamclosed "$sub" >/dev/null 2>&1 || { echo "   ✗ teamclosed ติดกับดัก substring ที่ '$sub'"; fail=1; }
+      fi
+      # เอกสารบั๊กที่เป็นเหตุให้มีฟังก์ชันนี้ — ถ้าวันไหน maw แก้แล้ว เทสต์นี้จะดังให้รู้
+      maw team status "__no_such_team_$$__" >/dev/null 2>&1 \
+        || echo "   (หมายเหตุ: maw team status คืน rc!=0 กับทีมที่ไม่มีแล้ว — พฤติกรรมเปลี่ยนจาก 08-04)"
+    else
+      echo "   (maw team list ว่าง — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
+    fi
+  else
+    echo "   (ไม่มี maw — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
+  fi
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
@@ -194,7 +279,7 @@ selftest() {
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 
 case "${1:-}" in
-  binexists|procs|procs_cmd|alive|bootprobe|relay|selftest) "$@" ;;
-  "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | selftest" ;;
+  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|selftest) "$@" ;;
+  "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | teamclosed <team> | selftest" ;;
   *) echo "unknown fn: $1"; exit 2 ;;
 esac
