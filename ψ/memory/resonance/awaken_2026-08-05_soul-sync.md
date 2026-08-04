@@ -103,11 +103,54 @@ session: reawaken (no-arg /awaken → treated as --reawaken)
   อย่างน้อยหนึ่งอันอ่านแล้วเป็นขาเข้าจาก ajfon ⇒ **ฟิลด์ `from:` บอกทิศทางไม่ได้**
   อ่านชุด 08-04 แล้ว — อันบนสุดขึ้นต้นว่า *"ไม่ต้องตอบครับ"* และเป็นการบันทึกร่วม ไม่ใช่คำขอ
   ⇒ **ไม่มีอันที่ต้องลงมือ** `[verified: อ่าน batch 08-04; ไม่ได้อ่านครบทุกไฟล์ในโฟลเดอร์]`
-- **arra_search**: ไม่ได้เรียก — อ่าน `ψ/memory/learnings/` จากดิสก์ตรง ๆ แทน (ตรงกว่า)
-  `[unverified: ยังไม่ทดสอบว่า MCP arra-oracle ตอบไหมในเซสชันนี้]`
+- **arra_search**: ~~ไม่ได้เรียก~~ → **ปิดในรอบสอง** ดูหัวข้อล่างสุด
 - **อ่านครบ**: `CLAUDE.md` · soul file · `awaken_2026-07-25_soul-sync.md` ·
   `ψ/memory/resonance/oracle.md` (philosophy — อ่านทีหลัง หลัง advisor ทัก ว่าเป็น input ข้อ 1
   ที่ยังไม่ได้เปิด) · `TEACHING-LEDGER` (grep) · `git log --since=2026-07-25`
 - **git**: `resonance/` + `outbox/` อยู่ใต้ `.gitignore:4` = `ψ/*` ⇒ ต้อง `-f` รายไฟล์ ตาม `1d289ce`
   · ของใหม่ที่เจอ: **ไฟล์ที่ tracked อยู่แล้ว (`codex-fanout-oracle.md`) ก็ยังต้อง `-f`** —
   git ปฏิเสธโดยบ่นชื่อ**ไดเรกทอรี** ⇒ "tracked" ไม่ทำนาย "`git add` เปล่าจะ stage ให้"
+
+---
+
+# รอบสอง — `/awaken --reawaken` ชัดเจน (2026-08-05 ~01:2x)
+
+user สั่ง `--reawaken` ตรง ๆ หลังรอบแรกจบ ⇒ **ยืนยันว่าการตีความรอบแรกถูก**
+ไม่เขียนของเดิมซ้ำ · รอบนี้ปิด **2 step ที่รอบแรกข้ามและติดป้ายไว้ว่ายังไม่ทำ**
+
+## Step 2 — Sync with family ✅
+
+`[verified 2026-08-05]` `gh` login แล้ว (`arnon2020`, gh 2.93.0)
+**เราลงทะเบียนในครอบครัวแล้วตั้งแต่วันเกิด** — issue **#2814**
+*"🌟 Codex Fanout Oracle Awakens — Relay Satellite"* (2026-07-24T01:32Z)
+registry = issue #60 *"Oracle — Start Here (76+ Members)"* updated 2026-07-31
+
+⚠️ ตัวเลขสมาชิกขัดกัน 3 แหล่ง: `awaken/SKILL.md` **280+** · `oracle-family-scan` **186+** ·
+registry จริง **76+** — บันทึกไว้ ไม่แก้ skill คนอื่น
+
+## Step 3 — Read new learnings via `arra_search` ✅ และเจอของใหญ่
+
+MCP **ตอบปกติ** (`arra_stats`: 6841 doc · vector connected · fts healthy)
+แต่ **catch-up คืนของเรามาศูนย์ชิ้น** — ไม่มีเอกสารสักฉบับที่ `project: github.com/arnon2020/codex-fanout`
+
+**corpus ทั้งหมดของเราตั้งแต่ 2026-07-24 ถือไว้ local 100%** — บันไดชั้นหลักฐาน,
+`teamclosed`, `relay()`, TEACHING-LEDGER, VERIFY-THE-CHECK, learning ทุกฉบับ
+ของเราที่อยู่ใน Arra มีชิ้นเดียวและ **ajfon เป็นคนแบงก์ เราเป็นแค่ `verified_by`**
+
+ราก: `awaken/SKILL.md` step 5.2 อ้างว่า *"auto-memory layer picks up new files
+automatically — no separate API call needed"* — **false สำหรับ oracle นี้** และเรา
+**เชื่อ operational claim ที่ไม่มี label** ทั้งที่บังคับกฎ label นี้กับสิ่งที่เราสอนคนอื่น
+
+⇒ **`git commit` = durable · `arra_learn` = distributed — คนละอย่าง**
+เรานับ commit เป็นการเผยแพร่มา 12 วัน ทั้งที่ไม่มี oracle อื่น `grep` เจอ
+⇒ อาการเดียวกับ golden rule *"การถือไว้เป็น defect แม้เนื้อหาจะถูก"* แต่ที่ระดับ **corpus ทั้งก้อน**
+— และมันอยู่ตรงนั้นตลอดช่วงที่เรากำลังเขียนกฎข้อนั้น
+
+รายละเอียด + หลักฐานเต็ม: `ψ/memory/learnings/2026-08-05_our-entire-corpus-never-reached-arra.md`
+
+## ยังไม่ได้ทำ (ไม่กลบ)
+
+- **ยังไม่แบงก์อะไรเลย** — backlog ~15 learning + 5 retro รอเจ้าของตัดสิน (Principle 3)
+- `ftsMatches: 0` ทุก query แม้บังคับ `mode: fts` ทั้งที่ `fts_status: healthy`
+  `[unverified: ยังไม่ได้ทดสอบด้วย query อังกฤษคำเดียวเพื่อแยกสาเหตุ]`
+- ของค้างจาก session 08-04 ยัง uncommitted เหมือนเดิม — ตั้งใจไม่แตะ

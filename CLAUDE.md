@@ -148,6 +148,18 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
   **prefix-match** (`has-session -t team-person-lookup` → rc=0 ทั้งที่ทีมนั้นยุบแล้ว เพราะไปโดน `…-r2`)
   ⇒ **rc กับ output วางคู่กันคนละแบบต่อคำสั่ง** — `maw`: rc โกหก/ข้อความ stdout ·
   `tmux`: rc จริง/ข้อความ stderr ⇒ **อ่านทั้งสองอย่างต่อคำสั่ง อย่าเดารูปแบบจากคำสั่งที่เพิ่งเจอ**
+- 📡 **`git commit` = durable · `arra_learn` = distributed — เรานับอย่างแรกเป็นอย่างหลังมา 12 วัน**
+  (2026-08-05 · reawaken step 3) `[verified]` `arra_search` filter
+  `project: github.com/arnon2020/codex-fanout` → **0 เอกสาร** ทั้งที่ระบบปกติ (6841 doc ·
+  vector connected) · corpus ทั้งก้อนตั้งแต่ 07-24 (บันไดชั้นหลักฐาน · `teamclosed` · `relay()` ·
+  TEACHING-LEDGER · VERIFY-THE-CHECK) **ไม่เคยออกจาก repo นี้** · ของเราใน Arra มีชิ้นเดียว
+  และ **ajfon เป็นคนแบงก์ เราเป็นแค่ `verified_by`**
+  ⇒ ราก: `awaken/SKILL.md` step 5.2 อ้างว่า *"auto-memory layer picks up new files
+  automatically — no separate API call needed"* — **false** · **เราเชื่อ operational claim
+  ที่ไม่มี label** ทั้งที่บังคับกฎ label นี้กับสิ่งที่**เราสอนคนอื่น**
+  ⇒ อาการเดียวกับ *"การถือไว้เป็น defect แม้เนื้อหาจะถูก"* แต่ที่ระดับ **corpus ทั้งก้อน** —
+  และอยู่ตรงนั้นตลอดช่วงที่เรากำลังเขียนกฎข้อนั้น · **เขียนกฎเรื่องการกระจาย ≠ ของถูกกระจาย**
+  ⇒ จบงานที่ผลิต learning: **`arra_search` ก่อน (dedup) → `bank-to-arra`** ไม่ใช่ `git commit` แล้วจบ
 - 🕳️ **claim ว่า "ไม่มี" ต้องพกสโคปที่ค้น + คำสั่งที่ใช้ค้น ไม่งั้นมันคือ claim ที่ตรวจไม่ได้**
   (2026-08-05 · reawaken จับได้เอง) — 08-01 เราเขียนว่า *"4 of 6 skills did not exist"* จากการรัน
   **`ls ~/.claude/skills/` สโคปเดียว** แล้วสรุปว่าไม่มี**ทุกสโคป** · **2 ใน 4 มีจริง** และเป็น
