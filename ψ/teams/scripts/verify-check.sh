@@ -187,6 +187,12 @@ teamclosed() {
   local unreachable="" found="" rc_open=0
 
   # ── ผิว 1: tmux (ทีมจาก `up` โผล่ที่นี่ที่เดียว) ─────────────────────────
+  # 🧭 **ตัดสินใจโดยตั้งใจ**: session ที่ยังอยู่ = ยังไม่ปิด **แม้เหลือแต่ `_anchor`**
+  #    `maw team up` ทิ้ง window `_anchor` ไว้ซึ่งอยู่ทนกว่า worker ⇒ ทีมที่ worker ตายหมด
+  #    แต่ session ยังอยู่ จะได้ `LIVE` · **นี่คือคำตอบที่ต้องการ** เพราะคำถามคือ "ปิดหรือยัง"
+  #    และ session ที่ค้างคือเหตุผลที่แท้จริงที่จะยังไม่เรียกว่าปิด (ต้อง kill-session ก่อน)
+  #    ⚠️ แต่ **LIVE ไม่ได้แปลว่า worker มีงานทำ** — ajfon ข้อ 4: `up` ปลุก pane ได้โดย
+  #      ไม่ส่ง prompt เลย exit 0 preflight เขียว และ worker นั่งว่าง ⇒ ฟังก์ชันนี้ตอบไม่ได้
   if binexists tmux >/dev/null 2>&1; then
     local sess
     for sess in "$t" "team-$t"; do
@@ -195,6 +201,7 @@ teamclosed() {
         echo "LIVE      $t  tmux session '$sess' มีอยู่จริง ($nw windows)"
         tmux list-windows -t "=$sess" -F '          #{window_index}: #{window_name}' 2>/dev/null
         echo "          ⇒ ทีมจาก \`maw team up\` ไม่ลงทะเบียนใน store — list/status มองไม่เห็น"
+        echo "          [LIVE = 'session ยังอยู่' ไม่ใช่ 'worker ยังทำงาน' — ดูรายชื่อ window เอง]"
         return 1
       fi
     done
@@ -314,17 +321,25 @@ selftest() {
   else
     echo "   (ไม่มี maw — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
   fi
-  echo "5f) teamclosed ต้องเห็นทีมที่ live ใน tmux แต่ไม่อยู่ใน store (เคส maw team up)"
-  # ajfon 2026-08-04: `up` ไม่ลงทะเบียนใน store ⇒ เวอร์ชันที่ดูแต่ list ตอบ false-CLOSED
-  # **Tier 3**: ตัวประธานคือ session จริงที่รันอยู่ ไม่ใช่ fixture
+  echo "5f) teamclosed: วง CLOSED→LIVE→CLOSED บน session ที่สร้างเอง (ล้มได้จริงทั้งสองทิศ)"
+  # ⚠️ เวอร์ชันแรกของ 5f ยืนยันแค่ "ทีมที่ live ต้องไม่ถูกตอบ CLOSED" โดยเล็งไปที่ session
+  #    ของ ajfon ⇒ **มันล้มไม่ได้ขณะที่มันรัน** เพราะเงื่อนไขเดียวที่ทำให้ล้มคือ session หาย
+  #    ซึ่งเป็นเงื่อนไขเดียวกับที่ทำให้เทสต์ถูกข้าม (ที่ปรึกษาจับได้ · กติกา A1.1 ของไฟล์คู่มือ)
+  # ⇒ ตอนนี้สร้าง session ทิ้งของตัวเอง แล้ววัดสามจังหวะ — ตกได้ทั้งขาขึ้นและขาลง
   if binexists tmux >/dev/null 2>&1; then
-    local ls_out; ls_out=$(tmux list-sessions -F '#{session_name}' 2>/dev/null)
-    local tsess; tsess=$(printf '%s\n' "$ls_out" | grep -m1 '^team-' || true)
-    if [ -n "$tsess" ]; then
-      teamclosed "${tsess#team-}" >/dev/null 2>&1 \
-        && { echo "   ✗ teamclosed บอกว่า '${tsess#team-}' ปิด ทั้งที่ session '$tsess' รันอยู่"; fail=1; }
+    local ps="zz-vc-selftest-$$"
+    if tmux has-session -t "=team-$ps" 2>/dev/null; then
+      echo "   (ชื่อ probe ชนของที่มีอยู่ — ข้าม ไม่นับผ่าน/ตก)"
     else
-      echo "   (ไม่มี session ขึ้นต้น team- อยู่ตอนนี้ — ข้าม ไม่นับผ่าน/ตก)"
+      teamclosed "$ps" >/dev/null 2>&1 || { echo "   ✗ ก่อนสร้าง: ควรเป็น CLOSED"; fail=1; }
+      if tmux new-session -d -s "team-$ps" 2>/dev/null; then
+        teamclosed "$ps" >/dev/null 2>&1 && { echo "   ✗ หลังสร้าง session: ยังตอบ CLOSED = false-CLOSED"; fail=1; }
+        tmux kill-session -t "=team-$ps" 2>/dev/null
+        teamclosed "$ps" >/dev/null 2>&1 || { echo "   ✗ หลังฆ่า session: ควรกลับเป็น CLOSED"; fail=1; }
+        tmux has-session -t "=team-$ps" 2>/dev/null && { echo "   ✗ session probe ตกค้าง"; fail=1; }
+      else
+        echo "   (สร้าง tmux session ไม่ได้ — ข้าม ไม่นับผ่าน/ตก)"
+      fi
     fi
   else
     echo "   (ไม่มี tmux — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
