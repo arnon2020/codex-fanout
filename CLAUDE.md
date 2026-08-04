@@ -149,11 +149,17 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
   ⇒ **rc กับ output วางคู่กันคนละแบบต่อคำสั่ง** — `maw`: rc โกหก/ข้อความ stdout ·
   `tmux`: rc จริง/ข้อความ stderr ⇒ **อ่านทั้งสองอย่างต่อคำสั่ง อย่าเดารูปแบบจากคำสั่งที่เพิ่งเจอ**
 - 📡 **`git commit` = durable · `arra_learn` = distributed — เรานับอย่างแรกเป็นอย่างหลังมา 12 วัน**
-  (2026-08-05 · reawaken step 3) `[verified]` `arra_search` filter
-  `project: github.com/arnon2020/codex-fanout` → **0 เอกสาร** ทั้งที่ระบบปกติ (6841 doc ·
-  vector connected) · corpus ทั้งก้อนตั้งแต่ 07-24 (บันไดชั้นหลักฐาน · `teamclosed` · `relay()` ·
-  TEACHING-LEDGER · VERIFY-THE-CHECK) **ไม่เคยออกจาก repo นี้** · ของเราใน Arra มีชิ้นเดียว
-  และ **ajfon เป็นคนแบงก์ เราเป็นแค่ `verified_by`**
+  (2026-08-05 · reawaken step 3) `[verified: arra_search "teamclosed" mode:fts → ftsMatches: 0]`
+  — คำที่เราประดิษฐ์เอง มีอยู่ที่เดียวในโลกคืองานเรา · เทียบ `"codex-fanout"` fts → **16 hit
+  ทุกอันเป็นของ oracle อื่นที่พูดถึงเรา** · corpus ทั้งก้อนตั้งแต่ 07-24 (บันไดชั้นหลักฐาน ·
+  `teamclosed` · `relay()` · TEACHING-LEDGER · VERIFY-THE-CHECK) **ไม่เคยออกจาก repo นี้**
+  ของเราใน Arra มีชิ้นเดียว และ **ajfon เป็นคนแบงก์ เราเป็นแค่ `verified_by`**
+  ⚠️ **probe แรกของผมผิดเครื่องมือ** — กรอง `project: .../codex-fanout` ได้ 0 แล้วสรุปเลย
+  ทั้งที่ **`project:` ติดตาม*ผู้แบงก์* ไม่ใช่เจ้าของเรื่อง** (doc ของเราถูกแบงก์ใต้
+  `project: .../ajfon-teams`) ⇒ filter นั้นตอบคำถามนี้ไม่ได้ตั้งแต่แรก · advisor จับ
+  ⇒ **claim ทางลบต้องยิงด้วย token ที่โดดที่สุดใน `mode: fts` ไม่ใช่ filter หรือประโยคยาว**
+  ⇒ `[verified]` **FTS ไม่ได้พัง** — `"shopee"` fts → 6 hit ใน 4ms · ที่ได้ 0 คือ**query ยาวหลายคำ
+  /ภาษาไทย** ตกไปใช้ vector หมด ⇒ **dedup ก่อนแบงก์ ต้อง probe ด้วย token เดี่ยว**
   ⇒ ราก: `awaken/SKILL.md` step 5.2 อ้างว่า *"auto-memory layer picks up new files
   automatically — no separate API call needed"* — **false** · **เราเชื่อ operational claim
   ที่ไม่มี label** ทั้งที่บังคับกฎ label นี้กับสิ่งที่**เราสอนคนอื่น**
