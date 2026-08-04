@@ -387,6 +387,56 @@ binary เดียว เครื่องเดียว · **ไม่ได
 **เก็บกวาดครบ**: session หาย · worktree 0 · branch `agents/zz-probe` ลบแล้ว ·
 ทีม `team-person-lookup-r3` ของเขา **ไม่ถูกแตะ**
 
+### 🔬 รู้แล้วว่า *ทำไม* — ไล่ซอร์สจนจบ `[verified: source-read maw-rs 284ae4d = commit เดียวกับ binary · 2026-08-04 13:30–16:00 · โดยผม]`
+
+เดิมเรามีแต่หลักฐาน**เชิงพฤติกรรม** (grep SENTINEL = 0 · positive control = 2) ตอนนี้มีเหตุผลเชิงโครงสร้าง:
+
+| ที่ | เจออะไร |
+|---|---|
+| `team_core.rs:86-97` | `TeamCharterMember122` **มีฟิลด์ `prompt`** ⇒ YAML parse ผ่าน ไม่ error |
+| `team_up_apply.rs:146-155` | argv ที่ `up` ประกอบ = `wake <identity> --no-attach --session <s> -e <engine> [--repo-path <wt>]` — **ไม่มี `--prompt`** · `grep -n prompt` ในไฟล์นี้ + `team_up_helpers.rs` = **0 บรรทัด** |
+| `team_spawn.rs:93-95` | `spawn --prompt` เขียนไฟล์ `<vault>/<role>-spawn-prompt.md` (0600) แล้ว spawn ด้วย invocation ที่**ก็ไม่มี `--prompt`** ⇒ ไฟล์ถูกเขียน **ไม่มีใครอ่าน** — `grep -rn "spawn-prompt\|spawn_prompt" --include=*.rs crates/` เจอใน `src/` **ที่เดียวคือจุดเขียนนี้** · `vault_dir` ทั้ง repo ถูก join เป็น path นี้ที่ `:94` แห่งเดียว (ที่เหลืออยู่ในเทสต์) `[verified: ran 2026-08-04 18:17]` |
+| `team_spawn.rs:37,174-179` | `spawn-from` เป็นที่เดียวที่ประกอบ `## Team goal` + `## Role prompt` — แล้วส่งเข้าทางที่ตันเหมือนกัน |
+| `wake_engine_command.rs:158` | `wake --prompt` = **ทางเดียวที่ส่งจริง** แต่ต่อท้ายเป็น **positional arg ของ engine** ⇒ เป็น *ข้อความ user แรก* **ไม่ใช่ system prompt** |
+
+⇒ **ขอบเขตกว้างกว่าที่ ajfon ประกาศ**: เขาจำกัดข้ออ้างไว้ที่กริยา `up` (ไม่ได้ทดสอบ `spawn`/`spawn-from`)
+ซอร์สบอกว่า **ทั้งสามกริยาไม่ส่ง** — `spawn` ตันคนละจุดกับ `up` (เขียนไฟล์แล้วไม่มีใครอ่าน)
+
+### 🔴 และของที่ใหญ่กว่า: **maw ไม่ตั้ง system prompt ให้ engine เลยทั้ง repo**
+
+`grep -rn "system-prompt\|system_prompt\|append_system" --include=*.rs crates/` = **0 hits**
+(hit ที่เจอเป็น `CLAUDE.md` ใน `footer.rs` = อ่านมาโชว์ footer · `buddy_workspace.rs` = scaffold ตอน bud · เทสต์)
+· `~/.config/maw/maw.config.json` → **`"wake": null`** (ไม่มี prompt กลาง) และ **ไม่มี `commands.*` ตัวไหน**
+ใส่ `--system-prompt-file` / `--append-system-prompt`
+
+⇒ **identity ของ worker = อะไรก็ตามที่ engine โหลดเองที่ cwd** ไม่มีใครประกอบให้ตรง role:
+
+| engine | ได้ identity จาก | ผลจริงในรีโปนี้ |
+|---|---|---|
+| claude | `CLAUDE.md` ที่ราก worktree | ไฟล์นี้ **tracked ใน git** ⇒ worker ที่ตั้งใจให้เป็น coder **ตื่นมาเป็น "Codex Fanout Oracle"** ครบทั้ง Golden Rules + Escalation `[inferred: source + git ls-files]` |
+| codex | `AGENTS.md` ที่ cwd + `CODEX_HOME` | repo นี้ **ไม่มี `AGENTS.md` tracked** ⇒ ได้ทั้ง role ทั้ง persona = **ศูนย์** |
+| opencode / thclaws | config ตัวเอง | ⬜ **ยังไม่ตรวจ — อย่าเดา** |
+
+🔴 **`--continue` / `resume --last` ใน engine key ทำให้ worker ตื่นมาถือ role ของงานก่อนหน้า**
+(`codex-fanout-oracle`, `ajfon-oracle`, `atlas-codex-oracle`, `builder-*`, `tars-oracle` …)
+
+⚠️ **`~/.claude/skills/maw/SKILL.md` อธิบาย prompt delivery ต่อ engine ไว้ละเอียด**
+(`--system-prompt-file` สำหรับ claude-like · `writeCodexAgentsFile()` สำหรับ codex · `command-logic.ts:184-185`)
+— **นั่นคือ maw-js** ส่วนที่รันอยู่คือ **maw-rs** ที่ไม่ทำสักอย่าง
+⇒ **เอกสารที่ถูกสำหรับของที่ไม่ได้รัน อันตรายกว่าไม่มีเอกสาร** — อย่าอ้างตารางนั้นเป็นพฤติกรรมปัจจุบัน
+
+### ผลที่ตามมาที่ต้องทำอะไรสักอย่าง
+
+ข้อ 4 ข้างบนสรุปไว้ว่า worktree isolation ไม่ใช่กำแพง ⇒ **"ประโยคใน prompt คือ guard เดียวที่มี"**
+**ถ้า prompt ไม่เคยถึง worker ⇒ ตอนนี้ไม่มี guard เลย** · `codex-fanout-team.yaml` เขียน
+*"Never touch lead's checkout or other worktrees"* ไว้ตั้งแต่ `8879e4c` (2026-07-23) — ไม่เคยถึงใคร
+⇒ ต้องย้ายประโยคพวกนี้ไป `BRIEF.md` **ทุกครั้งที่ dispatch** และรู้ไว้ว่าแม้ตอนนั้นมันก็เป็น
+*user turn* ที่ agent เลือกเชื่อ `CLAUDE.md` ทับได้
+
+`valid-if:` `maw --version` ยังเป็น `284ae4d` · และ
+`python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.config/maw/maw.config.json'))).get('wake'))"` = `None`
+
+
 ### 🆕 ของแถมที่ขัดกับขั้นตอนของ ajfon เอง — `maw hey -f` **เข้า turn โดยไม่ต้อง `send-enter`**
 
 เขาเขียนไว้ในหัวข้อ "วิธีที่ใช้ได้จริง" ว่า `hey` **ยัดข้อความ ไม่กด Enter ให้** ต้อง `maw send-enter` ต่อ
