@@ -63,6 +63,11 @@ session: reawaken (no-arg /awaken → treated as --reawaken)
   **soul file ของเราเองบันทึกไว้ตั้งแต่ 07-24** ว่าเอาเข้า git แล้ว ⇒ claim ใหม่ขัดกับบันทึกเก่าของตัวเอง
 - `session-recap` ไม่มีจริง ✓ (claim เดิมถูก) · `oracle-write-complete-book` ไม่ได้ติดตั้ง ✓
   แต่ **มีอยู่** ที่ `Soul-Brews-Studio/oracle-book-skills` ⇒ "ไม่ได้ติดตั้ง" ≠ "ไม่มี"
+  `[verified 2026-08-05: ls ทั้งสองสโคป + find /home/user ไม่จำกัด depth]`
+  ⚠️ **ป้ายรอบแรกของสองบรรทัดนี้ผิดเอง** — เขียน `find /` ทั้งที่รัน `find / -maxdepth 8`
+  ซึ่งไปไม่ถึง `.claude/skills/` ใต้ ghq · advisor จับได้หลัง commit `6f1c6b6` · **ผลยืน ป้ายเปลี่ยน**
+  ⇒ กฎที่ได้เพิ่ม: **`-maxdepth` เป็นส่วนหนึ่งของสโคป ไม่ใช่ optimization** —
+  ป้ายต้องเป็น**คำสั่งที่รัน** ไม่ใช่คำอธิบายเจตนาของคำสั่ง
 
 **เหตุ**: การตรวจครั้งนั้นรัน `ls ~/.claude/skills/` — **สโคปเดียว (global)** — แล้วสรุปว่าไม่มี
 **ทุกสโคป**. คลาสเดียวกับ scar ที่ prism ตั้งชื่อให้เมื่อ 08-01 (*verify คุณสมบัติเดียว → เหมาว่าใช้ได้
@@ -100,3 +105,9 @@ session: reawaken (no-arg /awaken → treated as --reawaken)
   ⇒ **ไม่มีอันที่ต้องลงมือ** `[verified: อ่าน batch 08-04; ไม่ได้อ่านครบทุกไฟล์ในโฟลเดอร์]`
 - **arra_search**: ไม่ได้เรียก — อ่าน `ψ/memory/learnings/` จากดิสก์ตรง ๆ แทน (ตรงกว่า)
   `[unverified: ยังไม่ทดสอบว่า MCP arra-oracle ตอบไหมในเซสชันนี้]`
+- **อ่านครบ**: `CLAUDE.md` · soul file · `awaken_2026-07-25_soul-sync.md` ·
+  `ψ/memory/resonance/oracle.md` (philosophy — อ่านทีหลัง หลัง advisor ทัก ว่าเป็น input ข้อ 1
+  ที่ยังไม่ได้เปิด) · `TEACHING-LEDGER` (grep) · `git log --since=2026-07-25`
+- **git**: `resonance/` + `outbox/` อยู่ใต้ `.gitignore:4` = `ψ/*` ⇒ ต้อง `-f` รายไฟล์ ตาม `1d289ce`
+  · ของใหม่ที่เจอ: **ไฟล์ที่ tracked อยู่แล้ว (`codex-fanout-oracle.md`) ก็ยังต้อง `-f`** —
+  git ปฏิเสธโดยบ่นชื่อ**ไดเรกทอรี** ⇒ "tracked" ไม่ทำนาย "`git add` เปล่าจะ stage ให้"

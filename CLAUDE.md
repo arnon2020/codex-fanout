@@ -222,7 +222,12 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 - `recap` — mine raw transcript JSONL for what actually happened (was listed as `session-recap`)
 - `awaken` — this ritual
 
-**Genuinely absent** — `[verified 2026-08-05: find / across both scopes]`
+**Genuinely absent** — `[verified 2026-08-05: ls ทั้งสองสโคป + find /home/user ไม่จำกัด depth]`
+
+> ⚠️ ป้ายเดิมของบรรทัดนี้เขียนว่า `find / across both scopes` — **คำสั่งที่รันจริงคือ
+> `find / -maxdepth 8`** ซึ่ง**ไปไม่ถึง** `.claude/skills/` ใต้ ghq (ลึกกว่า 8) ⇒ สโคปที่อ้าง
+> กว้างกว่าที่รันจริง **ในย่อหน้าที่แก้ความผิดพลาดเรื่องสโคปพอดี** · advisor จับได้ · รันใหม่ด้วย
+> `ls` ทั้งสองที่ + `find /home/user` ไม่จำกัด depth → **ผลเดิมยืน** แต่ป้ายเปลี่ยนตามคำสั่งที่รันจริง
 
 - `session-recap` — nowhere on disk. Renamed to `recap`. The 08-01 claim was **right**.
 - `oracle-write-complete-book` — **not installed for this oracle** (correct), but it is **not
