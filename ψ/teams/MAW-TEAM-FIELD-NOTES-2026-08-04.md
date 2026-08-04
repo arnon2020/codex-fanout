@@ -370,5 +370,40 @@ binary เดียว เครื่องเดียว · **ไม่ได
 `valid-if:` `git -C <ajfon-teams> show 8dd52bd --stat` (fixture ยังอยู่ไหม — ตั้งใหม่ได้ใน 2 นาที
 โดยไม่ต้องมี ajfon และไม่ต้องรอ session ไหนมีชีวิต)
 
-⬜ **ผมยังไม่ได้รันเอง** — ค้างที่คำตัดสินของ arnon ว่าจะให้ `up` ทีมจริงในเซสชันนี้ไหม
-   (ajfon บอกว่า "ไม่ต้องขอ arnon เพิ่ม" — **ข้อนั้นไม่ใช่ของ peer ตัดสิน** ดูกฎ D5.3 ของเขาเอง)
+### ✅ ผมรันเองแล้ว — ป้ายเปลี่ยนเป็น `[verified]`
+
+`[verified 2026-08-04 · โดยผม · maw-rs v26.7.30-alpha.2017-17-g284ae4d · arnon อนุมัติให้รัน]`
+(ajfon บอกว่า "ไม่ต้องขอ arnon เพิ่ม" — **ข้อนั้นไม่ใช่ของ peer ตัดสิน** ดูกฎ D5.3 ของเขาเอง
+ผมถามแล้วได้ไฟเขียว จึงรัน)
+
+| ขั้น | ผลของผม | ตรงกับ ajfon ไหม |
+|---|---|---|
+| `maw team up zz-probe-up-prompt --only probe` | `probe missing → fresh wake` · **exit 0** ไม่มี error | ✅ |
+| engine ที่ขึ้นจริง | **Claude Code v2.1.221** (banner เต็ม) — ไม่ใช่ fallback | ✅ |
+| cwd ของ pane | `…/ajfon-teams/workers/zz-probe/probe` | ✅ |
+| **`grep -c SENTINEL` หลัง `up`** | **0** ⇐ *ข้ออ้างหลัก ยืนยัน* | ✅ |
+| **ควบคุมทางบวก** `maw hey -f` แล้ว grep | **2** ⇒ เลข 0 คือ *ไม่มี* ไม่ใช่ *grep พัง* | ✅ |
+
+**เก็บกวาดครบ**: session หาย · worktree 0 · branch `agents/zz-probe` ลบแล้ว ·
+ทีม `team-person-lookup-r3` ของเขา **ไม่ถูกแตะ**
+
+### 🆕 ของแถมที่ขัดกับขั้นตอนของ ajfon เอง — `maw hey -f` **เข้า turn โดยไม่ต้อง `send-enter`**
+
+เขาเขียนไว้ในหัวข้อ "วิธีที่ใช้ได้จริง" ว่า `hey` **ยัดข้อความ ไม่กด Enter ให้** ต้อง `maw send-enter` ต่อ
+**ผมไม่ได้เรียก `send-enter` เลย** แล้ว capture ได้:
+
+```
+15:❯ [local:codex-fanout] SENTINEL-7Q4X-UP-PROMPT-DELIVERED
+17:● Sentinel received: SENTINEL-7Q4X-UP-PROMPT-DELIVERED (via local:codex-fanout). …
+```
+
+บรรทัดที่ 17 คือ **agent ตอบด้วยเนื้อหา** ⇒ **หลักฐานว่ารับเข้า turn จริง** ซึ่งเป็นสิ่งที่
+`delivered` พิสูจน์ไม่ได้มาตลอด — และเป็นเกณฑ์ที่เราตกลงกันเองว่าเป็นตัวเดียวที่ใช้ได้
+
+🏷️ `[verified: สังเกตได้จริง 1 ครั้ง]` · **ขอบเขต**: engine เดียว (`sage-claude-oracle` =
+Claude Code) · **n=1** · ผม **kill session ไปแล้วก่อนไล่ต่อ** ⇒ ยังแยกไม่ออกว่าเป็นเพราะ
+`hey` เวอร์ชันนี้กด Enter เอง หรือ engine auto-submit ⇒ **ต้องรันใหม่ถึงจะตอบได้**
+⇒ ไม่ล้มขั้นตอนของ ajfon ทั้งอัน — `send-enter` ยังอาจจำเป็นกับ engine อื่น
+   (`relay()` ของผมเรียก `send-enter` อยู่แล้ว จึงไม่ได้รับผลกระทบทางลบ)
+
+`valid-if:` `git -C ~/ghq/github.com/arnon2020/ajfon-teams show 8dd52bd --stat` (fixture ยังอยู่ไหม)
