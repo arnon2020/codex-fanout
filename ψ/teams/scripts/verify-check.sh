@@ -194,6 +194,13 @@ teamclosed() {
   #    ⚠️ แต่ **LIVE ไม่ได้แปลว่า worker มีงานทำ** — ajfon ข้อ 4: `up` ปลุก pane ได้โดย
   #      ไม่ส่ง prompt เลย exit 0 preflight เขียว และ worker นั่งว่าง ⇒ ฟังก์ชันนี้ตอบไม่ได้
   if binexists tmux >/dev/null 2>&1; then
+    # 🔑 `-t "=..."` บังคับ exact — **ไม่ใช่การกันเคสสมมติ** [ajfon แจ้ง + ผมทำซ้ำ 2026-08-04]
+    #    `has-session -t team-person-lookup` คืน **rc=0** ทั้งที่ทีมนั้นยุบไปแล้ว
+    #    เพราะ prefix-match กับ `team-person-lookup-r2` ⇒ **false-ALIVE ของจริงบนเครื่องนี้**
+    #    ⚠️ และคู่ rc/stream ที่นี่ **ตรงข้ามกับ `maw team status`**:
+    #       tmux: rc พูดความจริง · ข้อความอยู่ **stderr**
+    #       maw : rc **โกหก** (0 เสมอ) · ข้อความอยู่ **stdout**
+    #    ⇒ **อ่านทั้ง rc และ output ต่อคำสั่ง อย่าเดารูปแบบจากคำสั่งอื่น** (ajfon ตั้งข้อสังเกต)
     local sess
     for sess in "$t" "team-$t"; do
       if tmux has-session -t "=$sess" 2>/dev/null; then
@@ -340,6 +347,26 @@ selftest() {
       else
         echo "   (สร้าง tmux session ไม่ได้ — ข้าม ไม่นับผ่าน/ตก)"
       fi
+    fi
+  else
+    echo "   (ไม่มี tmux — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
+  fi
+  echo "5g) teamclosed ต้องไม่ติด tmux prefix-match (false-ALIVE จากทีมชื่อยาวกว่า)"
+  # 🔴 เคสจริงบนเครื่องนี้ [ajfon แจ้ง 2026-08-04 · ผมทำซ้ำเอง · tmux 3.4]:
+  #      tmux has-session -t team-person-lookup    → rc=0  ทั้งที่ทีมนั้นถูกยุบไปแล้ว
+  #      tmux has-session -t =team-person-lookup   → rc=1  (ข้อความลง **stderr**)
+  #    เพราะรูปเปล่าไป prefix-match กับ team-person-lookup-r2 ของรอบถัดไป
+  #    ⇒ **false-ALIVE** กับธรรมเนียมชื่อ <team> / <team>-r2 ที่เราใช้กันเองอยู่แล้ว
+  #    เทสต์นี้มีไว้กันคนถัดไป (รวมทั้งผม) มาลบ "=" ทิ้งเพราะคิดว่าไม่จำเป็น
+  if binexists tmux >/dev/null 2>&1; then
+    local pb="zz-vc-prefix-$$"
+    if tmux new-session -d -s "team-${pb}-r2" 2>/dev/null; then
+      teamclosed "$pb" >/dev/null 2>&1 || { echo "   ✗ '$pb' ไม่ควร LIVE — ติด prefix-match ของ '${pb}-r2'"; fail=1; }
+      teamclosed "${pb}-r2" >/dev/null 2>&1 && { echo "   ✗ '${pb}-r2' ควร LIVE"; fail=1; }
+      tmux kill-session -t "=team-${pb}-r2" 2>/dev/null
+      tmux has-session -t "=team-${pb}-r2" 2>/dev/null && { echo "   ✗ session probe ตกค้าง"; fail=1; }
+    else
+      echo "   (สร้าง tmux session ไม่ได้ — ข้าม ไม่นับผ่าน/ตก)"
     fi
   else
     echo "   (ไม่มี tmux — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"

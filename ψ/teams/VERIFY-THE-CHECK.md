@@ -52,6 +52,8 @@ string ตรง ≠ ไฟล์มี · ไฟล์มี ≠ รันไ�
 | ทีมปิดแล้วจริงไหม | `maw team status <t>` แล้วดู exit / เชื่อคำว่า `team not found` | `verify-check.sh teamclosed <t>` — **tmux ก่อน** แล้วค่อย `list` + dir ค้าง 3 ผิว | **`maw team status <ทีมที่ไม่มีอยู่> คืน rc=0`** พิมพ์ `⚠ team not found` ลง **stdout** ⇒ `status X >/dev/null 2>&1 && echo CLOSED` **พิมพ์ CLOSED จริง** `[verified 2026-08-04 · maw-rs v26.7.30-alpha.2017-17-g284ae4d · ajfon ทำซ้ำยืนยัน]` · ajfon เจอจากอีกด้าน (status ขัด list) บน binary ของเขา — **อาการต่างกัน ข้อสรุปเดียวกัน** |
 | ทีมปิดแล้วจริงไหม **(ทีมจาก `maw team up`)** | `maw team list` อย่างเดียว | **ต้องดู tmux ด้วย** — `tmux has-session -t "=<name>"` และ `"=team-<name>"` | 🔴 **false-CLOSED บนทีมที่กำลังรัน** — `maw team up` เป็น charter-driven reconciliation **ไม่ลงทะเบียนใน tool store** ⇒ `list` ไม่เห็นทีมทั้งประเภท · `list \| grep -c person-lookup` = **0** ขณะที่ `tmux list-windows` = **4 windows** และ worker commit ไปแล้ว 3 ก้อน `[ajfon แจ้ง + ผมทำซ้ำเอง 2026-08-04]` · `has-session` rc: มี=**0** ไม่มี=**1** `[ผมทดสอบเอง — ajfon บอกตรงว่าเขายังไม่ได้ทดสอบให้]` |
 | ผิวตรวจ "ไม่เจอ" แปลว่าอะไร | ไม่มีไดเรกทอรี → ตอบ `UNKNOWN` ไปหมด | แยก **"ไม่มี" (ตรวจแล้วไม่เจอ)** ออกจาก **"ตรวจไม่ได้" (ไบนารีหาย)** | เวอร์ชันกลางทางของ `teamclosed` ตอบ `UNKNOWN` ทุกเคสเพราะ CWD ไม่มี `.maw/teams/` ⇒ **ตัวตรวจที่ไม่มีวันตอบ CLOSED = ตัวตรวจที่ไม่มีใครเรียก** ซึ่งพังแบบเดียวกับกฎที่ไม่มีใครอ่าน |
+| session ของทีมยังอยู่ไหม | `tmux has-session -t "team-$t"` | `tmux has-session -t "=team-$t"` (`=` = exact) | 🔴 **false-ALIVE สดบนเครื่องนี้** — `has-session -t team-person-lookup` คืน **rc=0** ทั้งที่ทีมนั้นยุบไปแล้ว เพราะ **prefix-match** กับ `team-person-lookup-r2` ของรอบถัดไป ⇒ ธรรมเนียมชื่อ `<team>` / `<team>-r2` ที่เราใช้กันเองทำให้เคสนี้เกิดเองอยู่แล้ว `[ajfon แจ้ง + ผมทำซ้ำเอง 2026-08-04 · tmux 3.4 · n=1 ไม่ได้ข้าม version]` |
+| **rc กับ output อันไหนพูดจริง** | เดารูปแบบจากคำสั่งอื่นที่เพิ่งเจอ | **อ่านทั้งสองอย่างต่อคำสั่ง** | `maw team status`: rc **โกหก** (0 เสมอ) ข้อความอยู่ **stdout** · `tmux has-session -t "=…"`: rc **พูดจริง** ข้อความอยู่ **stderr** ⇒ **สองคำสั่งในงานเดียวกัน วางคู่ rc/stream กลับด้านกัน** — ตัวตรวจที่เขียนโดยยึดรูปแบบเดียวจะพังกับอีกอัน `[ajfon ตั้งข้อสังเกต 2026-08-04]` |
 | ทีมชื่อนี้มีไหม (เทียบชื่อ) | `maw team list \| grep -qF "$t"` | exact-match คอลัมน์แรก (`awk '$1==n'`) | `grep -F atlas` ติด **`atlas-codex`** ด้วย — ในลิสต์นี้มี 3 ชื่อที่เป็นสตริงย่อยของกันและกัน |
 
 ---
@@ -123,8 +125,12 @@ bash $S bootprobe "$ENGINE_CMD" 8 thclaws # เก็บ output เสมอ + �
 bash $S teamclosed ajfon-research         # OPEN / GHOST-DIR / CLOSED / UNKNOWN — ไม่แตะ status
 ```
 
-`selftest` ปัจจุบัน: **12 ข้อ ผ่านครบ · stderr 0 บรรทัด**
-`[verified 2026-08-04 · นับด้วย grep -cE '^[0-9]+[a-z]?\)' · เพิ่ม 5e + 5f (teamclosed)]`
+`selftest` ปัจจุบัน: **13 ข้อ ผ่านครบ · stderr 0 บรรทัด**
+`[verified 2026-08-04 · นับด้วย grep -cE '^[0-9]+[a-z]?\)' · เพิ่ม 5e + 5f + 5g (teamclosed)]`
+
+**5g มี negative control จริง** `[verified 2026-08-04]` — คัดลอกสคริปต์ แล้ว**ถอด `=` ออกจริง**
+บนสำเนา → `SELFTEST FAILED` ที่ 5g พร้อมชื่อ session ที่ติดกับดัก · ของจริงยัง `SELFTEST OK` ·
+ไม่มี session ตกค้าง ⇒ **Tier 2 ตามตารางด้านล่าง** (สภาพผิดจริงบนตัวประธานที่ถูกแทน)
 
 > ⚠️ **5e เวอร์ชันแรกเล็งผิดตัวประธาน** — `awk NR>1` ข้ามแค่บรรทัดว่าง ⇒ ได้ **header row `TEAM`**
 > กับดัก substring ที่โฆษณาว่าทดสอบ `atlas`/`atlas-codex` จริง ๆ ทดสอบ `TEAM`/`TEA`
