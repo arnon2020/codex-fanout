@@ -148,6 +148,16 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
   **prefix-match** (`has-session -t team-person-lookup` → rc=0 ทั้งที่ทีมนั้นยุบแล้ว เพราะไปโดน `…-r2`)
   ⇒ **rc กับ output วางคู่กันคนละแบบต่อคำสั่ง** — `maw`: rc โกหก/ข้อความ stdout ·
   `tmux`: rc จริง/ข้อความ stderr ⇒ **อ่านทั้งสองอย่างต่อคำสั่ง อย่าเดารูปแบบจากคำสั่งที่เพิ่งเจอ**
+- 🕳️ **claim ว่า "ไม่มี" ต้องพกสโคปที่ค้น + คำสั่งที่ใช้ค้น ไม่งั้นมันคือ claim ที่ตรวจไม่ได้**
+  (2026-08-05 · reawaken จับได้เอง) — 08-01 เราเขียนว่า *"4 of 6 skills did not exist"* จากการรัน
+  **`ls ~/.claude/skills/` สโคปเดียว** แล้วสรุปว่าไม่มี**ทุกสโคป** · **2 ใน 4 มีจริง** และเป็น
+  **project-local ใน repo นี้เอง** (`codex-lead` `8879e4c` · `oracle-team` `eca78eb`) —
+  **โหลดอยู่ใน session list ขณะที่ไฟล์บอกว่าไม่มี** · `codex-setup.ts` ที่เขียนว่า missing ก็อยู่ใน git
+  และ **soul file ของเราบันทึกไว้เองตั้งแต่ 07-24**
+  ⇒ นี่คือ scar *"verify คุณสมบัติเดียว → เหมาว่าทั้งหมด"* **ชี้กลับทิศ** — และมันรอดสายตาเพราะ
+  **การบอกว่าตัวเองไม่มีของ ดูถ่อมตัว ไม่ดูเหมือน overclaim**
+  ⇒ ก่อนเขียนว่า skill ไม่มี: **`ls ~/.claude/skills/ .claude/skills/` — สองที่เสมอ**
+  ⇒ **"ไม่ได้ติดตั้ง" ≠ "ไม่มีอยู่"** — สองสถานะนี้พาไปคนละทางแก้ (หาทางอื่น vs `git clone` แล้วจบ)
 - **คำสั่งของเจ้าของงานที่ขัดกับคำตัดสินที่ยังยืนอยู่ → ต้องบอกก่อนลงมือ ไม่ใช่หลังลงมือ**
   (ajfon D5.3, 2026-08-03 · เกิดจากผมเอง: arnon สั่งสลับ verifier เป็น zai ตอน 22:18 ทั้งที่ ajfon
   ตัดสิน D3 ปฏิเสธไป 21:50 — ผมรู้แต่ทำเลย) · **เจ้าของยังเป็นคนตัดสินเหมือนเดิม แค่ตัดสินโดยรู้ว่า
@@ -185,18 +195,40 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 
 ## Installed Skills
 
-> Verified on disk 2026-08-01 (`ls ~/.claude/skills/`). **4 of 6 previously listed here did not
-> exist** — `codex-lead`, `oracle-team`, `oracle-write-complete-book`, `session-recap`. Corrected
-> below. Anything still referencing the missing ones (incl. `CODEX-TEAM-BOOTUP.md`) is stale.
+> ⚠️ **CORRECTION 2026-08-05 (reawaken)** — the 2026-08-01 note here said *"4 of 6 did not exist"*.
+> **2 of those 4 exist and always did.** The 08-01 check ran `ls ~/.claude/skills/` only — **global
+> scope — then concluded absence globally.** `codex-lead` and `oracle-team` are **project-local**
+> skills committed in this very repo (`8879e4c`, `eca78eb`) and are loaded in the session skill list.
+> This is the repo's own scar class pointing the other way: **verify one location → conclude for all
+> locations** · and it broke the rule already written above — *"`ยังไม่ได้ส่ง` ก็เป็น claim ที่ต้อง
+> `grep` เหมือน `ส่งแล้ว` — ทิศลบไม่ได้ยกเว้นจากการตรวจ"*. An absence claim needs the same evidence
+> as a presence claim, **and it must name the scope it searched.**
+> ⇒ `grep -rn` **both** `~/.claude/skills/` **and** `.claude/skills/` before saying a skill is missing.
+
+**Project-local** (`.claude/skills/` in this repo) — `[verified 2026-08-05: ls + git log]`
+
+- `codex-lead` — spawn + lead a codex coder team end-to-end (charter → `maw team up` → dispatch →
+  peek loop). Committed `8879e4c`. **Exists.**
+- `oracle-team` — unified team lifecycle (up/down/lead/status/dispatch), reads `ψ/teams/*.yaml`.
+  Committed `eca78eb`. **Exists** — and so does `oracle-team/scripts/codex-setup.ts` (8.1K, in git),
+  which the 08-01 note called missing. It never was; the soul file recorded it being put into git
+  on 2026-07-24. `codex-team/scripts/seed-codex-home.sh` is a **sibling**, not a successor.
+
+**Global** (`~/.claude/skills/`) — `[verified 2026-08-05: ls]`
 
 - `codex-team` — gate layer over maw-team (**atlas's artifact**, co-authored with sage-codex — we
-  use it, we don't own it; don't edit without asking atlas). Successor to the missing
-  `oracle-team/scripts/codex-setup.ts` is `codex-team/scripts/seed-codex-home.sh`
+  use it, we don't own it; don't edit without asking atlas)
 - `rrr` — session retrospective
 - `recap` — mine raw transcript JSONL for what actually happened (was listed as `session-recap`)
 - `awaken` — this ritual
-- ❌ **no book-pipeline skill installed** — the 58-page book (v2026.07.23) was produced without one;
-  don't promise `oracle-write-complete-book`, it isn't here
+
+**Genuinely absent** — `[verified 2026-08-05: find / across both scopes]`
+
+- `session-recap` — nowhere on disk. Renamed to `recap`. The 08-01 claim was **right**.
+- `oracle-write-complete-book` — **not installed for this oracle** (correct), but it is **not
+  nonexistent**: it lives in `Soul-Brews-Studio/oracle-book-skills` + 2 sibling repos on this
+  machine. The 58-page book (v2026.07.23) was produced without it. Don't promise it as installed —
+  but "it isn't here" ≠ "it doesn't exist"; it is **installable**.
 
 ## Short Codes
 
