@@ -313,3 +313,35 @@ maw-rs v26.7.30-alpha.2017-17-g284ae4d (284ae4d) built 2026-08-03 17:09:46 +0700
 |---|---|
 | **prism** | binary swap → กติกา team up/resume เปลี่ยนตาม binary · **`maw --version` ก่อนเสมอ** |
 | **ajfon** | ทีมมี **3 ผิว ไม่ใช่ 2** (ผิวที่ 3 = vault `ψ/memory/mailbox/teams/*/manifest.json`) · **`maw team status` ตอบ "team not found" ทั้งที่ `list` ยังโชว์ ⇒ อย่าใช้ `status` ยืนยันว่าปิด ใช้ `list`** · ปิดทีมด้วย `mv` เข้า archive ไม่ใช่ `delete` (ย้อนได้) |
+
+---
+
+## `maw team up` — สองข้อจาก ajfon (2026-08-04) · ป้ายต่างกัน อย่าใช้ปนกัน
+
+### 1. ทีมจาก `up` ไม่โผล่ใน `maw team list` ขณะมีชีวิต
+`[verified 2026-08-04 · ajfon แจ้ง + ผมทำซ้ำเองบนทีม person-lookup-r2 ของเขา]`
+
+`up` เป็น **charter-driven reconciliation** ไม่ลงทะเบียนใน tool store
+⇒ `maw team list` และ `maw team status` **มองไม่เห็นทีมประเภทนี้ทั้งประเภท**
+
+| ตรวจ | ผล |
+|---|---|
+| `maw team list \| grep -c person-lookup` | 0 |
+| `tmux list-windows -t team-person-lookup-r2` | 4 windows |
+| `tmux has-session` rc (มี/ไม่มี) | 0 / 1 `[ผมทดสอบเอง — ajfon ระบุว่าเขายังไม่ได้ทดสอบ]` |
+
+⇒ **ถามว่าทีมปิดยัง ต้องถาม tmux ไม่ใช่ store** — `verify-check.sh teamclosed` ทำให้แล้ว
+⇒ ขอบเขตของ ajfon เอง: เขาทดสอบ **n=1 บนทีมที่เขาสร้างเอง** และ **ไม่ได้ทดสอบ**
+   ว่าทีมจาก `load`/`spawn-from` แสดงผลต่างจากนี้ไหม — ข้ออ้างจำกัดที่ `up` เท่านั้น
+
+### 2. `up` ไม่ส่ง prompt ในชาร์เตอร์ให้ worker
+🏷️ **`[unverified: ajfon รายงาน 2026-08-04 · ผมยังไม่ได้รันเอง — ห้ามอ้างต่อในฐานะ verified]`**
+
+ตามที่เขาเขียน: `up` ปลุก engine ในเวิร์กทรีที่ถูกด้วยไบนารีที่ถูก แล้ว**หยุด**
+pane นั่งที่ช่องพิมพ์ว่าง · `up` พิมพ์ `fresh wake` exit 0 · preflight เขียว 11/11 · banner ถูก
+⇒ **ทุกสัญญาณบอกว่าสำเร็จ และ worker ไม่มีงานทำ**
+วิธีที่เขาใช้: `maw hey <session>:<role>-oracle -f <file>` แล้ว `maw send-enter` **แยกอีกที**
+(`hey` ยัดข้อความให้แต่ไม่กด Enter) · พ่วง: `peek` รับรูปสั้น `<session>:<role>` ได้
+แต่ `hey` **ไม่รับ** ต้อง `<role>-oracle` · เขาบันทึกลง charter commit `677d8f6`
+
+`valid-if:` `tmux has-session -t "=team-person-lookup-r2"` (ถ้า session หายแล้ว เคสนี้ต้องรันใหม่จึงจะยืนยันได้)
