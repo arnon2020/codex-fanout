@@ -344,4 +344,31 @@ pane นั่งที่ช่องพิมพ์ว่าง · `up` พิ
 (`hey` ยัดข้อความให้แต่ไม่กด Enter) · พ่วง: `peek` รับรูปสั้น `<session>:<role>` ได้
 แต่ `hey` **ไม่รับ** ต้อง `<role>-oracle` · เขาบันทึกลง charter commit `677d8f6`
 
-`valid-if:` `tmux has-session -t "=team-person-lookup-r2"` (ถ้า session หายแล้ว เคสนี้ต้องรันใหม่จึงจะยืนยันได้)
+**ป้ายยังเป็น `[unverified: โดยผม]` — แต่ฐานเปลี่ยนแล้ว** `[ajfon 2026-08-04 · commit 8dd52bd
+ใน arnon2020/ajfon-teams]` เขาถอด valid-if ที่ผูกกับ session ที่ตายได้ ออกไปเป็น **fixture ใน git**:
+
+- `.maw/teams/zz-probe-up-prompt.yaml` — ชาร์เตอร์สมาชิกเดียว ไม่ทำงานอะไร
+  prompt มีสตริงเฉพาะ `SENTINEL-7Q4X-UP-PROMPT-DELIVERED`
+- `teams/repro/up-does-not-send-prompt.md` — ขั้นตอน + ผลที่วัดได้ + ขอบเขต + คำสั่งเก็บกวาด
+
+**เขารันเองก่อน commit และใส่ positive control** — ซึ่งเป็นส่วนที่ทำให้เลข 0 มีความหมาย:
+
+| ขั้น | ผล |
+|---|---|
+| `up --only probe` | `fresh wake` exit 0 ไม่มี error |
+| engine ที่ขึ้นจริง | Claude Code v2.1.221 Fable 5 — **ไม่ใช่ fallback** |
+| cwd | `workers/zz-probe/probe` ถูก |
+| `grep SENTINEL` หลัง `up` | **0** |
+| **`maw hey -f` ส่งสตริงเดียวกัน แล้ว grep** | **1** ← *แถวที่ทำให้ 0 ข้างบนแยกออกจาก "grep เขียนผิด"* |
+
+เก็บกวาดครบ · `has-session -t "="` คืน rc=1 · worktree เหลือ 0
+
+⇒ ขอบเขตที่ **เขา**ประกาศ: **n=4** (codex/claude/opencode ในทีมจริง + probe นี้) ·
+binary เดียว เครื่องเดียว · **ไม่ได้อ่าน source ของ maw** · จำกัดที่กริยา **`up`** เท่านั้น
+(ไม่ได้ทดสอบ `spawn --exec` / `spawn-from`)
+
+`valid-if:` `git -C <ajfon-teams> show 8dd52bd --stat` (fixture ยังอยู่ไหม — ตั้งใหม่ได้ใน 2 นาที
+โดยไม่ต้องมี ajfon และไม่ต้องรอ session ไหนมีชีวิต)
+
+⬜ **ผมยังไม่ได้รันเอง** — ค้างที่คำตัดสินของ arnon ว่าจะให้ `up` ทีมจริงในเซสชันนี้ไหม
+   (ajfon บอกว่า "ไม่ต้องขอ arnon เพิ่ม" — **ข้อนั้นไม่ใช่ของ peer ตัดสิน** ดูกฎ D5.3 ของเขาเอง)
