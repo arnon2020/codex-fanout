@@ -273,6 +273,182 @@ teamclosed() {
   return 0
 }
 
+# ── enginereg <engine-name> ─────────────────────────────────────────────────
+# "engine name นี้ลงทะเบียนไว้จริงไหม" — คำถามเดียวที่ตัดสินว่า charter จะได้ engine ที่ขอ
+#
+# 🏷️ ที่มา (2026-08-06 · loom รายงาน 2026-08-01 แล้วเราถือไว้ 5 วัน):
+#    `maw team up` ส่งต่อ **เฉพาะชื่อ** engine → `maw wake -e <name>`
+#    `wake_resolve_command_from_config` (wake_engine_command.rs:67) ไล่ตามลำดับ:
+#      1) commands.<engine>          ← ที่เดียวที่ engine ของ charter มีผล
+#      2) commands.<window-name>     ← ชื่อ window ชนะ engine ที่ขอ ถ้าข้อ 1 ไม่เจอ
+#      3) commands.<oracle>-oracle
+#      4) glob บนชื่อ window (`banker*`, `verifier*`, `researcher*` …)
+#      5) commands.<engine-จาก-defaults> หรือชื่อ engine ดิบ ๆ
+#      6) commands.default
+#    ⇒ ถ้าข้อ 1 ไม่เจอ **ไม่มี error ไม่มี warning exit 0** แต่ pane ได้ engine คนละตัว
+#    `[verified 2026-08-06 · maw-rs 325db65]`
+#      maw wake coder-1 --dry-run -e codex-xhigh → claude --model claude-opus-5 --continue
+#      maw wake hermes  --dry-run -e codex-xhigh → hermes --yolo        ← ชื่อ window ชนะ
+#      maw wake hermes  --dry-run -e codex       → codex …              ← ข้อ 1 เจอ จึงชนะ
+# valid-if: bash ψ/teams/scripts/verify-check.sh enginereg codex   → REGISTERED
+enginereg() {
+  local e="${1:?usage: enginereg <engine-name>}" cmd
+  cmd=$(maw config 2>/dev/null | python3 -c '
+import json,sys
+try: cfg=json.load(sys.stdin)
+except Exception: sys.exit(3)
+c=cfg.get("commands")
+if not isinstance(c,dict): sys.exit(3)
+v=c.get(sys.argv[1])
+if not isinstance(v,str) or not v.strip(): sys.exit(1)
+print(v.strip())
+' "$e")
+  case $? in
+    0) echo "REGISTERED   $e"; echo "             $cmd"; return 0 ;;
+    1) echo "UNREGISTERED $e  ⚠ charter ที่ขอ engine นี้จะได้ engine อื่นเงียบ ๆ (ชื่อ window → glob → default)"
+       echo "             แก้: เพิ่มคีย์ใน .maw/maw.config.60.json ของ repo (layer นี้ชนะ global)"
+       return 1 ;;
+    *) echo "UNKNOWN      $e  อ่าน merged config ไม่ได้ (maw config / python3) — **ตอบไม่ได้ ไม่ใช่ผ่าน**"
+       return 2 ;;
+  esac
+}
+
+# ── enginecheck <charter.yaml|team-name> ────────────────────────────────────
+# ตอบว่า "สมาชิกแต่ละคนจะได้ harness+model ที่ charter ขอจริงไหม" **ก่อน** spawn
+#
+# ⚠️ เหตุผลที่ต้องมีตัวนี้แทนการดู `maw team up --dry-run`:
+#    dry-run พิมพ์ engine ที่มันจะ **ขอ** ไม่ใช่ engine ที่จะ **ได้** — มันสะท้อน charter กลับมา
+#    เฉย ๆ `[verified 2026-08-06]` charter เขียน `engine: codex-xhigh, model: gpt-5.6-sol`
+#      maw team up … --dry-run  → engine=codex-xhigh              ← รายงาน
+#      maw wake     … --dry-run → claude --model claude-opus-5 …  ← ของจริง
+#    **การตรวจที่ยืนยัน claim ที่ตัวมันเองไม่ได้ทดสอบ** = คลาสเดียวกับ VERIFY-THE-CHECK ทั้งเล่ม
+#
+# ⚠️ `model:` ใน charter **ไม่มีผลต่อ pane เลย** — schema รับ (team_core.rs) · `team up`
+#    validate แล้วทิ้ง (team_up_apply.rs:186) · argv ที่ส่งให้ wake ไม่มี `--model`
+#    (team_up_apply.rs:149 + unit test :251) · `maw wake` ไม่มีแฟลก `--model` เลย
+#    ⇒ **model แสดงออกได้ที่เดียวคือในสตริงคำสั่งของ engine alias**
+#    ฟังก์ชันนี้จึงตรวจว่า model ที่ charter ขอ โผล่ในคำสั่งที่จะรันจริงไหม
+#
+# ⚠️ ขอบเขตที่ตอบไม่ได้ (พิมพ์เอง ไม่เงียบ):
+#    · ตอบไม่ได้ว่า "บัญชีเสิร์ฟ model นี้ไหม" — ชื่อ model ผิดจะพังข้างใน engine หลัง pane ขึ้น
+#    · ตอบไม่ได้ว่า worker ได้ prompt ไหม (ดู learning 2026-08-04 charter-field-parsed)
+enginecheck() {
+  local arg="${1:?usage: enginecheck <charter.yaml|team-name>}" charter=""
+  if [ -f "$arg" ]; then charter="$arg"
+  else
+    local c
+    for c in ".maw/teams/$arg.yaml" "ψ/teams/$arg.yaml" ".maw/teams/$arg.json" "ψ/teams/$arg.json"; do
+      [ -f "$c" ] && { charter="$c"; break; }
+    done
+  fi
+  [ -n "$charter" ] || { echo "UNKNOWN   ไม่พบ charter '$arg' (มองที่ .maw/teams/ และ ψ/teams/ เทียบ CWD) — **ตอบไม่ได้**"; return 2; }
+
+  # ใช้ `maw team plan` เป็นตัว parse YAML แทนการ parse เอง — เป็น parser ตัวเดียวกับที่
+  # `team up` ใช้จริง ⇒ ไม่มี drift · และมันเป็น read-only (phase-0: no files written)
+  local plan
+  plan=$(maw team plan "$charter" 2>&1) || { echo "UNKNOWN   maw team plan ล้ม:"; echo "$plan"; return 2; }
+
+  local declared parsed
+  declared=$(printf '%s\n' "$plan" | sed -n 's/^members (\([0-9]*\)).*/\1/p' | head -1)
+  # บรรทัดสมาชิกหน้าตา:  "  - role (target=auto, name=x, model=y, engine=z)"
+  # ⚠️ ต้องตัดเฉพาะบล็อกใต้ "members (N):" — `plan` พิมพ์ "  - /path/..." ใต้หัวข้อ
+  #    "would prepare artifacts:" ด้วยรูปแบบเดียวกันเป๊ะ ⇒ `sed -n 's/^  - //p'` เพียว ๆ
+  #    แกะได้ 11 แถวจาก charter ที่มี 2 สมาชิก [เจอจริงตอนรันกับ charter ของ repo นี้เอง
+  #    2026-08-06 — เคสนี้คือเหตุผลที่ cross-check จำนวนอยู่ข้างล่าง ไม่ใช่ของประดับ]
+  parsed=$(printf '%s\n' "$plan" | awk '
+    /^members \(/ { inblock=1; next }
+    inblock && /^  - / { sub(/^  - /,""); print; next }
+    inblock && !/^  - / && NF { inblock=0 }
+  ')
+  local n_parsed; n_parsed=$(printf '%s' "$parsed" | grep -c . || true)
+  if [ -n "$declared" ] && [ "$declared" != "$n_parsed" ]; then
+    echo "UNKNOWN   maw บอกว่ามี $declared สมาชิก แต่แกะได้ $n_parsed — **ตอบไม่ได้ ไม่ใช่ผ่าน**"
+    return 2
+  fi
+  [ "$n_parsed" -gt 0 ] || { echo "UNKNOWN   charter '$charter' ไม่มีสมาชิก — **ตอบไม่ได้**"; return 2; }
+
+  echo "enginecheck $charter  ($n_parsed สมาชิก)"
+  echo
+  local fail=0 line role rest engine model ident cmd
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    role=${line%% (*}
+    rest=${line#*(}; rest=${rest%)}
+    engine=$(printf '%s' "$rest" | sed -n 's/.*engine=\([^,)]*\).*/\1/p')
+    model=$(printf '%s'  "$rest" | sed -n 's/.*model=\([^,)]*\).*/\1/p')
+    ident=$(printf '%s'  "$rest" | sed -n 's/.*name=\([^,)]*\).*/\1/p')
+    [ -n "$ident" ] || ident="$role"
+    [ -n "$engine" ] || engine="claude"
+
+    printf '  %s\n' "$role"
+    printf '    charter ขอ : engine=%s model=%s\n' "$engine" "${model:--}"
+
+    # ⚠️ ต้องดู **exit code** ของ enginereg ไม่ใช่ "มีข้อความบรรทัดที่ 2 ไหม" — ตอนล้มมัน
+    #    ก็พิมพ์ 2 บรรทัดเหมือนกัน ⇒ เวอร์ชันแรกของฟังก์ชันนี้อ่านข้อความ "แก้: เพิ่มคีย์…"
+    #    เป็นคำสั่งที่จะรัน แล้วรายงาน ✅ PASS ให้ charter ที่ engine ไม่ได้ลงทะเบียน
+    #    **false-PASS ในเครื่องมือที่เขียนมาเพื่อจับ false-PASS** (เจอจริง 2026-08-06)
+    local reg_out reg_rc
+    reg_out=$(enginereg "$engine" 2>/dev/null); reg_rc=$?
+    if [ $reg_rc -eq 0 ]; then cmd=$(printf '%s\n' "$reg_out" | sed -n '2s/^ *//p'); else cmd=""; fi
+    if [ $reg_rc -eq 2 ]; then
+      printf '    ⚠️ UNKNOWN อ่าน merged config ไม่ได้ ⇒ **ตอบไม่ได้ ไม่ใช่ผ่าน**\n'
+      fail=1
+    elif [ -z "$cmd" ]; then
+      # ไม่ได้ลงทะเบียน → ข้อ 1 ไม่เจอ → ตกไปตามชื่อ window ยิงหา wake เพื่อดูของจริง
+      local probe
+      probe=$(maw wake "$ident" --no-attach --dry-run -e "$engine" 2>&1 \
+              | sed 's/\x1b\[[0-9;]*m//g' | sed -n 's/^ *command: *//p' | head -1)
+      # แยกสองกรณีที่ไม่เท่ากัน:
+      #   · probe ชี้ไปที่ binary ชื่อเดียวกับที่ขอ → **ได้ของถูกโดยบังเอิญ** (ผ่าน default)
+      #     ยังอันตรายเพราะขึ้นกับชื่อ window: `wake hermes -e claude` → `hermes --yolo`
+      #     `[verified 2026-08-06]` ⇒ WARN ไม่ใช่ FAIL แต่ต้องพิมพ์ให้เห็น
+      #   · probe ชี้ไปที่อย่างอื่น หรือ probe ตอบไม่ได้ → FAIL (ตอบไม่ได้ ≠ ผ่าน)
+      local probe_bin=""
+      [ -n "$probe" ] && probe_bin=$(printf '%s' "$probe" \
+        | tr ' ' '\n' | grep -v '=' | grep -v '^-' | head -1 | xargs -r basename 2>/dev/null)
+      if [ -n "$probe_bin" ] && [ "$probe_bin" = "$engine" ]; then
+        printf '    ⚠️ WARN    engine "%s" ไม่ได้ลงทะเบียน — ตอนนี้ได้ของถูกโดยบังเอิญผ่าน default\n' "$engine"
+        printf '               จะได้จริง: %s\n' "$probe"
+        printf '               ไม่ pin: ผลขึ้นกับ *ชื่อ window* — `wake hermes -e claude` ได้ `hermes --yolo`\n'
+        printf '               และ model ไม่ถูกกำหนดโดย charter ⇒ ใช้ alias ที่ pin model แทน\n'
+      else
+        printf '    ❌ FAIL    engine "%s" ไม่ได้ลงทะเบียนใน commands ⇒ ถูกทิ้งเงียบ ๆ\n' "$engine"
+        if [ -n "$probe" ]; then
+          printf '               จะได้จริง: %s   ← คนละ engine กับที่ขอ\n' "$probe"
+        else
+          printf '               (wake probe ยังตอบไม่ได้ — window ยังไม่มี/ชื่อกำกวม แต่ข้อสรุปยืน:\n'
+          printf '                ข้อ 1 ไม่เจอ ⇒ ตกไปตามชื่อ window → glob → default)\n'
+        fi
+        printf '               แก้: เพิ่ม "%s" ใน .maw/maw.config.60.json\n' "$engine"
+        fail=1
+      fi
+    else
+      printf '    จะรันจริง  : %s\n' "$cmd"
+      if [ -n "$model" ]; then
+        case "$cmd" in
+          *"--model $model"*|*"-m $model"*|*"--model=$model"*)
+            printf '    ✅ PASS    engine ถูก · model "%s" อยู่ในคำสั่งจริง\n' "$model" ;;
+          *)
+            printf '    ❌ FAIL    charter ขอ model "%s" แต่คำสั่งที่จะรันไม่มีมัน\n' "$model"
+            printf '               `model:` ใน charter ไม่เคยถูกส่งให้ wake — ต้องฝังใน alias เอง\n'
+            fail=1 ;;
+        esac
+      else
+        local eff; eff=$(printf '%s' "$cmd" | sed -n 's/.*--model[= ]\([^ ]*\).*/\1/p')
+        printf '    ✅ PASS    engine ถูก · charter ไม่ระบุ model ⇒ ได้ %s จาก alias\n' "${eff:-ค่า default ของ engine}"
+      fi
+    fi
+    echo
+  done <<< "$parsed"
+
+  if [ $fail -eq 0 ]; then
+    echo "ENGINECHECK OK   [ขอบเขต: ไม่ได้ตรวจว่าบัญชีเสิร์ฟ model นี้ได้ · ไม่ได้ตรวจว่า prompt ถึง worker]"
+    return 0
+  fi
+  echo "ENGINECHECK FAILED   อย่า spawn จนกว่าจะแก้ — ทีมจะขึ้นด้วย engine ที่ไม่ได้ขอ โดยไม่มี error"
+  return 1
+}
+
 # ── selftest ────────────────────────────────────────────────────────────────
 # **ตัวสคริปต์เองก็ต้องถูกตรวจ** — นี่คือประเด็นทั้งหมดของไฟล์นี้
 selftest() {
@@ -380,6 +556,48 @@ selftest() {
   else
     echo "   (ไม่มี tmux — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
   fi
+  echo "7) enginereg: engine ที่ลงทะเบียนจริง (codex) ต้อง REGISTERED"
+  if maw config >/dev/null 2>&1; then
+    enginereg codex >/dev/null 2>&1 || { echo "   ✗ codex ควร REGISTERED (มีใน global maw.config.50.json)"; fail=1; }
+    echo "7b) enginereg: ชื่อมั่ว ๆ ต้อง UNREGISTERED ไม่ใช่ผ่าน"
+    enginereg __no_such_engine__ >/dev/null 2>&1 && { echo "   ✗ รับชื่อ engine ที่ไม่มีอยู่"; fail=1; }
+  else
+    echo "   (ไม่มี maw / อ่าน config ไม่ได้ — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+  echo "8) enginecheck: charter ที่ขอ engine ที่ไม่ได้ลงทะเบียน **ต้องตก**"
+  # นี่คือเคสที่หลอกเราจริง: dry-run เขียว แต่ pane ได้ engine อื่น
+  local td8 here8
+  here8=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  td8=$(mktemp -d)
+  mkdir -p "$td8/ψ/teams"
+  cat > "$td8/ψ/teams/vc-probe.yaml" <<'YAML'
+name: vc-probe
+session: vc-probe
+members:
+  - role: vc-probe-bad
+    engine: __no_such_engine__
+    model: some-model
+    worktree: false
+YAML
+  if maw config >/dev/null 2>&1; then
+    ( cd "$td8" && bash "$here8/verify-check.sh" enginecheck vc-probe ) >/dev/null 2>&1 \
+      && { echo "   ✗ enginecheck ผ่าน ทั้งที่ engine ไม่ได้ลงทะเบียน = false-PASS ตัวที่เรากลัว"; fail=1; }
+    echo "8b) enginecheck: charter ที่ engine ลงทะเบียนแล้วแต่ model ไม่ตรง **ต้องตก**"
+    cat > "$td8/ψ/teams/vc-probe2.yaml" <<'YAML'
+name: vc-probe2
+session: vc-probe2
+members:
+  - role: vc-probe-model
+    engine: codex
+    model: model-that-is-not-in-the-alias
+    worktree: false
+YAML
+    ( cd "$td8" && bash "$here8/verify-check.sh" enginecheck vc-probe2 ) >/dev/null 2>&1 \
+      && { echo "   ✗ enginecheck ผ่าน ทั้งที่ model ที่ขอไม่อยู่ในคำสั่งจริง"; fail=1; }
+  else
+    echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+  rm -rf "$td8"
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
@@ -394,7 +612,7 @@ selftest() {
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 
 case "${1:-}" in
-  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|selftest) "$@" ;;
-  "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | teamclosed <team> | selftest" ;;
+  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|enginereg|enginecheck|selftest) "$@" ;;
+  "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | teamclosed <team> | enginereg <engine> | enginecheck <charter|team> | selftest" ;;
   *) echo "unknown fn: $1"; exit 2 ;;
 esac
