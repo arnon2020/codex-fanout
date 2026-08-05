@@ -164,6 +164,28 @@ bash ψ/teams/scripts/verify-check.sh enginecheck <charter|team-name>
 
 ---
 
+## ผลสแกน charter ทั้งหมดใน repo นี้ `[verified 2026-08-06]`
+
+รันครั้งแรกที่มีเครื่องมือ — **4 ใน 5 charter ขอ engine ที่ไม่เคยลงทะเบียน**
+
+| charter | engine ที่ขอ | สถานะ |
+|---|---|---|
+| `codex-fanout-team.yaml` | `sage-opencode-oracle` | ✅ แก้แล้ว — ลงทะเบียนตามที่ **YAML comment ของมันเองบอกไว้ตั้งแต่ 2026-07-25** |
+| `drift-opencode.yaml` | (ลงทะเบียนแล้ว) | ✅ |
+| `drift-fanout-a.yaml` | `sage-codex-oracle` | ❌ ยังไม่แก้ |
+| `drift-fanout-b.yaml` | `hound-codex-oracle` | ❌ ยังไม่แก้ |
+| `drift-thclaws.yaml` | `hound-thclaws-oracle` | ❌ ยังไม่แก้ |
+
+สามตัวท้ายขอ **ชื่อ oracle** มาเป็นชื่อ engine (`<name>-oracle`) — ซึ่งเป็นรูปที่ resolution
+ข้อ 3 ใช้กับ *ชื่อ window* ไม่ใช่กับ `engine:` ⇒ เดาได้ว่าคนเขียนคิดว่า "ใช้ engine ของ oracle ตัวนั้น"
+
+**จงใจไม่ลงทะเบียนให้**: ผมไม่รู้ว่า oracle เหล่านั้นบูตด้วยคำสั่งอะไรจริง ๆ การเดาคำสั่ง
+launch แล้วเขียนลงไฟล์ = operational claim ที่ไม่มีหลักฐาน ซึ่งเป็นความผิดคลาสเดียวกับที่
+เอกสารนี้ทั้งฉบับกำลังแก้ ⇒ **ต้องให้เจ้าของ charter ตัดสินว่าสามตัวนั้นควรชี้ไปที่อะไร**
+(charter พวกนี้เป็นของรอบ drift test — อาจเลิกใช้แล้ว ถ้าเลิกใช้ให้ย้ายไป `archive/` ไม่ใช่ลบ)
+
+---
+
 ## ยังไม่ได้แก้ที่ต้นน้ำ
 
 พฤติกรรมที่ควรเปิดกับ maw-rs (ทำนองเดียวกับ #658 ที่เราเคยยิงไป):

@@ -176,6 +176,23 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
   **การบอกว่าตัวเองไม่มีของ ดูถ่อมตัว ไม่ดูเหมือน overclaim**
   ⇒ ก่อนเขียนว่า skill ไม่มี: **`ls ~/.claude/skills/ .claude/skills/` — สองที่เสมอ**
   ⇒ **"ไม่ได้ติดตั้ง" ≠ "ไม่มีอยู่"** — สองสถานะนี้พาไปคนละทางแก้ (หาทางอื่น vs `git clone` แล้วจบ)
+- 🎛️ **`engine:` ใน charter คือ *คำขอ* ไม่ใช่ *การตั้งค่า* · `model:` **ไม่มีผลเลย** — ตรวจด้วย
+  `verify-check.sh enginecheck <charter>` ก่อน spawn ทุกครั้ง** (2026-08-06 · fleet รายงาน
+  แต่ **loom รายงานเรื่องเดียวกันตั้งแต่ 08-01 และเราถือไว้ 5 วัน**)
+  `[verified: maw-rs 325db65]` `team up` ส่งให้ wake แค่ `-e <name>` (`team_up_apply.rs:149`
+  + unit test `:251`) · **`maw wake` ไม่มีแฟลก `--model` ทั้งไบนารี** · `model:` ถูก validate
+  แล้วทิ้ง (`:186`) · `engines:` block เป็น **field ตาย** (parser เขียน ไม่มีใครอ่าน)
+  ⇒ ถ้า `commands.<engine>` ไม่มี **ไม่มี error ไม่มี warning exit 0** แล้วตกไปตาม
+  **ชื่อ window → `<oracle>-oracle` → glob → `default`**
+  `wake coder-1 -e codex-xhigh` → `claude --model claude-opus-5` · `wake hermes -e codex-xhigh`
+  → `hermes --yolo` · **`-e claude` ก็ไม่ได้ลงทะเบียน** — ได้ claude เพราะ `default` บังเอิญเป็น claude
+  ⇒ **`maw team up --dry-run` สะท้อน charter กลับมา ตกไม่ได้** — ถามทุกครั้งว่า
+  **"การตรวจนี้ตกได้ด้วยเหตุอะไร"** ถ้าตอบไม่ได้ มันคือ echo ไม่ใช่ check
+  ⇒ ลงทะเบียน alias ที่ **`<repo>/.maw/maw.config.60.json`** (merge ทับ global N=50 · เดินทาง
+  ไปกับ repo · ไม่แตะของกลาง) — `maw config set` ทำไม่ได้ รองรับแค่ `node|port`
+  ⇒ **"validate แล้วทิ้ง" หลอกหนักกว่า "ปฏิเสธ"** — ต่อยอด [[charter-field-parsed-but-never-read]]:
+  grep หาจุดที่ *อ่านไปใช้* ไม่ใช่จุดที่ประกาศ **และไม่ใช่จุดที่ validate**
+  ⇒ ดู `ψ/teams/ENGINE-AND-MODEL.md`
 - **คำสั่งของเจ้าของงานที่ขัดกับคำตัดสินที่ยังยืนอยู่ → ต้องบอกก่อนลงมือ ไม่ใช่หลังลงมือ**
   (ajfon D5.3, 2026-08-03 · เกิดจากผมเอง: arnon สั่งสลับ verifier เป็น zai ตอน 22:18 ทั้งที่ ajfon
   ตัดสิน D3 ปฏิเสธไป 21:50 — ผมรู้แต่ทำเลย) · **เจ้าของยังเป็นคนตัดสินเหมือนเดิม แค่ตัดสินโดยรู้ว่า
