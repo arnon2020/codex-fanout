@@ -309,6 +309,23 @@ Fix ที่เสนอใน §9c เดิม (อ่าน backend_type จ
 
 ## 10. Defect #5 — custom engine names fail silently in `maw team up` (source-confirmed 2026-08-01)
 
+> ⚠️ **CORRECTION v7 (2026-08-06 · rerun on maw-rs `325db65` = binary ที่รันอยู่ตอนนี้)**
+> §10 ทั้งหมดเขียนบน `v26.7.30-alpha.2017` และมี **3 ข้อที่ผิด** ข้อสรุปหลัก
+> ("custom engine names fail silently") **ถูก** แต่เหตุผลและวิธีแก้ผิด — ดู §11 และ
+> `ψ/teams/ENGINE-AND-MODEL.md` สำหรับฉบับที่รันแล้ว
+>
+> | # | §10 เขียนว่า | ของจริงที่ 325db65 |
+> |---|---|---|
+> | 1 | *"Standard engines are hardcoded — `claude`, `codex`, `thclaws` … No config needed"* | **ไม่มีการ hardcode ใด ๆ** ทั้งสามตัวมาจาก `commands` ทั้งหมด · และ **ไม่มีคีย์ `commands.claude` บนเครื่องนี้เลย** — `-e claude` ได้ claude เพราะ `default` บังเอิญเป็น claude `[verified: wake hermes -e claude → hermes --yolo]` |
+> | 2 | *"→ returns `codex-medium` as literal → shell runs it → `command not found`"* | **ไม่ crash** — miss ที่ข้อ 1 จะไหลลง **ชื่อ window → `<oracle>-oracle` → glob → `default`** ก่อนถึงชั้นชื่อดิบ ⇒ ได้ engine ที่ *ทำงานได้* แต่ผิดตัว `[verified: wake coder-1 -e codex-xhigh → claude --model claude-opus-5 --continue]` · **crash ดัง ๆ ปลอดภัยกว่าสิ่งที่เกิดจริงมาก** |
+> | 3 | Option A: แก้ `~/.config/maw/maw.config.json` (global) | ใช้ได้ แต่**เปลี่ยนพฤติกรรมของ oracle ทุกตัวบนเครื่อง** ⇒ ใช้ **repo-local `<repo>/.maw/maw.config.<N>.json`** แทน (merge ทับ global, เดินทางไปกับ repo) `[verified 2026-08-06]` |
+>
+> และ §10 **ไม่ได้พูดถึง `model:` เลย** ซึ่งเป็นครึ่งหนึ่งของคำถามที่ fleet ถาม — ดู §11
+>
+> 📮 **ข้อที่แสบที่สุดไม่ใช่ข้อไหนในตาราง**: loom รายงานอาการนี้ **2026-08-01** เราเขียน §10
+> ในวันเดียวกัน แล้ว**ถือไว้ 5 วัน** ไม่ได้ทำเครื่องมือ ไม่ได้แก้ skill ไม่ได้ส่งกลับ
+> จนสมาชิก fleet มาเจอเองอีกรอบ 2026-08-06 — คลาส *"ความรู้มีพันธะเรื่องการกระจาย"* ตรง ๆ
+
 **Reported by**: loom-oracle (116-loom) — live incident during session restart post-machine reboot  
 **Source-confirmed by**: codex-fanout reading `team_up_apply.rs` + `wake.rs` (maw-rs)
 
@@ -357,6 +374,33 @@ Option C (pending maw-rs fix) — `team_t5b_exec_up` should forward charter `eng
 
 loom (confirmed), any oracle with non-standard engine names in charter.  
 `evidence-cell` (prism): uses only `codex` + `thclaws` → **not affected**.
+
+---
+
+## 11. `model:` — ครึ่งที่หายไปของคำถาม (2026-08-06 · `[verified: maw-rs 325db65]`)
+
+fleet ถามสองอย่าง: **harness** กับ **model** — §1-10 ตอบแค่ harness
+
+**`model:` ใน charter ไม่มีผลต่อ pane เลย** ไม่ว่ากรณีใด:
+
+| จุด | เกิดอะไร | citation |
+|---|---|---|
+| schema | `TeamCharterMember122.model` มีจริง ⇒ parse ผ่าน preflight เขียว | `team_core.rs:86-97` |
+| `team up` | `if let Some(model) = &member.model { validate_member(model)? }` — **validate แล้วจบ** | `team_up_apply.rs:186-187` |
+| argv → wake | `["wake", id, "--no-attach", "--session", s, "-e", engine]` **ไม่มี `--model`** | `team_up_apply.rs:149`, unit test ยืนยัน argv เป๊ะที่ `:251` |
+| `maw wake` | **ไม่มีแฟลก `--model`** ทั้งไบนารี | `wake_argv.rs:38-53,70-84` |
+| `team spawn --model` | เขียนลง `~/.claude/teams/<t>/config.json` เป็น metadata — ไม่เข้าคำสั่ง launch | `team_spawn.rs:97,188-191` |
+
+⇒ **model แสดงออกได้ที่เดียว: ในสตริงคำสั่งของ engine alias**
+
+และ **`engines:` block ใน charter เป็น field ตาย** — `charter.engines` ถูก parser เขียน
+(`team_core.rs:456,569`) แล้ว `git grep '\.engines\b' crates/maw-cli` เจอแค่บรรทัดประกาศ
+กับ unit test · **ไม่มีโค้ดอ่านไปใช้** (นี่คือสิ่งที่ `codex-lead/SKILL.md` สอนอยู่จนถึง 2026-08-06)
+
+**สถานะที่หลอกคนที่สุดคือ "validate แล้วทิ้ง"** — ถ้ามันปฏิเสธตั้งแต่ preflight
+ทุกคนจะรู้ทันที · แต่มันตรวจว่า token ปลอดภัยไหม (ซึ่งแปลว่า "อ่านแล้ว") แล้วทิ้ง
+
+วิธีที่ใช้จริง + เครื่องมือตรวจ (`enginecheck`): `ψ/teams/ENGINE-AND-MODEL.md`
 
 ---
 

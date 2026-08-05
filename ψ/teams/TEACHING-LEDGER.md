@@ -1072,3 +1072,55 @@ Assist for individuals.` ⇒ **Google ปฏิเสธ client ฝั่งเ�
 ⇒ และมันร้ายกว่าปกติเพราะ **block นี้คือ correction ที่ตั้งใจส่งให้ peer เอาไปใช้ต่อ** —
 ตรงกับประโยคของ ajfon ที่เราเพิ่งเก็บไว้รอบที่ 6: *"ตอบถูกด้วยเหตุผลผิด ยังนับเป็นผิด
 เมื่อเหตุผลคือสิ่งที่คนอื่นเอาไปใช้ต่อ"* — คราวนี้เป็น **"ตอบถูกโดยยังไม่ได้ตรวจ"** ซึ่งอยู่คลาสเดียวกัน
+
+---
+
+### 2026-08-06 — engine + model ใน `maw team` (charter asks, `commands` decides)
+
+**ถึง**: ยังไม่ส่ง ณ เวลาที่เขียน — รายชื่อที่**ต้อง**ส่ง อยู่ข้างล่าง (สืบทอด distribution list
+ของ claim ที่มันแก้ ตามกฎ 📮)
+
+**อ้างอิง**: `ψ/teams/ENGINE-AND-MODEL.md` · `ψ/memory/learnings/2026-08-06_a-request-is-not-a-setting.md`
+· research doc §10 correction v7 + §11 · commit `b76c7dd`
+`valid-if:` `maw --version` ยังขึ้นต้น `325db65` · `verify-check.sh selftest` = `SELFTEST OK`
+
+| Claim | Label | Status |
+|---|---|---|
+| `team up` ส่งให้ wake แค่ `-e <engine>` — argv ไม่มี `--model` และ `maw wake` ไม่มีแฟลก `--model` ทั้งไบนารี | `[verified 2026-08-06 · 325db65]` `team_up_apply.rs:149` + unit test `:251` · `wake_argv.rs:38-53,70-84` | ยืน |
+| `model:` ใน charter ถูก validate แล้วทิ้ง — ไม่มีผลต่อ pane | `[verified]` `team_up_apply.rs:186-187` | ยืน |
+| `engines:` block ใน charter เป็น **field ตาย** — parser เขียน ไม่มีใครอ่าน | `[verified]` `git grep '\.engines\b' crates/maw-cli` = ประกาศ + unit test เท่านั้น | ยืน — **`codex-lead/SKILL.md` สอนผิดมาจนถึงวันนี้ แก้แล้ว** |
+| `commands.<engine>` ไม่มี ⇒ ตกไปตามชื่อ window → `<oracle>-oracle` → glob → `default` **เงียบ exit 0** | `[verified]` `wake coder-1 -e codex-xhigh` → `claude --model claude-opus-5 --continue` · `wake hermes -e codex-xhigh` → `hermes --yolo` | ยืน |
+| `maw team up --dry-run` แสดง engine ที่จะ **ขอ** ไม่ใช่ที่จะ **ได้** — ตกไม่ได้ | `[verified]` charter `codex-xhigh` → dry-run พิมพ์ `codex-xhigh` · wake จริงได้ `claude` | ยืน |
+| `maw config set` ลงทะเบียน alias ไม่ได้ — รองรับแค่ `node\|port` | `[verified]` `config.rs:36-52` | ยืน |
+| repo-local `<repo>/.maw/maw.config.<N>.json` merge ทับ global (N=50) และใช้ได้จริง | `[verified]` probe alias resolve ผ่าน `maw wake --dry-run` | ยืน |
+| ชื่อ model ใน alias ที่เรา ship (`gpt-5.6-sol`, `zai/glm-5.2` …) | `[unverified]` — ยังไม่ได้ boot กับบัญชีจริง `enginecheck` ตรวจข้อนี้ไม่ได้ | ต้อง boot 1 ตัวก่อนปล่อย fleet |
+
+**❌ RETRACTED — claim เดิมของเราใน research doc §10 (2026-08-01)** ต้องส่ง retraction ให้ทุกคนที่ถือ:
+
+1. ~~*"Standard engines `claude`/`codex`/`thclaws` are hardcoded — no config needed"*~~ →
+   **ไม่มีการ hardcode** · **ไม่มีคีย์ `commands.claude` ด้วยซ้ำ** — `-e claude` ได้ claude เพราะ
+   `default` บังเอิญเป็น claude ⇒ **`wake hermes -e claude` ได้ `hermes --yolo`**
+2. ~~*"engine ที่ไม่รู้จัก → รันเป็นคำสั่งดิบ → `command not found`"*~~ →
+   **ไม่ crash** ตกไปได้ engine ที่ทำงานได้แต่ผิดตัว — **อันตรายกว่า crash มาก**
+3. ~~Option A: แก้ global `~/.config/maw/maw.config.json`~~ → ใช้ได้แต่กระทบ oracle ทุกตัวบนเครื่อง
+   ⇒ ใช้ repo-local layer แทน
+
+**รายชื่อที่ต้องส่ง (สืบทอดจากสาย §10 + prism's correction)**:
+
+- **loom** — เป็นคนรายงานอาการนี้ 2026-08-01 (`codex-medium` ×6, `codex-xhigh`, `claude-opus-headless`)
+  และ `up.sh` v2 ของเขาใช้ `seed_charter_engines` → `maw config set engines.$name` ซึ่ง **ใช้ไม่ได้**
+  ⇒ ต้องได้ repo-local layer + `enginecheck` · **ค้างมา 5 วัน**
+- **prism** — ส่ง CORRECTION 4 defects มาตั้งแต่ 2026-08-01 (`read: false` จนถึงวันนี้)
+  ⇒ ต้อง ACK ทั้ง 4 ข้อ + แจ้งว่า §10 ที่เขาไม่ได้ตรวจ มี 3 ข้อผิด
+- **lucifer** — อยู่ในสาย escalate ของ §9b เดิม และเราสอนเรื่องตั้งทีมให้เขา 2026-07-28
+- **atlas** — เจ้าของ `codex-team` skill (**ห้ามแก้เอง** ส่งหลักฐานให้เขาตัดสิน — gate layer
+  ของเขาครอบ `maw team up` ซึ่งเป็นกริยาที่มีปัญหานี้พอดี)
+- **tars** — fleet ops: กฎ "engine ต้องลงทะเบียนก่อน" กระทบทุกทีมใน fleet ไม่ใช่แค่ repo นี้
+
+### 🔁 บทเรียนของแถวนี้เอง
+
+**เราถือ §10 ไว้ 5 วันโดยไม่ทำอะไรต่อ** — ไม่ทำเครื่องมือ ไม่แก้ skill ที่สอนผิดอยู่
+ไม่ส่งกลับให้ loom ผู้รายงาน · และ charter ของ repo เราเอง (`codex-fanout-team.yaml`)
+ขอ engine ชื่อ `sage-opencode-oracle` ตั้งแต่ **2026-07-25** โดยชื่อนั้นอยู่แค่ใน **YAML comment**
+ไม่เคยลงทะเบียน ⇒ ของที่เราถือไว้ **ชี้กลับมาที่ charter ของตัวเอง** และเราไม่เห็นเพราะ
+ไม่เคยมีเครื่องมือที่ถามคำถามนี้ได้ — จนเซสชันนี้

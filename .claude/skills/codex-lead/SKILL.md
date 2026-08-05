@@ -98,20 +98,36 @@ git checkout -b alpha && git push -u origin alpha && git checkout main   # PR ta
 #    - NO defaults.worktree block
 #    - every member declares its own worktree: and branch:
 #    - lead: worktree:false, branch:alpha
-#    - engine command is worktree-local, inline under `engines:`, using codex-setup.ts <N>
-#      (N = pool/account index, e.g. 5) — NOT the shared engine keys (codex-t1..t6), which
-#      point at ~/.codex-team/<N> directly and skip the worktree-local CODEX_HOME isolation.
+#    - engine: must name an alias REGISTERED in `commands` (see step 1a). An unregistered
+#      name is discarded silently — the pane gets whatever the window name resolves to.
+#    - model: goes INSIDE the alias command string. `model:` in the charter is parsed,
+#      validated, then dropped; `maw wake` has no --model flag.
+#
+# ⚠️ CORRECTED 2026-08-06 — this block previously told you to define the engine command
+#    inline under `engines:` in the charter. `charter.engines` is written by maw's parser
+#    and read NOWHERE in the CLI (`git grep '\.engines\b' crates/maw-cli` = declaration +
+#    unit tests only, maw-rs 325db65). Charters written that way have been defining engine
+#    commands that nothing ever reads. Register them in the repo-local config layer instead.
+#    Full evidence: ψ/teams/ENGINE-AND-MODEL.md
+# 1a. Register the engine alias in the REPO-LOCAL config layer (this is what `engine:` looks up).
+#     maw merges every <ancestor>/.maw/maw.config.<N>.json by N ascending; global is N=50,
+#     so 60 wins and travels with the repo. Filename MUST match maw.config.<digits>.json.
+#     `maw config set` cannot do this — it only supports node|port.
+mkdir -p .maw && cat > .maw/maw.config.60.json <<'JSON'
+{ "commands": {
+    "omx-N": "bun $PWD/.claude/skills/oracle-team/scripts/codex-setup.ts N && CODEX_HOME=$PWD/.codex OMX_AUTO_UPDATE=0 omx --direct --madmax"
+} }
+JSON
+
 mkdir -p ψ/teams
 cat > ψ/teams/<team>.yaml <<'YAML'
 name: <team>
 project: <org>/<repo>
 session: <tmux-session>
-engines:
-  omx-N: "bun $HOME/.claude/skills/oracle-team/scripts/codex-setup.ts N && CODEX_HOME=$PWD/.codex OMX_AUTO_UPDATE=0 omx --direct --madmax"
 members:
   - role: codex-1        # coder listed BEFORE lead — see #658 workaround below
     name: codex-1
-    engine: omx-N
+    engine: omx-N        # ← must exist as a key in commands, or it is silently ignored
     worktree: agents/codex-1
     branch: agents/codex-1
     prompt: |
@@ -133,7 +149,8 @@ git worktree add agents/codex-1 -b agents/codex-1 origin/alpha
 (cd agents/codex-1 && bun ~/.claude/skills/oracle-team/scripts/codex-setup.ts N \
   && printf "\n[projects.\"$PWD\"]\ntrust_level=\"trusted\"\n" >> .codex/config.toml)
 
-# 3. Load + spawn
+# 3. Load + spawn — enginecheck FIRST, it is the only gate that tests what will actually launch
+bash ψ/teams/scripts/verify-check.sh enginecheck ψ/teams/<team>.yaml   # rc≠0 → STOP
 maw team load ψ/teams/<team>.yaml --no-spawn
 maw team up <team> --only codex-1
 maw peek <session>:codex-1     # must show the omx/Codex engine UI, not a shell or trust prompt

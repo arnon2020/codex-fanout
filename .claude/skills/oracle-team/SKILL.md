@@ -83,6 +83,30 @@ Parse the subcommand from `$ARGUMENTS`:
 
 Idempotent: skip live, relaunch dead, create missing.
 
+### Gate 0: engine + model actually reach the pane (MANDATORY, before preflight)
+
+```bash
+bash ψ/teams/scripts/verify-check.sh enginecheck "$CHARTER"    # rc≠0 → STOP
+```
+
+**Do not skip this because `maw team preflight` and `maw team up --dry-run` are green.**
+Neither one checks it. `[verified 2026-08-06 · maw-rs 325db65]`
+
+- `team up` forwards **only** `-e <engine-name>` to `maw wake`. If `commands.<engine-name>`
+  is not registered, the name is **discarded with no error, exit 0**, and the pane gets
+  whatever the *window name* resolves to (window key → `<oracle>-oracle` → glob → `default`).
+- `team up --dry-run` prints the engine it will **request**, echoed straight from the charter
+  — never the engine it will **get**. It cannot fail on this.
+- `model:` in a charter is parsed, validated, then **dropped**. `maw wake` has no `--model`
+  flag at all. **A model can only be expressed inside the alias command string.**
+
+Register aliases in the repo-local layer `<repo>/.maw/maw.config.60.json` (merges over the
+global `maw.config.50.json`, travels with the repo, no global mutation). Full evidence,
+resolution ladder, and the upstream bugs: `ψ/teams/ENGINE-AND-MODEL.md`.
+
+> This is the root cause of the "`Opus 4.8` in status bar when the charter said codex"
+> failure listed below — it was recorded here as a symptom for months without its cause.
+
 ```bash
 maw team preflight "$CHARTER"
 ```
@@ -129,7 +153,11 @@ For each coder, verify against charter:
 5. Re-verify
 
 **Common failures:**
-- `Opus 4.8` in status bar → generic `codex` engine opened Claude Code → use `codex-tN` instead
+- `Opus 4.8` / `Opus 5` in status bar when the charter asked for codex → **the engine name
+  was not registered in `commands`, so it was silently discarded and resolution fell through
+  to `commands.default` (which is claude).** Gate 0 catches this before you spawn; the old
+  advice "use `codex-tN` instead" only worked because those names happened to be registered.
+  `[verified 2026-08-06: wake coder-1 -e codex-xhigh → claude --model claude-opus-5]`
 - `gpt-5.5 low` → CODEX_HOME config has `model_reasoning_effort = "low"` → set to `xhigh`
 - Garbage files in worktree → model too dumb to parse prompt → fix reasoning_effort
 - Auto-exploring → omx --madmax starts working immediately → need "WAIT for maw hey" in prompt
