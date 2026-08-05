@@ -635,7 +635,18 @@ YAML
   else
     echo "   (ไม่มี maw หรือไม่มี layer ของ repo — ข้าม ไม่นับผ่าน/ตก)"
   fi
-  rm -rf "$td8"
+  echo "8d) enginereg: layer ที่บรรพบุรุษของ worktree **นอก repo** ต้องถูกเห็น (สูตรของ loom/prism)"
+  # ถ้าเคสนี้ตก แปลว่า worktree นอก repo ไม่มีทางแก้แบบ local เลย ต้องไปแก้ global
+  local td9; td9=$(mktemp -d)
+  mkdir -p "$td9/sub" "$td9/.maw"
+  printf '{"commands":{"__vc_probe_out__":"echo VC-OUT-OF-REPO"}}\n' > "$td9/.maw/maw.config.60.json"
+  if maw config >/dev/null 2>&1; then
+    enginereg __vc_probe_out__ "$td9/sub" >/dev/null 2>&1 || { echo "   ✗ บรรพบุรุษของ path นอก repo ควรเห็น layer"; fail=1; }
+    enginereg __vc_probe_out__ /            >/dev/null 2>&1 && { echo "   ✗ path นอกสาย ไม่ควรเห็น (negative control)"; fail=1; }
+  else
+    echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+  rm -rf "$td9" "$td8"
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }

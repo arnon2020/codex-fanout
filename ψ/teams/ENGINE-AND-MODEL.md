@@ -116,6 +116,29 @@ maw เดินขึ้นจาก cwd เก็บทุก `<ancestor>/.maw
 > (`~/.maw-teams/<team>/<role>` · `${CELL_STATE_ROOT}/<role>` แบบที่ evidence-cell ใช้)
 > **ใช้ไม่ได้** ต้องวาง layer ที่บรรพบุรุษของ path นั้นแทน (หรือยอมแก้ global)
 >
+> ### ✅ สูตรสำหรับ worktree นอก repo `[verified 2026-08-06 · มี negative control]`
+>
+> วาง layer ที่ **บรรพบุรุษร่วม** ของ worktree เหล่านั้น — ใช้ได้จริง:
+>
+> ```
+> /tmp/probe-root/.maw/maw.config.60.json  →  member path /tmp/probe-root/sub
+>   command: … echo OUT-OF-REPO-LAYER-RESOLVED          ← เห็น
+> เทียบกับ member path /tmp (ไม่ได้อยู่ใต้ probe-root)
+>   command: … claude --model claude-opus-5 --continue  ← ไม่เห็น (negative control)
+> ```
+>
+> | worktree อยู่ที่ | วาง layer ที่ | ครอบ |
+> |---|---|---|
+> | `<repo>/agents/<role>` | `<repo>/.maw/maw.config.60.json` | ทีมของ repo นั้น · **อยู่ใน git** |
+> | `~/.maw-teams/<team>/<role>` | `~/.maw-teams/.maw/maw.config.60.json` | ทุกทีมใต้ `~/.maw-teams` |
+> | `${CELL_STATE_ROOT}/<role>` | `${CELL_STATE_ROOT}/.maw/maw.config.60.json` | evidence-cell (prism) |
+>
+> 🔴 **ข้อแลกเปลี่ยนที่ต้องบอกตรง ๆ**: layer นอก repo **ไม่ได้อยู่ใน git ของใครเลย**
+> ⇒ ย้ายเครื่อง / ส่งมอบเจ้าของ / ล้าง `~/.maw-teams` แล้ว **หายเงียบ ๆ** และอาการที่กลับมา
+> คือ *"engine ที่ขอถูกทิ้ง"* อีกรอบ — ไม่ใช่ error ⇒ ต้องมีสคริปต์ที่สร้างมันขึ้นใหม่
+> เก็บไว้ใน repo และ **รัน `enginecheck` หลังย้ายทุกครั้ง** (นี่คือเหตุผลที่ `enginecheck`
+> ประเมินจาก path ของสมาชิก ไม่ใช่จาก cwd — มันจับเคสนี้ได้)
+>
 > `enginecheck` ตรวจข้อนี้ให้แล้ว — มันอ่าน `worktree:`/`cwd:` ของสมาชิกแต่ละคนแล้ว
 > ประเมิน config **จาก path ของคนนั้น** และพิมพ์ `สโคป path` ออกมาทุกแถว
 > (เวอร์ชันแรกของมันถามจาก cwd ของ lead เสมอ ⇒ **false-PASS** ให้สมาชิกที่อยู่นอก repo —
