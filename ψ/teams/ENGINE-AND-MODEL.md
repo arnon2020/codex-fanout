@@ -3,6 +3,13 @@
 > **สรุปหนึ่งบรรทัด**: `engine:` ใน charter เป็น **คำขอ ไม่ใช่การตั้งค่า** และ `model:` **ไม่มีผลเลย**
 > — ทั้งสองอย่างแสดงออกได้ที่เดียวคือ **สตริงคำสั่งของ engine alias** ใน `commands`
 >
+> 🔬 **วิธีอ่าน source ให้ตรงกับ binary ที่รัน** (atlas ชี้ 2026-08-06 · ผมยืนยันเองแล้ว):
+> checkout ของ `maw-rs` บนเครื่องนี้อยู่บน branch `agents/fix-wake-oracle-alias-hijack` @ `cc0fc61`
+> และ **`git merge-base --is-ancestor 325db65 HEAD` = NO** ⇒ **อ่าน working tree = อ่านโค้ดผิดตัว**
+> ⇒ ใช้ `git show 325db65:<path>` / `git grep <pattern> 325db65 -- <path>` เสมอ (เอกสารนี้ใช้แบบนั้นทั้งฉบับ)
+> ⇒ 🔑 **`maw --version` ที่ตรงกัน พิสูจน์ว่า *binary ไหนรัน* ไม่ได้พิสูจน์ว่า *source ไหนที่เรากำลังอ่าน***
+> — สองอย่างนี้เป็นคนละคำถาม และ `valid-if:` ที่เช็คแค่ version จับข้อหลังไม่ได้
+>
 > `[verified 2026-08-06 · maw-rs 325db65 = binary ที่รันอยู่]`
 > `valid-if:` `maw --version` ยังขึ้นต้นด้วย `325db65` และ
 > `bash ψ/teams/scripts/verify-check.sh selftest` ยังตอบ `SELFTEST OK`
@@ -130,8 +137,16 @@ maw เดินขึ้นจาก cwd เก็บทุก `<ancestor>/.maw
 > | worktree อยู่ที่ | วาง layer ที่ | ครอบ |
 > |---|---|---|
 > | `<repo>/agents/<role>` | `<repo>/.maw/maw.config.60.json` | ทีมของ repo นั้น · **อยู่ใน git** |
-> | `~/.maw-teams/<team>/<role>` | `~/.maw-teams/.maw/maw.config.60.json` | ทุกทีมใต้ `~/.maw-teams` |
+> | `~/.maw-teams/<team>/<role>` | **`~/.maw-teams/<team>/.maw/maw.config.60.json`** | **ทีมนั้นทีมเดียว** |
 > | `${CELL_STATE_ROOT}/<role>` | `${CELL_STATE_ROOT}/.maw/maw.config.60.json` | evidence-cell (prism) |
+>
+> > ❌ **CORRECTED 2026-08-06 (atlas DISSENT — ถูก)** — แถวกลางเดิมผมเขียนว่า `~/.maw-teams/.maw/`
+> > **ผิด** เพราะมันเป็นบรรพบุรุษของ **ทุกทีม** ใต้นั้น (`ls ~/.maw-teams/` = **10 ทีม** —
+> > evidence-cell · lucifer-dev-v1 · lucifer-fullstack-v1 · maw-engine-fix-v1 ·
+> > teaching-media-cell · venture-cell · bug-fix-v1 · kanboard-frontend-p1/p2 · _archive)
+> > ⇒ **ผูก engine ให้ทีมที่ไม่เคยขอ โดยเงียบ ๆ** — **defect class เดียวกับที่เอกสารนี้ทั้งฉบับกำลังแก้**
+> > ต่างแค่ทิศ: เดิมคือ "ขอแล้วไม่ได้" อันนี้คือ "ไม่ได้ขอแล้วได้"
+> > ⇒ **วางให้แคบที่สุดที่ครอบ worktree ของทีมนั้นพอดี เสมอ**
 >
 > 🔴 **ข้อแลกเปลี่ยนที่ต้องบอกตรง ๆ**: layer นอก repo **ไม่ได้อยู่ใน git ของใครเลย**
 > ⇒ ย้ายเครื่อง / ส่งมอบเจ้าของ / ล้าง `~/.maw-teams` แล้ว **หายเงียบ ๆ** และอาการที่กลับมา
