@@ -113,11 +113,16 @@ git checkout -b alpha && git push -u origin alpha && git checkout main   # PR ta
 #     maw merges every <ancestor>/.maw/maw.config.<N>.json by N ascending; global is N=50,
 #     so 60 wins and travels with the repo. Filename MUST match maw.config.<digits>.json.
 #     `maw config set` cannot do this — it only supports node|port.
+#     ⚠️ layer นี้ถูกเห็นเฉพาะเมื่ออยู่ที่ **บรรพบุรุษของ worktree ของสมาชิก** — worktree ใน repo
+#        (agents/<role>) ใช้ได้ · worktree นอก repo มองไม่เห็น [verified 2026-08-06]
 mkdir -p .maw && cat > .maw/maw.config.60.json <<'JSON'
 { "commands": {
-    "omx-N": "bun $PWD/.claude/skills/oracle-team/scripts/codex-setup.ts N && CODEX_HOME=$PWD/.codex OMX_AUTO_UPDATE=0 omx --direct --madmax"
+    "omx-N": "bun $HOME/.claude/skills/oracle-team/scripts/codex-setup.ts N && CODEX_HOME=$PWD/.codex OMX_AUTO_UPDATE=0 omx --direct --madmax"
 } }
 JSON
+#     [unverified] เส้นทาง codex-setup.ts ข้างบน: สำเนา project-local อยู่ที่
+#     .claude/skills/oracle-team/scripts/codex-setup.ts ของ repo นี้ ส่วน $HOME/... อาจไม่มี
+#     บนเครื่องอื่น — ตรวจด้วย `ls` ก่อนใช้ อย่าคัดลอกบรรทัดนี้ไปทั้งดุ้น
 
 mkdir -p ψ/teams
 cat > ψ/teams/<team>.yaml <<'YAML'

@@ -291,9 +291,21 @@ teamclosed() {
 #      maw wake hermes  --dry-run -e codex-xhigh → hermes --yolo        ← ชื่อ window ชนะ
 #      maw wake hermes  --dry-run -e codex       → codex …              ← ข้อ 1 เจอ จึงชนะ
 # valid-if: bash ψ/teams/scripts/verify-check.sh enginereg codex   → REGISTERED
+# 🔴 `[dir]` **ไม่ใช่ของประดับ**: maw resolve `commands` แบบ dir-aware **เทียบ path ของ
+#    สมาชิกคนนั้น** ไม่ใช่ cwd ของคนสั่ง (`wake_engine_command.rs:17,135-137` · #600)
+#    ⇒ alias ที่อยู่ใน `<repo>/.maw/` **มองไม่เห็นจาก worktree นอก repo**
+#    `[verified 2026-08-06]`  wake … -e codex-sol                → codex --model gpt-5.6-sol
+#                             wake … -e codex-sol --repo-path /tmp → claude --model claude-opus-5
+#    ⇒ ถามจาก cwd ของ lead แล้วตอบว่า REGISTERED = **false-PASS** สำหรับสมาชิกที่ worktree อยู่นอก repo
 enginereg() {
-  local e="${1:?usage: enginereg <engine-name>}" cmd
-  cmd=$(maw config 2>/dev/null | python3 -c '
+  local e="${1:?usage: enginereg <engine-name> [dir]}" dir="${2:-.}" cmd
+  # ถ้า dir ยังไม่มีจริง (worktree ที่ยังไม่ได้สร้าง) ใช้บรรพบุรุษที่ใกล้ที่สุดที่มีอยู่ —
+  # ผลเท่ากัน เพราะ layer chain สร้างจากการไล่ขึ้นบรรพบุรุษอยู่แล้ว
+  while [ -n "$dir" ] && [ ! -d "$dir" ]; do
+    local up; up=$(dirname -- "$dir"); [ "$up" = "$dir" ] && break; dir="$up"
+  done
+  [ -d "$dir" ] || dir="."
+  cmd=$( cd "$dir" 2>/dev/null && maw config 2>/dev/null | python3 -c '
 import json,sys
 try: cfg=json.load(sys.stdin)
 except Exception: sys.exit(3)
@@ -302,11 +314,11 @@ if not isinstance(c,dict): sys.exit(3)
 v=c.get(sys.argv[1])
 if not isinstance(v,str) or not v.strip(): sys.exit(1)
 print(v.strip())
-' "$e")
+' "$e" )
   case $? in
-    0) echo "REGISTERED   $e"; echo "             $cmd"; return 0 ;;
-    1) echo "UNREGISTERED $e  ⚠ charter ที่ขอ engine นี้จะได้ engine อื่นเงียบ ๆ (ชื่อ window → glob → default)"
-       echo "             แก้: เพิ่มคีย์ใน .maw/maw.config.60.json ของ repo (layer นี้ชนะ global)"
+    0) echo "REGISTERED   $e   [scope: $dir]"; echo "             $cmd"; return 0 ;;
+    1) echo "UNREGISTERED $e   [scope: $dir]  ⚠ charter ที่ขอ engine นี้จะได้ engine อื่นเงียบ ๆ (ชื่อ window → glob → default)"
+       echo "             แก้: เพิ่มคีย์ใน .maw/maw.config.<N>.json ที่เป็น **บรรพบุรุษของ path สมาชิกคนนี้**"
        return 1 ;;
     *) echo "UNKNOWN      $e  อ่าน merged config ไม่ได้ (maw config / python3) — **ตอบไม่ได้ ไม่ใช่ผ่าน**"
        return 2 ;;
@@ -367,7 +379,8 @@ enginecheck() {
   fi
   [ "$n_parsed" -gt 0 ] || { echo "UNKNOWN   charter '$charter' ไม่มีสมาชิก — **ตอบไม่ได้**"; return 2; }
 
-  echo "enginecheck $charter  ($n_parsed สมาชิก)"
+  local root; root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$PWD
+  echo "enginecheck $charter  ($n_parsed สมาชิก)  [repo root: $root]"
   echo
   local fail=0 line role rest engine model ident cmd
   while IFS= read -r line; do
@@ -380,15 +393,26 @@ enginecheck() {
     [ -n "$ident" ] || ident="$role"
     [ -n "$engine" ] || engine="claude"
 
+    # 🔴 path ของสมาชิก = สโคปที่ maw ใช้ resolve `commands` ของคนนั้น (ไม่ใช่ cwd ของ lead)
+    local wt cwdf mdir
+    cwdf=$(printf '%s' "$rest" | sed -n 's/.*[ (]cwd=\([^,)]*\).*/\1/p')
+    wt=$(printf '%s'   "$rest" | sed -n 's/.*worktree=\([^,)]*\).*/\1/p')
+    if   [ -n "$cwdf" ]; then mdir="$cwdf"
+    elif [ -n "$wt" ] && [ "$wt" != "false" ]; then
+      case "$wt" in /*) mdir="$wt" ;; *) mdir="$root/$wt" ;; esac
+    else mdir="$root"
+    fi
+
     printf '  %s\n' "$role"
     printf '    charter ขอ : engine=%s model=%s\n' "$engine" "${model:--}"
+    printf '    สโคป path  : %s\n' "$mdir"
 
     # ⚠️ ต้องดู **exit code** ของ enginereg ไม่ใช่ "มีข้อความบรรทัดที่ 2 ไหม" — ตอนล้มมัน
     #    ก็พิมพ์ 2 บรรทัดเหมือนกัน ⇒ เวอร์ชันแรกของฟังก์ชันนี้อ่านข้อความ "แก้: เพิ่มคีย์…"
     #    เป็นคำสั่งที่จะรัน แล้วรายงาน ✅ PASS ให้ charter ที่ engine ไม่ได้ลงทะเบียน
     #    **false-PASS ในเครื่องมือที่เขียนมาเพื่อจับ false-PASS** (เจอจริง 2026-08-06)
     local reg_out reg_rc
-    reg_out=$(enginereg "$engine" 2>/dev/null); reg_rc=$?
+    reg_out=$(enginereg "$engine" "$mdir" 2>/dev/null); reg_rc=$?
     if [ $reg_rc -eq 0 ]; then cmd=$(printf '%s\n' "$reg_out" | sed -n '2s/^ *//p'); else cmd=""; fi
     if [ $reg_rc -eq 2 ]; then
       printf '    ⚠️ UNKNOWN อ่าน merged config ไม่ได้ ⇒ **ตอบไม่ได้ ไม่ใช่ผ่าน**\n'
@@ -419,7 +443,12 @@ enginecheck() {
           printf '               (wake probe ยังตอบไม่ได้ — window ยังไม่มี/ชื่อกำกวม แต่ข้อสรุปยืน:\n'
           printf '                ข้อ 1 ไม่เจอ ⇒ ตกไปตามชื่อ window → glob → default)\n'
         fi
-        printf '               แก้: เพิ่ม "%s" ใน .maw/maw.config.60.json\n' "$engine"
+        printf '               แก้: เพิ่ม "%s" ใน .maw/maw.config.<N>.json ที่เป็น**บรรพบุรุษของ %s**\n' "$engine" "$mdir"
+        case "$mdir" in
+          "$root"|"$root"/*) ;;
+          *) printf '               ⚠️ path ของสมาชิกคนนี้อยู่**นอก repo** ⇒ layer ที่ %s/.maw/ **มองไม่เห็น**\n' "$root"
+             printf '                  ต้องวาง layer ที่บรรพบุรุษของ path นั้น หรือใช้ worktree ใน repo\n' ;;
+        esac
         fail=1
       fi
     else
@@ -596,6 +625,15 @@ YAML
       && { echo "   ✗ enginecheck ผ่าน ทั้งที่ model ที่ขอไม่อยู่ในคำสั่งจริง"; fail=1; }
   else
     echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+  echo "8c) enginereg: alias ที่อยู่ใน .maw/ ของ repo ต้อง **มองไม่เห็น** จาก path นอก repo"
+  # กับดักที่ที่ปรึกษาจับได้ 2026-08-06: ถ้าถามจาก cwd ของ lead เสมอ จะตอบ REGISTERED
+  # ให้สมาชิกที่ worktree อยู่นอก repo — false-PASS ในประตูที่เพิ่งสร้างมากันเรื่องนี้พอดี
+  if maw config >/dev/null 2>&1 && [ -f "$here8/../../../.maw/maw.config.60.json" ]; then
+    enginereg codex-sol "$here8/../.." >/dev/null 2>&1 || { echo "   ✗ ในรีโปควรเห็น codex-sol"; fail=1; }
+    enginereg codex-sol /tmp          >/dev/null 2>&1 && { echo "   ✗ นอกรีโปไม่ควรเห็น alias ที่อยู่ใน .maw/ ของรีโป"; fail=1; }
+  else
+    echo "   (ไม่มี maw หรือไม่มี layer ของ repo — ข้าม ไม่นับผ่าน/ตก)"
   fi
   rm -rf "$td8"
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"

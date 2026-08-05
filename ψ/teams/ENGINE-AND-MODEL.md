@@ -101,6 +101,26 @@ maw เดินขึ้นจาก cwd เก็บทุก `<ancestor>/.maw
 
 ชื่อไฟล์ **ต้อง** ตรงรูป `maw.config.<ตัวเลข>.json` — ชื่ออื่นถูกข้ามเงียบ ๆ รวมถึง `maw.config.json` เปล่า ๆ
 
+> 🔴 **ข้อจำกัดที่สำคัญที่สุดของวิธีนี้ — layer ไม่ได้เดินทางไปทุกที่**
+> maw resolve `commands` แบบ **dir-aware เทียบ path ของสมาชิกคนนั้น** ไม่ใช่ cwd ของคนสั่ง
+> (`wake_engine_command.rs:17,135-137` · #600) ⇒ layer จะถูกเห็นก็ต่อเมื่อไฟล์อยู่ที่
+> **บรรพบุรุษของ worktree/cwd ของสมาชิก**
+>
+> ```
+> maw wake … -e codex-sol                  → codex --model gpt-5.6-sol       ← worktree ใน repo
+> maw wake … -e codex-sol --repo-path /tmp → claude --model claude-opus-5    ← นอก repo หายเลย
+> ```
+> `[verified 2026-08-06]`
+>
+> ⇒ **worktree ใน repo** (`agents/<role>`) ใช้ได้ · **worktree นอก repo**
+> (`~/.maw-teams/<team>/<role>` · `${CELL_STATE_ROOT}/<role>` แบบที่ evidence-cell ใช้)
+> **ใช้ไม่ได้** ต้องวาง layer ที่บรรพบุรุษของ path นั้นแทน (หรือยอมแก้ global)
+>
+> `enginecheck` ตรวจข้อนี้ให้แล้ว — มันอ่าน `worktree:`/`cwd:` ของสมาชิกแต่ละคนแล้ว
+> ประเมิน config **จาก path ของคนนั้น** และพิมพ์ `สโคป path` ออกมาทุกแถว
+> (เวอร์ชันแรกของมันถามจาก cwd ของ lead เสมอ ⇒ **false-PASS** ให้สมาชิกที่อยู่นอก repo —
+> ที่ปรึกษาจับได้ ไม่ใช่ selftest)
+
 ไฟล์ของ repo นี้: [`.maw/maw.config.60.json`](../../.maw/maw.config.60.json)
 
 ```json
