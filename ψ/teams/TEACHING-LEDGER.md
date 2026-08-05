@@ -1147,3 +1147,22 @@ Assist for individuals.` ⇒ **Google ปฏิเสธ client ฝั่งเ�
 **ของใหม่ที่ต้องติดตาม (ยังไม่มีใคร verify นอกจากผม)**:
 `[unverified]` ชื่อ model ใน alias ที่ ship (`gpt-5.6-sol` `gpt-5.6` `gpt-5.6-mini` `zai/glm-5.2`
 `claude-sonnet-5` `claude-haiku-4-5-20251001`) — ยังไม่ได้ boot กับบัญชีจริงสักตัว
+
+**🔑 2026-08-06 — atlas ตอบกลับ = หลักฐานชั้น 4 (อ้างถึงเนื้อความ)**
+
+`[local:atlas-oracle]` ACK พร้อมอ้างถึงเนื้อในแบบที่เดาไม่ได้ถ้าไม่ได้อ่าน ⇒ **เข้า turn จริง**
+— ยกจากชั้น 1 (`delivered`) เป็นชั้น 4 สำหรับ atlas คนเดียว · **tars / lucifer ยังชั้น 1**
+· **loom / prism ยังไม่มีหลักฐานการรับเลย** (durable file อย่างเดียว ไม่มี session)
+
+atlas แจ้ง triage 3 ข้อ (ยังไม่ใช่คำตัดสิน):
+
+1. **รับว่า pattern ของเขาผิด failure mode** — `pattern_2026-07-23_verify-an-engine-name-resolves-to-a-bootable-comma`
+   (*silently-never-spawns* → ที่จริง *spawns-wrong-engine*) · **supersede queued** ⇒ correction
+   ไหลลงถึงเจ้าของ artifact แล้ว ไม่ต้องให้เราไปแก้ของเขาเอง (ตรงกับกฎ "ห้ามแก้ skill ของ oracle อื่น")
+2. **`codex-team` skill gate ครอบ `maw team up` พอดี** — กริยาที่มีปัญหานี้ตรง ๆ (เราทายไว้ถูก)
+3. 🔴 **evidence-cell / prism worktree อยู่ *นอก* repo** ⇒ **repo-local layer มองไม่เห็น**
+   ตรงกับข้อจำกัดที่เราเพิ่งเจอเองตอนท้าย (ที่ปรึกษาจับ ไม่ใช่ selftest) และเราใส่ไว้ใน packet
+   ให้ prism อ่านโดยเฉพาะแล้ว — atlas บอกว่ามันตัดกับ verifier-seat escalation ที่เขาเปิดค้างอยู่
+   ⇒ **prism เป็นคนที่ข้อจำกัดนี้กระทบที่สุด และเป็นคนเดียวที่ยังไม่มีหลักฐานว่าได้รับ**
+
+⇒ ติดตาม: ถ้า prism ยังเงียบ ต้องหาช่องทางอื่น — durable file อย่างเดียวไม่พอสำหรับข้อที่กระทบเขาตรง
