@@ -117,6 +117,53 @@ maw เดินขึ้นจาก cwd เก็บทุก `<ancestor>/.maw
 
 ชื่อไฟล์ **ต้อง** ตรงรูป `maw.config.<ตัวเลข>.json` — ชื่ออื่นถูกข้ามเงียบ ๆ รวมถึง `maw.config.json` เปล่า ๆ
 
+> ### 🔴 `maw.config.json` (ไม่มีเลข) เป็น **ไฟล์ตาย** — loom เจอ 2026-08-06 · ผมยืนยันแล้ว
+>
+> `parse_config_layer_name` ต้องได้ **ตัวเลขล้วน** หลัง `maw.config.` ⇒ `"maw.config.json"`
+> → `rest="json"` → `strip_suffix(".json")` = `None` ⇒ **ไม่ใช่ layer**
+> มันถูกอ่านเป็น *legacy fallback* เฉพาะเมื่อ **ไม่มีไฟล์ที่มีตัวเลขเลย** (`if sources.is_empty()`)
+> เครื่องนี้มี `maw.config.50.json` ⇒ **`~/.config/maw/maw.config.json` ตายสนิท**
+>
+> ```
+> ไฟล์สองอันในโฟลเดอร์เดียวกัน ต่างแค่ชื่อ:
+>   maw.config.json     → maw config explain … = FINAL null      ← ไม่ถูกอ่าน
+>   maw.config.60.json  → maw config explain … = FINAL "echo …"  ← ถูกอ่าน
+> และ `maw config sources` ไม่ลิสต์ตัวที่ไม่มีเลขเลย
+> ```
+>
+> ❌ **แก้ claim ของผมเอง**: ที่เอกสารนี้ (สืบทอดจาก research doc §10) เขียนว่า
+> *"Option A: แก้ global `~/.config/maw/maw.config.json` — ใช้ได้แต่กระทบ oracle ทุกตัว"*
+> **ผิด — มันไม่ทำงานเลย register อะไรไม่ได้สักอย่าง exit 0 ไม่มี warning**
+> ⇒ ⚠️ **ใครใน fleet ที่ "แก้ engine แล้ว" ด้วยการ edit ไฟล์นี้ ยังไม่ได้แก้อะไรเลยและไม่รู้ตัว**
+> เช็ค: `ls ~/.config/maw/maw.config.*.json` — ถ้ามีไฟล์เลข ไฟล์ไม่มีเลขตายแล้ว
+> ⇒ นี่คือเหตุผลจริงที่ `seed_charter_engines` ของ loom พัง (เขาแก้ให้เขียน JSON ตรงเข้าไฟล์นั้น
+> ตั้งแต่ 08-01 ⇒ **เขียนลงไฟล์ที่ไม่มีใครอ่านมา 5 วัน** และ python check ของเขาเองก็อ่านไฟล์ตายนั้น
+> จึงรายงานผ่าน — `enginecheck` เป็นตัวที่จับได้)
+>
+> 🧪 **วิธีทดสอบข้อนี้ — อย่าเขียนลง `~/.config/maw/` จริง**
+> สร้าง temp dir แล้ววางไฟล์ทั้งสองชื่อไว้ด้วยกัน แล้ว `cd` เข้าไปถาม `maw config sources`
+> — ได้คำตอบเดียวกันและ**ดีกว่า** (ตัวแปรเดียวคือชื่อไฟล์) โดยไม่แตะของกลางของทั้ง fleet
+> *(ผมทดสอบครั้งแรกด้วยการเขียนลงไฟล์จริงแล้วกู้คืน — user ท้วง และถูก: สำรองไว้ไม่ได้แปลว่า
+> ควรทำ ของกลางที่ oracle ทุกตัวใช้ร่วมกัน ไม่ใช่ที่ทดลอง)*
+
+### 🔴 สองไบนารี resolve จาก **คนละไดเรกทอรี** ⇒ ต้องวาง **2 layer** (loom 2026-08-06)
+
+| คำสั่ง | resolve เทียบกับ | layer ที่ใช้ได้ |
+|---|---|---|
+| **maw-js** `team spawn` | **cwd ของ lead** (repo) | `<repo>/.maw/maw.config.60.json` |
+| **maw-rs** `wake` / `team up` | **path ของ member** | `<บรรพบุรุษ worktree>/.maw/maw.config.60.json` |
+
+loom วางแต่ layer ที่ `~/.maw-teams/<team>/` แล้ว **`maw team spawn` ยังปฏิเสธ**:
+`engine 'claude-opus-headless' not resolvable — known: [...]`
+⇒ ต้องวางทั้งสองที่ · **ข้อดีที่ได้ฟรี: layer ใน repo อยู่ใน git ⇒ แก้ปัญหา durability ที่เตือนไว้ครึ่งหนึ่ง**
+
+### 🔴 failure mode ของสองไบนารี **ตรงข้ามกัน** ⇒ เพิ่มเข้าชั้นหลักฐาน
+
+- **maw-js `team spawn` = fail-closed** — ปฏิเสธพร้อมลิสต์ engine ที่รู้จัก
+- **maw-rs `wake` = fall through เงียบ** ไป `commands.default`
+
+⇒ 🔑 **"spawn ผ่านทางนี้ได้" ไม่ใช่หลักฐานว่าทางโน้นถูก** — alias ที่หายเหมือนกันเป๊ะ ให้ผลคนละขั้ว
+
 > 🔴 **ข้อจำกัดที่สำคัญที่สุดของวิธีนี้ — layer ไม่ได้เดินทางไปทุกที่**
 > maw resolve `commands` แบบ **dir-aware เทียบ path ของสมาชิกคนนั้น** ไม่ใช่ cwd ของคนสั่ง
 > (`wake_engine_command.rs:17,135-137` · #600) ⇒ layer จะถูกเห็นก็ต่อเมื่อไฟล์อยู่ที่
