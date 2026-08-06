@@ -444,7 +444,28 @@ Idempotent: skip live, relaunch dead, create missing.
 
 **The one rule:** `engine:` in a charter is a *lookup key*, not a setting. It only takes
 effect if `commands.<name>` exists in a config layer visible **from the directory the worker
-runs in**. `maw wake` has no `--model` flag anywhere in the binary, so **a model can only
+runs in**.
+
+> 📐 **"Visible from where" — the phrase this document leans on hardest, and it has two
+> answers depending on the verb.** `[prism 2026-08-06: they lost real time to this]`
+>
+> | verb | resolves the layer from |
+> |---|---|
+> | `maw team up` / `maw wake` | the **member's** path (`--repo-path`) |
+> | `maw team spawn` | the **caller's** cwd — not the member's `--cwd` |
+>
+> So a layer at the team state root alone is invisible to `spawn`, and a layer in your repo
+> alone is invisible to the members. Teams using both verbs need **two byte-identical
+> copies** — one in the repo (also gets it into git, which fixes the machine-move problem)
+> and one at the members' common ancestor.
+>
+> **"Registered" also means one specific thing:** an exact key in `commands`. `engines` is a
+> different map that nothing reads, and glob keys only apply on the window-name path — never
+> to an `engine:` lookup.
+>
+> 🟢 One piece of good news from prism's run: `maw team spawn` **fails loudly** here
+> (`engine '<x>' not resolvable — known: […]`, exit 1) because it goes through an exact-key
+> resolve that throws. It is `wake`'s fallthrough chain that substitutes silently. `maw wake` has no `--model` flag anywhere in the binary, so **a model can only
 live inside the alias's command string.** One alias name = one command = one model. Two
 members naming the same alias get the same model, necessarily.
 
@@ -521,9 +542,32 @@ Ignore the session name in that output. Standalone `maw wake --dry-run` invents 
 (`would wake … in session '76-<name>'`) that has nothing to do with your `session:` — only the
 `command:` line matters here.
 
-**If both commands print the same launch line, your alias is not being read** — the name was
-discarded and both fell through to the same fallback. That comparison is the check that can
-fail; a single green line on its own proves nothing.
+🔴 **"Both outputs are the same" is NOT the test. Three different failures produce it, and
+two have nothing to do with your engine.** `[prism 2026-08-06, running it against a live cell]`
+
+| real cause | what you see | naive reading |
+|---|---|---|
+| the alias genuinely is not read | two identical `command:` lines | correct ✅ |
+| you omitted the positional target | `usage: maw wake <target\|all> …` twice | "engine not read" ❌ |
+| the target is a team ROLE, not a registered oracle | `wake: repo not found for <x>` twice | "engine not read" ❌ |
+
+**The real test: both invocations must actually PRODUCE a `command:` line, and those two lines
+must differ.** No `command:` line at all means the probe never ran — that is UNVERIFIED, not
+a failed engine, and chasing it as a config problem wastes the time prism lost to it.
+
+```bash
+real=$(maw wake "$A" --no-attach --dry-run -e team-codex-hi      --repo-path "$DIR" 2>&1 | sed -n 's/^ *command: *//p')
+ctrl=$(maw wake "$A" --no-attach --dry-run -e __no_such_engine__ --repo-path "$DIR" 2>&1 | sed -n 's/^ *command: *//p')
+if   [ -z "$real" ] || [ -z "$ctrl" ]; then echo "UNVERIFIED — probe did not resolve; check the target name and --repo-path"
+elif [ "$real" = "$ctrl" ];            then echo "FAIL — alias not read"
+else                                        echo "OK — $real"; fi
+```
+
+> ⚠️ `maw wake` resolves its target against the **oracle registry**, not against your team's
+> roles. A member name that is not a registered oracle only resolves because `--repo-path`
+> is supplied — omit it and you get `repo not found`, which is the second false positive
+> above. `scripts/verify-check.sh enginecheck` does not have this hole: it reads the merged
+> config directly and uses the wake probe only as corroboration.
 
 #### Scripted form — shipped with this skill, no other repo needed
 
@@ -634,6 +678,37 @@ the raw `maw` commands above instead — they need neither.
 After spawning, confirm on the engine's own UI (`maw peek <session>:<window>`) that the
 status bar shows the model you asked for. That is the only layer of evidence that covers
 whether the account can actually serve that model — nothing before it does.
+
+#### 0b-2. Also check the CHARTER → PLAN path. Gate 0b structurally cannot.
+
+Gate 0b tests the **alias → command** path: you supply `-e` by hand, so it proves the alias
+resolves. It never touches the **charter → plan** path — what engine maw decides each member
+gets *from your charter*. A charter can pass 0b completely and still boot the wrong engine.
+
+```bash
+maw team up "$TEAM" --dry-run       # read the `engine` COLUMN, member by member
+```
+
+🔴 **`defaults: { engine: X }` is silently dropped.** `[lucifer 2026-08-06, clean A/B on two
+of their charters; I reproduced both]` maw resolves engine as
+`-e flag → member.engine → member.model → "claude"`. **`defaults` is not in that chain** — the
+parser stores it and nothing reads it. Third dead field, after `model:` and `engines:`.
+
+```
+charter: defaults: {engine: codex-xhigh}, no per-member engine:
+plan:    supervisor-watchdog  claude  …  -e claude     ← codex-xhigh appears nowhere, rc=0
+control: same defaults + per-member engine: codex-medium
+plan:    frontend-engineer    codex-medium  …          ← per-member DOES reach
+```
+
+Their exposure: **45 of 60 charters** carrying a `defaults.engine` have **zero** per-member
+`engine:` — the dominant pattern, not an edge case. A house whose `defaults.engine` happens to
+be `claude` never notices, because the substitution matches what it wanted.
+
+⚠️ `enginecheck` reports this charter as FAIL — but until this was found it named the wrong
+cause, because it parses via `maw team plan`, which has **already** substituted `claude`. It
+now reads `defaults:` from the file directly and says so before anything else. A tool that
+inherits the substitution it is meant to detect cannot see it.
 
 #### 0c. Naming and worktree — the two things that make `maw team up` exit 1
 

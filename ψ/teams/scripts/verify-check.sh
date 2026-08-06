@@ -526,6 +526,32 @@ enginecheck() {
 
   local root; root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$PWD
   echo "enginecheck $charter  ($n_parsed สมาชิก)  [repo root: $root]"
+
+  # 🏷️ lucifer 2026-08-06 (EXTRA B, verified A/B): `defaults: {engine: X}` **ไม่เคยถูกอ่าน**
+  #    `team_t3_classify` = opts.engine → member.engine → member.model → "claude"
+  #    **ไม่มี defaults ใน chain** และ parser เก็บมันไว้เฉย ๆ (`team_core.rs:455`)
+  #    ⇒ dead field ตัวที่ 3 ต่อจาก `model:` และ `engines:`
+  #    🔴 และฟังก์ชันนี้ **มองไม่เห็นด้วยตัวเอง** เพราะใช้ `maw team plan` เป็น parser ซึ่ง
+  #      แทนค่าเป็น claude ไปแล้ว ⇒ เดิมรายงานว่า "charter ขอ engine=claude" ซึ่ง**เท็จ**
+  #      คนอ่านจะไปลงทะเบียน claude แล้ว FAIL หาย ทั้งที่ยังไม่มีวันได้ engine ที่ขอ
+  #    ⇒ ต้องอ่าน defaults: จากไฟล์ตรง ๆ ก่อน แล้วเตือนดัง ๆ
+  local dflt
+  dflt=$(awk '/^defaults:/{f=1;next} f&&/^[^[:space:]]/{f=0} f&&/engine:/{sub(/.*engine:[[:space:]]*/,"");print;exit}' "$charter" 2>/dev/null)
+  if [ -n "$dflt" ]; then
+    # เตือนเฉพาะเมื่อมี member ที่ **พึ่ง** defaults จริง — ถ้าทุกคนมี engine: ของตัวเอง
+    # คีย์นี้ไม่มีพิษ และการเตือนก็เป็นแค่ noise (control ของ lucifer เป็นแบบนั้น)
+    local naked
+    naked=$(awk '/^[[:space:]]*-[[:space:]]*role:/{if(n&&!e)c++; n=1; e=0}
+                 n&&/^[[:space:]]+engine:/{e=1}
+                 END{if(n&&!e)c++; print c+0}' "$charter" 2>/dev/null)
+    if [ "${naked:-0}" -gt 0 ]; then
+      echo
+      echo "🔴 charter นี้มี  defaults: engine: $dflt  — **maw ไม่เคยอ่านคีย์นี้**"
+      echo "   และมี $naked member ที่ไม่มี engine: ของตัวเอง ⇒ **จะได้ 'claude' ไม่ใช่ '$dflt' และ exit 0**"
+      echo "   ⇒ ย้าย engine ไปไว้ที่ member ทุกคน · บรรทัดด้านล่างแสดงค่า **หลัง** maw แทนแล้ว"
+      echo "   ⇒ ยืนยันเอง: maw team up <team> --dry-run แล้วอ่านคอลัมน์ engine"
+    fi
+  fi
   echo
   local fail=0 line role rest engine model ident cmd machine=""
   while IFS= read -r line; do
