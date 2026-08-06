@@ -26,11 +26,22 @@ Why this is a real step, not boilerplate: `ROOT=$(git rev-parse --show-toplevel)
 repo sets `ROOT` to the **empty string**, and every path after it silently becomes
 `/.maw/...`, `/agents/...`. Nothing errors until a confusing failure several steps later.
 
-> **No repo?** Teams can live entirely outside one — `~/.maw-teams/<team>/<role>` is a normal
-> layout. In that case set `ROOT=~/.maw-teams/$TEAM`, `mkdir -p "$ROOT"`, and use that
-> everywhere below; the config layer goes at `$ROOT/.maw/maw.config.60.json`. Everything else
-> is identical. You lose only one thing: the layer is then in nobody's git, so it vanishes on
-> a machine move and the symptom is a silently wrong engine, not an error.
+> **No repo? `maw team up` still needs one.** `[verified — an earlier version of this callout
+> said "everything else is identical", which was false]`
+> ```
+> $ maw team up <team>          # from a directory with no .git anywhere above it
+> team spawn: repo root not found (.git)
+> $ echo $?
+> 0                             # ← rc=0. A gate checking the exit code calls this a success.
+> ```
+> A team can still live outside your oracle repo — `~/.maw-teams/<team>/<role>` is a normal
+> layout — but that directory must itself be a git repo. Set `ROOT=~/.maw-teams/$TEAM`,
+> `mkdir -p "$ROOT"`, **`git init "$ROOT"`**, and use it everywhere below; the config layer
+> goes at `$ROOT/.maw/maw.config.60.json`. Trade-off: that layer is then in nobody's *shared*
+> git, so it vanishes on a machine move and the symptom is a silently wrong engine, not an error.
+
+> ⚠️ **`maw` returns rc=0 on several of its failures.** Three of the four ways this procedure
+> can break exit 0 with the error only on stdout. Read the output; never branch on `$?` alone.
 
 ```bash
 # ── things you choose ────────────────────────────────────────────────────────
@@ -54,8 +65,18 @@ cat > "$ROOT/.maw/maw.config.60.json" <<'JSON'
 } }
 JSON
 ```
-Do not invent model names. Use one your account actually serves — check what a working
-engine already uses: `grep '^model' ~/.codex/config.toml`.
+**Finding model names that actually work — one per engine, they are not interchangeable:**
+
+| engine | how to list what your account serves |
+|---|---|
+| codex | `grep '^model' ~/.codex/config.toml` gives the current default · `codex --help` for the flag |
+| claude | `claude --help` lists the aliases (`opus`, `sonnet`, `haiku`) — an alias is fine in the command |
+| opencode | `opencode models` prints every `provider/model` it can reach |
+
+Do not invent names. If you need **two different models**, note that `~/.codex/config.toml`
+holds only one default — you either name a second codex model explicitly, or make the second
+member a different engine entirely (mixing codex and claude in one team is normal and is what
+the aliases above are for).
 
 **Step 2 — create each member's working directory. It must exist before spawn.**
 
@@ -74,21 +95,23 @@ an `engine:` beside it (see 0c).
 mkdir -p "$ROOT/ψ/teams"
 cat > "$ROOT/ψ/teams/$TEAM.yaml" <<YAML
 name: $TEAM
-project: <owner>/<repo>
 session: $SESSION
 members:
   - role: $A
-    name: $A
+    name: $A                  # the "member identity" referred to elsewhere in this doc
     engine: team-codex-hi
-    worktree: agents/$A
-    branch: alpha
+    worktree: agents/$A       # RELATIVE to \$ROOT (absolute also works)
   - role: $B
     name: $B
     engine: team-codex-lo
     worktree: agents/$B
-    branch: alpha
 YAML
 ```
+
+Fields deliberately omitted, because they are not needed and their absence confuses people
+who copy fuller examples: `project: <owner>/<repo>` is validated by `maw team preflight` but
+is not required by `maw team up`; `branch:` is likewise not consulted when bringing a team
+up. Add them only if some other verb you use needs them.
 
 **Step 4 — prove the aliases are actually visible.** Not optional: `maw team preflight` and
 `maw team up --dry-run` are both green even when this is broken.
@@ -120,33 +143,71 @@ Two failures you will probably hit here, and neither error explains itself:
 
 **Step 6 — peek every member. A spawn that "succeeded" often has not booted.**
 
-```bash
-sleep 15
-tmux capture-pane -p -t "$SESSION:$A" | tail -20
-tmux capture-pane -p -t "$SESSION:$B" | tail -20
-```
-- Sitting on `✨ Update available!` → send `2` + Enter, then peek again.
-- A bare shell prompt → the engine never started; go back to step 4.
-- Expected: the engine's own banner with `model: <MODEL-A> ...` — **confirm each member shows
-  the model you asked for.** This is the only check that covers whether the account can serve
-  that model; nothing earlier does.
-
-**Step 7 — tear down completely.** Killing tmux is not enough; the fleet entry keeps
-claiming your member names and breaks the *next* team.
+🔴 **The window is named `<role>-oracle`, not `<role>`.** `maw team up` appends the suffix.
+Targeting `$SESSION:$A` makes tmux prefix-match, return one useless line, and **exit 0** —
+which reads as "member is up and quiet". Always list the real names first:
 
 ```bash
-tmux kill-session -t "$SESSION"
-rm -f ~/.maw/fleet/"$SESSION".json
+tmux list-windows -t "=$SESSION" -F '#{window_name}'      # the '=' prevents prefix matching
+sleep 40                                                   # see the loading note below
+tmux capture-pane -p -t "$SESSION:${A}-oracle" | tail -25
+tmux capture-pane -p -t "$SESSION:${B}-oracle" | tail -25
 ```
+
+First-boot prompts that stall a member — each one leaves it looking merely quiet:
+
+| what you see | engine | clear it with |
+|---|---|---|
+| `✨ Update available!` | codex | `tmux send-keys -t "$SESSION:${A}-oracle" 2 Enter` |
+| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` |
+| a bare shell prompt `❯` | any | the engine never started — go back to step 4 |
+
+⏳ **`model: loading` occupies the exact line you are told to read.** After clearing a prompt
+the codex banner shows `model:       loading` for ~25 more seconds before the real value
+appears. Do not accept the first banner you see — re-peek until the value is not `loading`.
+
+**Expected, and the only check that covers whether the account can actually serve the model:**
+the engine's own banner naming it. Per engine:
+- **codex** — banner line `model: <MODEL> <effort>` and the status bar repeat it
+- **claude** — the banner scrolls away; use `tmux send-keys -t "$SESSION:${B}-oracle" "/status" Enter`
+  then peek, and read `Model: <alias> (<full-id>)`
+
+**Step 7 — tear down.**
+
+```bash
+tmux kill-session -t "=$SESSION"
+ls ~/.maw/fleet/ | grep -i "$SESSION"      # usually EMPTY — see below
+rm -f ~/.maw/fleet/"$SESSION".json         # only if the line above printed something
+```
+
+**Which of those two lines you need depends on how the team was started, and the difference
+is not obvious:** `maw wake` run directly writes `~/.maw/fleet/<session>.json`, and
+`tmux kill-session` does not remove it — the stale entry keeps answering to those member
+names and breaks the next spawn with an ambiguity error. **`maw team up` does not appear to
+write one at all.** So run the `ls` and only delete what actually exists; a bare `rm -f`
+succeeds either way and teaches you nothing.
+
+Note also that a team created this way does **not** show up in `maw team list` even while it
+is alive — do not use that command to decide whether a team is running. `tmux list-sessions`
+is the source of truth.
 
 If all eight steps pass, the mechanism is working and the rest of this skill is about
 running the team, not standing it up.
 
-> **This QUICKSTART has been run start-to-finish, but only by its author.** It produced a
-> live two-member team on two different models, and one step (`charter not found`) was fixed
-> because following it literally failed there. It has **not** yet been run by someone who did
-> not already know the answers — so if a step assumes knowledge you do not have, that is a
-> defect in this document, not in you. Say which step and what you had to guess.
+**QUICKSTART is the procedure. Gate 0 below is the reference** — same job, more depth on
+*why* each check exists. If the two ever disagree, QUICKSTART is the one that has been run;
+report the discrepancy.
+
+> **Test record.** Run start-to-finish twice: once by its author, once by an agent given only
+> this skill and no other context. The second run **succeeded but reported 5 blockers and 12
+> guesses** — every one of them is now fixed or documented above, including the two that
+> mattered most: `maw team up` requires a git repo even outside your oracle's repo (the
+> earlier "everything else is identical" line here was simply false), and the tmux window is
+> `<role>-oracle`, so the peek command in the old Step 6 silently targeted nothing.
+> **Three of the four failure modes that run hit returned rc=0.**
+>
+> If a step still assumes knowledge you do not have, that is a defect in this document, not in
+> you. Say which step and what you had to guess.
 
 ---
 
@@ -304,9 +365,13 @@ maw config sources                  # your layer file MUST appear in this list
 maw config explain commands.codex-hi   # "FINAL null" ⇒ not registered from here
 
 # decisive: the real launch line, plus a control that is deliberately unregistered
+# <member-identity> = the member's `name:` from the charter (falls back to `role:` if unset)
 maw wake <member-identity> --no-attach --dry-run -e codex-hi           --repo-path "$MEMBER_DIR"
 maw wake <member-identity> --no-attach --dry-run -e __no_such_engine__ --repo-path "$MEMBER_DIR"
 ```
+Ignore the session name in that output. Standalone `maw wake --dry-run` invents one
+(`would wake … in session '76-<name>'`) that has nothing to do with your `session:` — only the
+`command:` line matters here.
 
 **If both commands print the same launch line, your alias is not being read** — the name was
 discarded and both fell through to the same fallback. That comparison is the check that can
