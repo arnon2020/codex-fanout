@@ -249,19 +249,27 @@ EOF
 
 # (b) 🟡 .gitignore, per worktree — NOT per team. Same charter can be safe for
 #     some members and unsafe for others when members live in different repos.
-grep -E '^\s*(worktree|cwd):' "$CHARTER" | awk '{print $2}' | while read -r wt; do
-  [ -d "$wt" ] || continue
-  owner=$(git -C "$wt" rev-parse --show-toplevel 2>/dev/null) || continue
-  case "$wt" in "$owner"/*)
-    git -C "$owner" check-ignore -q "$wt" 2>/dev/null \
-      || echo "🟡 $wt is inside $owner and NOT ignored there — it will sit untracked forever" ;;
-  esac
+#     `worktree: true|false` are FLAGS, not paths — filter them out explicitly.
+#     [found by ajfon 2026-08-06] `worktree: true` on a lead role reached the loop as the
+#     candidate path "true"; it was skipped only because `[ -d "true" ]` happens to be false.
+#     A check that survives on a coincidence is not passing, it is getting lucky.
+grep -E '^\s*(worktree|cwd):' "$CHARTER" | awk '{print $2}' \
+  | grep -vxE 'true|false|~|\.' | while read -r wt; do
+  # Resolve WITHOUT requiring existence — this runs before spawn, so it never exists yet.
+  case "$wt" in /*) abs="$wt" ;; *) abs="${ROOT:-$PWD}/$wt" ;; esac
+  parent=$(dirname "$abs")
+  [ -d "$parent" ] || continue                       # the PARENT exists pre-spawn; the worktree does not
+  owner=$(git -C "$parent" rev-parse --show-toplevel 2>/dev/null) || continue
+  # check-ignore matches paths, not files — it answers correctly for a path that does not exist.
+  git -C "$owner" check-ignore -q "$abs" 2>/dev/null \
+    || echo "🟡 $abs will sit inside $owner un-ignored — untracked forever, one 'git add .' from committed"
 done
 
-# (c) 🟡 Member names should be prefixed with the team name.
-grep -E '^\s*-?\s*role:' "$CHARTER" | awk '{print $NF}' | while read -r r; do
-  case "$r" in "${TEAM}"*) ;; *) echo "🟡 role '$r' is not prefixed with '$TEAM' — bare 'maw wake $r' can fuzzy-match something else entirely" ;; esac
-done
+# (c) 🟡 Member names should be prefixed with the team name. ONE line per charter, not per role:
+#     lucifer's n=65 run fired 357/357 times, which is noise nobody reads.
+unpref=$(grep -E '^\s*-?\s*role:' "$CHARTER" | awk '{print $NF}' | grep -vc "^${TEAM}" || true)
+tot=$(grep -cE '^\s*-?\s*role:' "$CHARTER" || true)
+[ "${unpref:-0}" -gt 0 ] && echo "🟡 $unpref/$tot roles in $(basename "$CHARTER") lack the '$TEAM' prefix — bare 'maw wake <role>' can fuzzy-match another oracle or repo entirely"
 
 # (d) 🔴 Every member needs worktree: or cwd:. Absent is NOT a harmless default.
 python3 - "$CHARTER" <<'PY'

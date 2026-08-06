@@ -376,6 +376,46 @@ done
 > one `.gitignore`: `grep` misses negations, directory rules, nested `.gitignore` files, and
 > `core.excludesFile` — and it cannot know which repo it should have been reading.
 
+## Step 2b: Orphan worktrees — the ones no charter mentions
+
+> 🔴 **Every check above reads the charter, so none of them can see a worktree the charter does
+> not name.** `[found by ajfon, running Step 4b against their own charter, 2026-08-06]` Their
+> `ajfon-research-team.yaml` declares `agents/{corpus-scout,measure-runner,claim-verifier}` —
+> **none of which exist on disk.** The five worktrees actually stranded there are
+> `agents/{corpus-builder,lit-scout,metric-prober,verifier,verifier-zai}`, and **not one name
+> overlaps.** The charter was renamed and rewritten after the team that made them was spawned.
+>
+> So the `.gitignore` check stayed **completely silent** on a repo with five stranded worktrees
+> carrying unmerged commits. It was not broken — it answered the question it was asked.
+>
+> **ajfon's framing, which is the part worth keeping:** *"(b) วัดความสอดคล้องระหว่าง charter
+> กับดิสก์ ไม่ได้วัดว่ามี git state ค้างอยู่จริงไหม — สองอย่างนี้ต่างกัน."* **Charter-conformance
+> and leftover-state are different questions, and every check in this skill was answering only
+> the first.** A charter is a statement of intent; drift between it and the disk is exactly where
+> teardown debt accumulates, because the moment they diverge the intent-based checks go quiet.
+
+```bash
+# Every worktree git knows about, minus every worktree ANY charter in the repo declares.
+git worktree list --porcelain 2>/dev/null | awk '$1=="worktree"{print $2}' | sort -u > /tmp/.wt.$$
+for c in ψ/teams/*.yaml ψ/teams/*.yml; do
+  [ -e "$c" ] || continue
+  grep -E '^\s*(worktree|cwd):' "$c" | awk '{print $2}' | grep -vxE 'true|false|~|\.' | while read -r w; do
+    case "$w" in /*) printf '%s\n' "$w" ;; *) (cd "$w" 2>/dev/null && pwd -P) ;; esac
+  done
+done | sort -u > /tmp/.declared.$$
+comm -23 /tmp/.wt.$$ /tmp/.declared.$$ | while read -r orphan; do
+  [ "$orphan" = "$(git rev-parse --show-toplevel 2>/dev/null)" ] && continue   # the main checkout
+  ahead=$(git -C "$orphan" rev-list --count "${BASE_REF:-main}..HEAD" 2>/dev/null || echo 0)
+  echo "🔴 orphan worktree: $orphan — declared by NO charter, ${ahead} commit(s) ahead of ${BASE_REF:-main}"
+done
+rm -f /tmp/.wt.$$ /tmp/.declared.$$
+```
+
+> ⚠️ **Report orphans; do not remove them.** An orphan is by definition something whose owner you
+> cannot identify from a charter — which is exactly when a deletion is least safe. ajfon's five
+> have been sitting for days with unmerged commits; the right outcome is that a human sees them
+> listed, not that a teardown script decides.
+
 ## Step 3: Release the fleet reservation
 
 **`tmux kill-session` does not do this.**
