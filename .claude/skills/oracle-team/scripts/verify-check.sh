@@ -268,7 +268,7 @@ teamclosed() {
     echo "          ⇒ **ไม่ใช่ CLOSED** — ผิวที่ตรวจไม่ถึงอาจถือทีมนี้อยู่"
     return 2
   fi
-  echo "CLOSED    $t  ไม่มี tmux session · ไม่อยู่ใน list · ไม่มีของค้างใน store/vault/charter"
+  echo "CLOSED    $t  ไม่มี tmux session · ไม่อยู่ใน list · ไม่มี state ค้างใน store/vault (ไฟล์ charter ไม่ถูกแตะ)"
   echo "          [ขอบเขต: vault + charter อ่านจาก CWD ปัจจุบัน — ทีมของ oracle อื่นอยู่ใน repo เขา]"
   return 0
 }
@@ -374,19 +374,35 @@ except Exception:
 c=cfg.get("commands")
 if not isinstance(c,dict):
     print("UNKNOWN  ไม่มี commands ใน merged config"); sys.exit(2)
-rows=[(k,v) for k,v in sorted(c.items())
-      if isinstance(v,str) and v.strip() and not k.startswith("_") and "*" not in k]
-print(f"enginelist.count: {len(rows)}")
-for k,v in rows:
-    m=""
+def model_of(v):
     p=v.split()
     for i,t in enumerate(p):
-        if t in ("--model","-m") and i+1<len(p): m=p[i+1]; break
-        if t.startswith("--model="): m=t.split("=",1)[1]; break
-    print("enginelist.engine: %s model=%s cmd=%s" % (k, m or "-", v))
+        if t in ("--model","-m") and i+1<len(p): return p[i+1]
+        if t.startswith("--model="): return t.split("=",1)[1]
+    return ""
+usable=[(k,v) for k,v in sorted(c.items())
+        if isinstance(v,str) and v.strip() and not k.startswith("_") and "*" not in k]
+globs=[(k,v) for k,v in sorted(c.items())
+       if isinstance(v,str) and v.strip() and "*" in k and k!="default"]
+print("enginelist.count: %d usable=%d glob=%d" % (len(usable)+len(globs), len(usable), len(globs)))
+for k,v in usable:
+    print("enginelist.engine: %s model=%s cmd=%s" % (k, model_of(v) or "-", v))
+for k,v in globs:
+    print("enginelist.glob: %s model=%s cmd=%s" % (k, model_of(v) or "-", v))
 ' || return $?
-  echo "[ขอบเขต: คีย์ที่มี glob (เช่น verifier*) ถูกตัดออก เพราะมันแมตช์ *ชื่อ window* ไม่ใช่ชื่อ engine"
-  echo " · การมีชื่ออยู่ในลิสต์ ไม่ได้แปลว่าบัญชีเสิร์ฟ model นั้นได้ — ต้อง boot ถึงจะรู้]"
+  # 🏷️ tars 2026-08-06: เวอร์ชันแรกของฟังก์ชันนี้ **ตัด glob ทิ้ง** ด้วยเหตุผลที่ถูกทางเทคนิค
+  #    (มันแมตช์ *ชื่อ window* ไม่ใช่ชื่อ engine) — **แต่ผลคือเครื่องมือที่มีไว้ทำให้ resolution
+  #    มองเห็นได้ กลับซ่อนขั้นที่ 4 ของ chain ทิ้ง ซึ่งเป็นคำอธิบายทั้งหมดของการบูตผิด**
+  #    หลักฐานของเขา: banker ขอ `claude` ได้ **codex** (glob `banker*`) · verifier ขอ
+  #    `forge-oracle` ได้ **thclaws** (glob `verifier*`) · researcher ขอ `codex-full` ได้ codex
+  #    ⇒ คนที่บูตผิดแล้วเปิด enginelist หาสาเหตุ จะไม่เห็นสาเหตุ และจะสรุปตามเอกสารว่า
+  #      "ตกไปเป็น claude" ซึ่งผิดทั้งสามแถว ⇒ แสดงแยกหัวข้อ ไม่ตัดทิ้ง
+  if maw config 2>/dev/null | grep -q '"[^"]*\*"'; then
+    echo "⚠ enginelist.glob คือคีย์ที่แมตช์ **ชื่อ window** ที่ขั้น 4 ของ resolution chain —"
+    echo "  สมาชิกที่ชื่อขึ้นต้นตรงกับ pattern จะถูกดูดมาที่นี่ **ก่อนถึง commands.default**"
+    echo "  ไม่ว่า charter จะขอ engine อะไรก็ตาม ⇒ ถ้าสมาชิกบูตผิด ให้ดูหัวข้อนี้ก่อน"
+  fi
+  echo "[ขอบเขต: การมีชื่ออยู่ในลิสต์ ไม่ได้แปลว่าบัญชีเสิร์ฟ model นั้นได้ — ต้อง boot ถึงจะรู้]"
 }
 
 # ── engineone <engine-name> <dir> ───────────────────────────────────────────
@@ -437,6 +453,17 @@ engineone() {
     printf 'enginecheck.engine: %s PASS resolved=%s %s\n' "$e" "$cmd" "$tail_field"
     printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
     printf 'overall: PASS requires-post-boot-verification=true\n'; return 0
+  fi
+  # 🏷️ ajfon 2026-08-06: **`dir-absent` + ไม่เจอ = "ตอบไม่ได้" ไม่ใช่ "ตอบว่าไม่ผ่าน"**
+  #    เราไปตอบจากบรรพบุรุษที่มีอยู่ ไม่ใช่จาก dir ที่ถูกถาม ⇒ แยกไม่ออกระหว่าง
+  #    "alias ไม่มีจริง" กับ "เรามองผิดที่" ⇒ gate ที่รัน engineone **ก่อน mkdir** จะได้ FAIL
+  #    แล้วสรุปว่า alias ผิด ทั้งที่ alias ถูก
+  #    NB: `dir-absent` + **เจอ** ยังเป็น PASS ถูกต้อง — บรรพบุรุษที่เจอมันครอบ path จริงอยู่แล้ว
+  #        เมื่อ dir ถูกสร้าง ⇒ อสมมาตรนี้ตั้งใจ ไม่ใช่ความพลาด
+  if [ "$scope" = "dir-absent" ]; then
+    printf 'enginecheck.engine: %s UNVERIFIED resolved= %s\n' "$e" "$tail_field"
+    printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED dir-existed=no\n'
+    printf 'overall: UNVERIFIED reason=asked-dir-does-not-exist\n'; return 2
   fi
   printf 'enginecheck.engine: %s FAIL resolved= %s\n' "$e" "$tail_field"
   printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
@@ -799,6 +826,14 @@ YAML
     o10d=$(engineone codex /no/such/dir/at/all 2>/dev/null || true)
     printf '%s\n' "$o10d" | grep -q 'scope=dir-absent' || { echo "   ✗ dir ไม่มี แต่ไม่ได้พ่น scope=dir-absent"; fail=1; }
     printf '%s\n' "$o10d" | grep -q 'answered-from=' || { echo "   ✗ dir-absent ต้องบอก path ที่ใช้ตอบจริง"; fail=1; }
+    echo "8h) engineone: dir ไม่มี + หา alias ไม่เจอ = UNVERIFIED rc=2 ไม่ใช่ FAIL (ajfon)"
+    # "ตอบไม่ได้" ≠ "ตอบว่าไม่ผ่าน" — gate ที่รันก่อน mkdir ต้องไม่สรุปว่า alias ผิด
+    local o10e rc10e
+    o10e=$(engineone __no_such_engine__ /no/such/dir/at/all 2>/dev/null); rc10e=$?
+    [ "$rc10e" = "2" ] || { echo "   ✗ ควร rc=2 ได้ $rc10e"; fail=1; }
+    printf '%s\n' "$o10e" | grep -q '^overall: UNVERIFIED' || { echo "   ✗ ควรพ่น ^overall: UNVERIFIED"; fail=1; }
+    # แต่ dir ที่มีจริงและหาไม่เจอ ต้องยัง FAIL — ไม่งั้นเราลบความสามารถในการตกทิ้ง
+    engineone __no_such_engine__ /tmp >/dev/null 2>&1; [ "$?" = "1" ] || { echo "   ✗ dir มีจริง+ไม่เจอ ควร rc=1"; fail=1; }
   else
     echo "   (ไม่มี maw — ข้าม)"
   fi

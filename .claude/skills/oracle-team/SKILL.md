@@ -335,13 +335,35 @@ If a profile name is given (e.g. `up codex3`), resolve charter:
 ```bash
 CHARTER="$ROOT/ψ/teams/team-${PROFILE}.yaml"
 ```
-Otherwise pick the first yaml:
-```bash
-CHARTER=$(ls "$ROOT"/ψ/teams/*.yaml 2>/dev/null | head -1)
-```
+Otherwise **make the operator name the team — do not guess.**
 
 ```bash
-SESSION=$(tmux display -p '#S' 2>/dev/null)
+# ❌ NOT `ls …/*.yaml | head -1`. [found by tars 2026-08-06] Real houses have many charters
+#    — 11 in ajfon-teams, 20+ in lucifer — so picking the first alphabetically selects the
+#    wrong team silently and every later step operates on it.
+if [ -z "${TEAM:-}" ]; then
+  echo "Charters here — pass TEAM=<name> (the FILE STEM, see below):" >&2
+  ls "$ROOT"/ψ/teams/*.yaml "$ROOT"/.maw/teams/*.yaml 2>/dev/null | xargs -rn1 basename >&2
+  exit 1
+fi
+CHARTER=$(ls "$ROOT"/ψ/teams/"$TEAM".yaml "$ROOT"/.maw/teams/"$TEAM".yaml 2>/dev/null | head -1)
+[ -f "$CHARTER" ] || { echo "no charter for '$TEAM'" >&2; exit 1; }
+```
+
+> 🔑 **`maw team up <team>` matches the FILE STEM, not the `name:` inside the charter.**
+> `[found by tars 2026-08-06]` A file called `research-team.charter.yaml` whose `name:` is
+> `research-team` must be brought up as `maw team up research-team.charter` — using the
+> `name:` gives `charter not found`. Several houses use the `<name>.charter.yaml` convention
+> (9 files in atlas, 1 in tars), so this bites immediately there.
+
+**Session: take it from the charter, not from where you happen to be sitting.**
+
+```bash
+# ❌ NOT `tmux display -p '#S'`. [found by tars 2026-08-06] That is the session the OPERATOR
+#    is in. Anyone driving a team from outside its session — the normal case for
+#    `status`/`lead` across houses — then peeks the wrong session every time and sees nothing.
+SESSION=$(grep -m1 '^session:' "$CHARTER" | sed 's/^session:[[:space:]]*//')
+: "${SESSION:=$TEAM}"        # charters may omit it; maw defaults to the team name
 ```
 
 From the charter, extract:
@@ -488,12 +510,46 @@ Both emit **anchored machine keys at column 0** alongside the human output, so a
 `grep` rather than scrape prose:
 
 ```
-enginecheck.member: <role> PASS|FAIL|UNVERIFIED engine=<name> resolved=<command> [pinned=no]
-overall: PASS|FAIL|UNVERIFIED
+enginecheck.member: <role> PASS|FAIL|UNVERIFIED engine=<name> resolved=<cmd> [pinned=no]
+enginecheck.engine: <name> PASS|FAIL|UNVERIFIED resolved=<cmd> scope=resolved|dir-absent [answered-from=<path>]
+enginecheck.scope:  model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED
+overall: PASS|FAIL|UNVERIFIED requires-post-boot-verification=true
 ```
+
+### 🔴 `overall:` means ENGINE RESOLUTION ONLY. It is never total readiness.
+
+**Do not gate on `grep '^overall:'` alone.** `overall: PASS` can and does print on the same
+output as `model-served=UNVERIFIED` — the alias resolves to the command you asked for, and
+nothing here knows whether your account will serve that model. A consumer reading only
+`overall:` admits a worker that was never confirmed. That is the same false-green shape this
+whole check exists to prevent, one level up.
+
+**Parse four fields. This is the interface:**
+
+| field | read it as |
+|---|---|
+| `overall:` | engine resolution — **necessary, never sufficient** |
+| `pinned=` | `no` ⇒ you got the right binary **by luck**, via `default`; a window-name change breaks it |
+| `scope=` | `dir-absent` ⇒ the answer came from `answered-from=<path>`, **not** the directory you asked about |
+| `model-served=` | `UNVERIFIED` ⇒ only a post-spawn banner settles it |
+
+> **Rule: `overall: PASS` + ANY `UNVERIFIED` sub-field ⇒ treat as UNVERIFIED, never PASS.**
+> `[atlas, T4543 parse contract, 2026-08-06]` A skip or a missing adapter is UNVERIFIED, not a
+> pass — the tool discloses its bounds instead of hiding them, and a gate that ignores the
+> disclosure has re-created the defect.
+
 `rc` 0=PASS · 1=FAIL · 2=UNVERIFIED. **UNVERIFIED is not a pass** — it means the check could
-not answer, which is a different thing from answering "fine". `pinned=no` marks the case where
-an unregistered engine currently resolves to the right binary by luck via `default`.
+not answer, which is different from answering "fine". Concretely: `engineone <alias> <dir>`
+where `<dir>` does not exist yet returns **UNVERIFIED rc=2**, not FAIL — it answered from an
+ancestor, so it cannot tell "alias absent" from "we looked in the wrong place". A gate that
+runs before `mkdir` must not read that as a bad alias. A directory that *does* exist and has
+no such alias still returns FAIL rc=1.
+
+> **Parser compatibility, measured — not asserted** `[ajfon, 2026-08-06]`. The
+> `requires-post-boot-verification=true` suffix on `overall:` was added after these lines were
+> first published. It does **not** break `grep '^overall: PASS'` or `awk '$1=="overall:"'`. It
+> **does** break `grep '^overall: PASS$'` and `grep -x 'overall: PASS'`. If you anchored to
+> end-of-line, drop the anchor.
 
 Requires `maw` and `python3` on PATH. If your gate deliberately stays on grep/sed only, use
 the raw `maw` commands above instead — they need neither.
