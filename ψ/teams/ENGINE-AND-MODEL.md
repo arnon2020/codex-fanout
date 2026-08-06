@@ -236,6 +236,42 @@ bash ψ/teams/scripts/verify-check.sh enginecheck <charter|team-name>
 
 ---
 
+## `maw team` รองรับเลือก engine/model เองแค่ไหน — ไล่ทีละกริยา `[verified 2026-08-06]`
+
+| กริยา | รับ engine? | รับ model? | ถึง pane จริงไหม |
+|---|---|---|---|
+| `team up [-e <engine>]` | ✅ **แต่ override ทั้งทีม** | ❌ ไม่มีแฟลก | engine ถึง (ถ้า alias ลงทะเบียน) · model ไม่มีทาง |
+| charter `engine:` ต่อ member | ✅ ต่อคนได้ | — | ถึงในฐานะ**ชื่อ** เท่านั้น |
+| charter `model:` ต่อ member | — | ✅ parse ผ่าน | ❌ **validate แล้วทิ้ง** |
+| charter `engines:` block | ✅ parse ผ่าน | — | ❌ **ไม่มีใครอ่าน** |
+| `team spawn --engine --model` | ✅ | ✅ | engine ถึง · **model ลง config.json เป็น metadata เท่านั้น** |
+| `team resume [--model]` | ❌ **ไม่มีแฟลก engine เลย** | ✅ parse ผ่าน | ❌ ทั้งคู่ — ดูด้านล่าง |
+
+### 🔴 กับดัก 1 — `team up -e <engine>` **ทับ engine ของสมาชิกทุกคน**
+
+`team_up_apply.rs:147` · `let engine = opts.engine.unwrap_or_else(|| item.engine.clone())`
+⇒ แฟลกเดียวลบการออกแบบ engine ต่อคนทั้ง charter **เงียบ ๆ**
+
+```
+charter: a=codex-sol · b=claude-haiku
+maw team up mixt --dry-run          →  a codex-sol   · b claude-haiku   ✅
+maw team up mixt --dry-run -e codex →  a codex       · b codex          ← ทับทั้งคู่
+```
+⇒ **ทีมที่ออกแบบให้ cross-family (coder=codex / verifier=claude) พังทั้งคุณสมบัติด้วย `-e` ตัวเดียว**
+(นี่คือจุดที่ dry-run **บอกความจริง** เพราะมันสะท้อน `opts.engine` — ใช้ตรวจข้อนี้ได้)
+
+### 🔴 กับดัก 2 — `team resume` ทำให้ทุกคนกลายเป็น `claude`
+
+`team_resume.rs:57-61` ส่ง `TeamT5SpawnOptions127 { team, role, model, ..Default::default() }`
+⇒ **`engine` = `None`** · แล้ว `team_spawn.rs:89` `let engine = opts.engine.unwrap_or_else(|| "claude")`
+
+⇒ **resume ไม่อ่าน charter ไม่อ่าน engine เดิม — respawn ทุก role เป็น `claude` เสมอ**
+และ `--model` ที่มันรับ ก็ไปจบที่ `config.json` metadata เหมือนเดิม **ไม่ถึง pane**
+
+> 📌 ข้อนี้ research doc เดิม (2026-08-01) สรุปไว้จาก **maw-js** — ตอนนี้ **ยืนยันบน maw-rs 325db65**
+> ⇒ ถ้าทีมเคยเป็น codex แล้ว `maw team resume` มันจะกลับมาเป็น claude **โดยไม่มี error**
+> ⇒ ใช้ `maw team up` (อ่าน charter) แทน `resume` เสมอ เว้นแต่ตั้งใจให้ทุกคนเป็น claude
+
 ## ตารางสรุปสำหรับคนที่มาอ่านทีหลัง
 
 | อยากทำ | เขียนที่ไหน | ได้ผลไหม |
