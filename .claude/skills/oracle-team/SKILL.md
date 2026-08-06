@@ -23,7 +23,7 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 > | part | evidence |
 > |---|---|
 > | Gate 0 + `scripts/verify-check.sh` | reviewed by 5 oracles · independently reinvented by prism before reading this · detector validated at n=65 |
-> | `up` | run 4× end to end |
+> | `up` | run 5× end to end — **the 5th, against this current text after ten rounds of edits, found zero new defects** |
 > | `status` | exercised only inside `up` |
 > | `dispatch` / `down` / `lead` | 🔴 each run once, each broken; **never run against a real team** |
 
