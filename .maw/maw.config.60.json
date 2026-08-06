@@ -41,9 +41,17 @@
     "    `sage-opencode-oracle` is the name psi/teams/codex-fanout-team.yaml has asked for",
     "    since 2026-07-25 while existing ONLY in a YAML comment — never registered, so that",
     "    charter has been silently resolving to something else the whole time.",
-    "  [unverified] the MODEL STRINGS below have not been booted against a live account.",
-    "    A model name your account cannot serve fails inside the engine, after the pane",
-    "    is up — enginecheck cannot catch that. Boot one worker before trusting a fleet."
+    "  MODEL STRINGS — status 2026-08-06, established by SENDING A REAL TURN:",
+    "    gpt-5.6-sol   OK  — completed a task and wrote a file",
+    "    gpt-5.6-mini  REJECTED by this account: 400 \"The 'gpt-5.6-mini' model is not",
+    "                  supported when using Codex with a ChatGPT account.\"",
+    "    gpt-5.6       UNSENT — do not assume it works because -sol does",
+    "    zai/glm-5.2, claude-*  UNSENT",
+    "",
+    "  A REJECTED MODEL STILL BOOTS. The pane comes up and its own banner prints",
+    "  'model: gpt-5.6-mini xhigh'; only the first real turn returns the 400. So peeking",
+    "  the banner does NOT establish that the account can serve the model — an earlier",
+    "  version of the skill said it did. Send one trivial task to any new engine first."
   ],
 
   "commands": {

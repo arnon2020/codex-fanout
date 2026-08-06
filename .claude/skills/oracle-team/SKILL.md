@@ -268,8 +268,23 @@ done
 ```
 Then read the banner. **Never accept the first banner you see.**
 
-**Expected, and the only check that covers whether the account can actually serve the model:**
-the engine's own banner naming it. Per engine:
+🔴 **The banner does NOT prove the account can serve that model.** `[verified 2026-08-06 by
+sending a real turn]` A pane boots cleanly and prints `model: gpt-5.6-mini xhigh` in its own
+UI, and the first actual request returns:
+```
+ERROR: {"status":400,"message":"The 'gpt-5.6-mini' model is not supported when using Codex with a ChatGPT account."}
+```
+The same command with `gpt-5.6-sol` completed the task and wrote the file. So the engine
+accepts the flag, reports it, and only the **first real turn** discovers the account cannot
+use it. Every earlier version of this document called the banner "the only check that covers
+whether the account can serve the model" — that was wrong, and the example aliases shipped
+here used exactly the model that fails.
+
+**The banner tells you the flag arrived. Only a real turn tells you it works.** Send one
+trivial task to each new engine before trusting a team to it — this is what
+`model-served=UNVERIFIED` has been pointing at the whole time.
+
+**What the banner does establish** — that your alias reached the engine. Per engine:
 - **codex** — banner line `model: <MODEL> <effort>` and the status bar repeat it
 - **claude** — the banner scrolls away; use `tmux send-keys -t "$SESSION:${B}-oracle" "/status" Enter`
   then peek, and read `Model: <alias> (<full-id>)`

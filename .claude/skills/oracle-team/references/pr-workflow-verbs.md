@@ -21,7 +21,7 @@
 > |---|---|
 > | `down` + `--clean` | ✅ **run once against a real 2-member team**, with a real `.env.local` sitting in one worktree. Session killed, dirty worktree kept with its files listed, clean worktree removed, `.env.local` committed **0** times and still on disk. `--clean` deleted the clean member's branch and git itself refused the other, because a kept worktree still holds it — the two guards compose |
 > | `lead` | ✅ **peek loop run against the same live team** — real output from both panes, base branch resolved to `main` on a repo with no origin, `maw hey` delivered to the real window |
-> | `dispatch` | 🔴 **still never run against a real team.** Its mechanics were exercised in a scratch repo; the `codex exec` path needs GitHub issues and a real account and has not been executed |
+> | `dispatch` | 🟡 **`codex exec` path now run for real** — a live worker completed a task and wrote the file. The GitHub-issue half is still unrun. That run is also what proved a model can boot and still be rejected on the first turn |
 >
 > One live run is not a track record. `up` needed five before a round came back clean.
 >
