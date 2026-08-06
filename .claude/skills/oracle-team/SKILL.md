@@ -311,8 +311,19 @@ resolve, and two independent rules decide whether it does:
   name is registered to — not your team's repo.** Your config layer is invisible there and
   the alias silently does not apply. With a real path, `team up` passes `--repo-path`, which
   both puts the member in the right tree *and* removes the requirement that the name be a
-  registered oracle. The path must already exist — and note `team up` does **not** expand
-  `${VARS}` in it, so `cwd: ${SOME_ROOT}/role` fails to canonicalize.
+  registered oracle. The path must already exist.
+
+- **🔴 `team up` does not expand `${VARS}` in a path — not even exported ones.**
+  `[verified 2026-08-06 by running it]` A charter with `cwd: ${TEST_ROOT}/ev-a` passes
+  `--dry-run` showing the literal string, then dies at spawn:
+  ```
+  team spawn: canonicalize <repo>/${TEST_ROOT}/ev-a failed: No such file or directory
+  ```
+  The variable is treated as a literal directory name and appended to the repo path. If your
+  team's layout is defined by an environment variable — a common pattern for cells whose
+  state lives outside any repo — **`maw team up` cannot launch it at all**, and you need
+  your own launcher that expands the path before calling maw. Use literal or repo-relative
+  paths in any charter you intend to bring up with this skill.
 
 - **🔴 A member with `model:` and no `engine:` uses the MODEL STRING as its engine name.**
   `team up` resolves engine as `-e flag` → `member.engine` → **`member.model`** → `"claude"`
