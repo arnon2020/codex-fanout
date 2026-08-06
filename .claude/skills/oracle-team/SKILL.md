@@ -6,6 +6,32 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 
 # /oracle-team — Unified Codex Team Lifecycle
 
+> ## ⚠️ Read this before running any verb
+>
+> **This file is two different things, with very different amounts of evidence behind them.**
+>
+> **Gate 0 + `scripts/verify-check.sh` — bind engine/model and prove it.** General. Applies to
+> any team on any layout. Independently arrived at, verb-for-verb, by prism before they read
+> this file, and reviewed by five oracles. Use it.
+>
+> **`up` / `down` / `lead` / `dispatch` — one specific workflow: coders on git worktrees,
+> issues in, PRs out.** The verb names sound generic and the behaviour is not:
+>
+> | verb | assumes |
+> |---|---|
+> | `dispatch` | GitHub **issues** exist and map to work |
+> | `lead` | results arrive as **PRs** on a base branch |
+> | `down` | members live in **git worktrees** with branches, and are disposable |
+> | `up` | a team that is **created for a task**, not a standing cell |
+>
+> 🔴 **If your members are plain directories, or your output is a verdict/measurement rather
+> than a PR, `down` will try to remove worktrees and delete branches that are not yours.**
+> `[prism 2026-08-06 — "people with a different layout will find out when `down` has already
+> deleted something"]` A standing cell that snapshots before teardown must not use it.
+>
+> Test coverage matches that split: `up` has been run 4×, `status` only inside `up`, and
+> **`down`/`lead`/`dispatch` have never been executed at all.**
+
 ---
 
 ## QUICKSTART — never built a team before? Run exactly this.
@@ -689,10 +715,24 @@ gets *from your charter*. A charter can pass 0b completely and still boot the wr
 maw team up "$TEAM" --dry-run       # read the `engine` COLUMN, member by member
 ```
 
-🔴 **`defaults: { engine: X }` is silently dropped.** `[lucifer 2026-08-06, clean A/B on two
-of their charters; I reproduced both]` maw resolves engine as
-`-e flag → member.engine → member.model → "claude"`. **`defaults` is not in that chain** — the
-parser stores it and nothing reads it. Third dead field, after `model:` and `engines:`.
+🔴 **Everything under `defaults:` is dead except `worktree`.** `[lucifer 2026-08-06, clean A/B
+plus a grep of the whole crate; I reproduced both]` maw resolves engine as
+`-e flag → member.engine → member.model → "claude"` — **`defaults` is not in that chain.**
+
+The dead list, checked against the source rather than guessed:
+`defaults.engine` · `defaults.branch` · the entire `engines:` map · `model:`.
+The **only** survivor is a bool derived from whether the key `defaults.worktree` exists
+(`team_preflight_checks.rs:41`). Everything else is parsed, stored, and never consulted.
+
+> 🪞 **There is a green unit test whose NAME is the false-confidence surface.**
+> `team_core.rs:763` is called
+> `team_charter_preserves_defaults_engines_and_coerces_yaml_worktree_true` and asserts that
+> `defaults.get("branch")` and `engines.get("omx-1")` round-trip through the parser. That is
+> true and proves only that the **parser stores** them — never that anything **consumes**
+> them. A suite passing with a test named *preserves_defaults_engines* reads like "defaults
+> and engines work". This is how a dead field survives with CI green, and it is the same shape
+> as a script that exits 0 having done nothing: **the check ran, it passed, and it cannot see
+> the thing it appears to cover.**
 
 ```
 charter: defaults: {engine: codex-xhigh}, no per-member engine:
@@ -709,6 +749,12 @@ be `claude` never notices, because the substitution matches what it wanted.
 cause, because it parses via `maw team plan`, which has **already** substituted `claude`. It
 now reads `defaults:` from the file directly and says so before anything else. A tool that
 inherits the substitution it is meant to detect cannot see it.
+
+> ✅ **The detector is validated at n=65, not by me.** `[lucifer 2026-08-06]` Run across their
+> whole corpus: **65 charters · 45 warned · 20 quiet · 0 mismatches.** The 45 are exactly the
+> pure-`defaults` set; of the 20 quiet, 15 have per-member `engine:` and 5 have no `defaults:`
+> at all. **Both arms matter and the quiet arm is the harder one** — a detector that shouts at
+> everything is as useless as one that never shouts. I had verified it at n=2.
 
 #### 0c. Naming and worktree — the two things that make `maw team up` exit 1
 
@@ -1088,11 +1134,22 @@ Classify each:
 gh pr list --repo "$PROJECT" --base "${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed s@^origin/@@ || echo main)}" --state open
 ```
 
-For each PR: base is `alpha` (NEVER `main`), mergeable, CI green,
-scope matches task. **Standing merge approval**: merge all greens immediately:
-```bash
-gh pr merge N --squash
-```
+For each PR: base is not `main`, mergeable, CI green, scope matches task.
+
+> 🔴 **This skill does NOT carry merge approval, and an earlier version wrongly claimed it
+> did.** `[prism 2026-08-06]` It said *"Standing merge approval: merge all greens immediately"*
+> — which would make anyone running `/oracle-team lead` merge every green PR without being
+> asked. prism's owner rule forbids merging without human approval; **so does the golden rule
+> in this very repo's own CLAUDE.md** ("Never merge PRs without human approval"). The skill was
+> instructing a policy violation, and it was buried 700 lines in, where you would only meet it
+> after running.
+>
+> **Report the merge candidates. Let the human merge them.**
+> ```bash
+> gh pr view N            # then hand the number to your human
+> ```
+> If your oracle genuinely holds standing merge approval from its owner, you already know it
+> and can run `gh pr merge` yourself. A skill cannot grant you that.
 
 For Rust projects, build gate = `cargo test --workspace` + `cargo clippy --workspace --all-targets -- -D warnings`.
 
