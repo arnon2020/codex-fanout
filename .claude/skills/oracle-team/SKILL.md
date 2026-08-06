@@ -965,14 +965,28 @@ defaults to 5 when unset, silently. Set `N` explicitly if you mean a different n
 
 ### Step 2: Create worktrees (if not exist)
 
-For each coder, ensure a worktree exists:
+> 🔴 **This step used to invent worktrees that had nothing to do with your team.**
+> `[verified by running it, 2026-08-06]` It looped `agents/coder-1`, `agents/coder-2`, … and
+> created **real worktrees and real branches** under those names — while the actual members
+> were `myteam-alpha`, `myteam-beta`. Running `dispatch` after `up` left orphan worktrees and
+> branches nobody owned, and dispatched work to directories no member was running in. Same
+> defect class as `down` guessing at path conventions: read the charter, do not invent names.
+
+For each coder, ensure its **charter-declared** worktree exists:
 ```bash
-# NUM_CODERS is never set anywhere in this file — same defect class as the $N in `down`.
-# Derive it from the roster you already parsed rather than from a variable nobody assigns.
-NUM_CODERS=$(printf '%s\n' $CODERS | grep -c .)
-for N in $(seq 1 $NUM_CODERS); do
-  wt="$ROOT/agents/coder-$N"
-  [ -d "$wt" ] || git worktree add "$wt" -b "agents/coder-$N" HEAD
+for ROLE in $CODERS; do
+  wt=$(python3 -c "
+import re
+blocks=re.split(r'(?=^\s*-\s*role:)', open('$CHARTER').read(), flags=re.M)
+for b in blocks:
+    if re.search(r'role:\s*$ROLE\b', b):
+        m=re.search(r'(?:worktree|cwd):\s*(\S+)', b)
+        if m and m.group(1) != 'false': print(m.group(1))
+        break
+")
+  [ -n "$wt" ] || { echo "SKIP $ROLE — no worktree:/cwd: in charter"; continue; }
+  case "$wt" in /*) ;; *) wt="$ROOT/$wt" ;; esac
+  [ -d "$wt" ] || git worktree add "$wt" -b "$ROLE" HEAD
 done
 ```
 
@@ -982,11 +996,28 @@ For each coder + issue pair, spawn a **background Agent** (model: haiku, run_in_
 
 The Agent's job: run `codex exec` inside the worktree and report results.
 
-**Agent prompt template** (one per coder):
-```
-You are a dispatch agent for coder-${N}. Run this command and report the full output:
+> 🔴 **The template below expanded to a dangerous, malformed command.**
+> `[verified by expanding it, 2026-08-06]` `MODEL`, `REASONING` and `TASK_PROMPT` are
+> **never assigned anywhere in this file**, so it produced:
+> ```
+> CODEX_HOME= codex exec --dangerously-bypass-approvals-and-sandbox -m  -c model_reasoning_effort="" ""
+> ```
+> — an empty `CODEX_HOME`, a bare `-m` that would swallow the next flag as its model name, an
+> empty reasoning effort, and an **empty task prompt**, all under a flag that bypasses every
+> approval and the sandbox. Set the values and refuse to run without them:
 
-cd ${ROOT}/agents/coder-${N} && \
+```bash
+: "${MODEL:?set MODEL — no default; -m with no value swallows the next flag}"
+: "${TASK_PROMPT:?set TASK_PROMPT — an empty prompt under bypass flags is not a no-op}"
+: "${REASONING:=medium}"
+: "${CODEX_HOME:=$HOME/.codex}"   # empty is NOT the same as unset here
+```
+
+**Agent prompt template** (one per coder — `$WT` is that role's charter-declared worktree):
+```
+You are a dispatch agent for ${ROLE}. Run this command and report the full output:
+
+cd ${WT} && \
 CODEX_HOME=${CODEX_HOME} codex exec \
   --dangerously-bypass-approvals-and-sandbox \
   -m ${MODEL} \
