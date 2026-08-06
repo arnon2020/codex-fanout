@@ -159,7 +159,7 @@ First-boot prompts that stall a member — each one leaves it looking merely qui
 | what you see | engine | clear it with |
 |---|---|---|
 | `✨ Update available!` | codex | `tmux send-keys -t "$SESSION:${A}-oracle" 2 Enter` |
-| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` |
+| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` — **[reported by a tester, not reproduced by this doc's author]** |
 | a bare shell prompt `❯` | any | the engine never started — go back to step 4 |
 
 ⏳ **`model: loading` occupies the exact line you are told to read.** After clearing a prompt
