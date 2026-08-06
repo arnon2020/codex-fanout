@@ -130,28 +130,79 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 `enginelist` is dir-aware — run it **from a path your member will use**. An alias with
 `model=-` pins no model; it takes whatever the engine's own default is.
 
-> 🔴 **Do NOT generalise that to `enginecheck`. They anchor differently, and getting it wrong
-> gives you a false FAIL with a hard-stop message.** `[measured by a clean-room tester, 2026-08-06]`
-> `enginecheck` resolves a charter's relative `worktree:` paths against the **caller's** repo
-> root (`git rev-parse --show-toplevel` of your cwd, falling back to cwd outside a repo) —
-> **not** against the charter's own location, even when you hand it an absolute charter path.
-> Same charter, three places to stand, three verdicts:
+> ## 🔴 `enginecheck` used to give different verdicts for the same charter depending on where you stood — **fixed; here is why it happened**
 >
-> | run from | verdict |
-> |---|---|
-> | an unrelated git repo | ❌ FAIL rc=1 |
-> | `/tmp` | ❌ FAIL rc=1 |
-> | the charter's repo, or a member dir inside it | ✅ PASS rc=0 |
+> `[found by a clean-room tester · verdict-flip measured independently by ajfon and by this
+> author · scope narrowed by lucifer and prism · 2026-08-06]`
 >
-> ⇒ **Run `enginecheck` from the charter's own repo root.** It failed for the tester on a
-> charter that was correct, and told them `ENGINECHECK FAILED อย่า spawn จนกว่าจะแก้` —
-> *"do not spawn until you fix it"* — naming a fix that was already in place.
+> **The mechanism, which matters more than the rule** (ajfon's point: a reader who memorises
+> "run it from the charter's repo" will still be caught by the next variant):
 >
-> This matters most for the `~/.maw-teams/<team>/<role>` layout that Gate 0a explicitly
-> supports: there the member dirs are **not** inside the charter's repo, so "run it from a path
-> your member will use" is precisely the wrong instruction. A symmetric **false PASS** is
-> plausible — a caller standing in some other repo that happens to have its own `agents/<role>`
-> and its own layer — but nobody has constructed one, so treat that as reasoned, not measured.
+> 1. maw discovers config layers by **walking the ancestors of a directory** and merging every
+>    `.maw/maw.config.<N>.json` it finds.
+> 2. `enginecheck` used to derive that directory from **the caller's cwd** (git root of cwd,
+>    falling back to cwd itself when you are not in a repo at all).
+> 3. So a **project-level layer living in the charter's own repo is invisible from anywhere
+>    else** — every engine resolves to the empty string, and the charter FAILs.
+> 4. Relative `worktree:` paths compound it: from `/tmp` the member scope became
+>    literally `/tmp/agents/<role>`.
+>
+> Measured, same charter, same absolute path passed every time:
+>
+> | | before fix | after fix |
+> |---|---|---|
+> | from the charter's repo | ✅ PASS | ✅ PASS |
+> | from a member dir inside it | ✅ PASS | ✅ PASS |
+> | from an unrelated repo | ❌ **FAIL** | ✅ PASS |
+> | from `/tmp` | ❌ **FAIL** | ✅ PASS |
+> | *unregistered engine, any cwd* | ❌ FAIL | ❌ **FAIL** (negative arm holds) |
+>
+> **Fixed**: `enginecheck` now anchors to the **charter's own directory**, so the verdict no
+> longer depends on where the caller stands. It prints `enginecheck.anchor: charter-dir` to say
+> so. The old behaviour told a tester `ENGINECHECK FAILED อย่า spawn จนกว่าจะแก้` — *"do not
+> spawn until you fix it"* — about a charter that was already correct, naming a fix already in
+> place.
+>
+> **Who was exposed, measured in their own houses:**
+> - **Only charters with RELATIVE `worktree:`/`cwd:` are affected** (lucifer). Absolute paths are
+>   completely immune: their `ws-parity-port` gave PASS 4/4 across four cwds. Their exposure was
+>   **2 of 65 charters**; prism's was **0 of 8**, having deliberately used absolute paths since
+>   porting, to dodge the `${VAR}`-does-not-expand trap.
+> - **ajfon produced the verdict flip** that settles it: `ajfon-rag-bench.yaml`, whose aliases
+>   live in a **project layer inside its own repo** — PASS from that repo, FAIL from `/tmp` and
+>   from `$HOME`. They found it only because they went looking after being asked to re-check.
+> - **lucifer could not produce a flip and said so** rather than assuming: their only layer is
+>   user-level `maw.config.50.json`, visible from everywhere, so the scope moved but the verdict
+>   never changed. **Recorded as "no evidence of a flip in that house", not "no flip."** That
+>   distinction is why ajfon's case was worth hunting.
+>
+> ⚠️ **Wording corrected by lucifer**: it is the caller's **cwd** (git root of cwd, else cwd),
+> not "the caller's git root" — from `/tmp`, which is no repo at all, it used `/tmp` directly.
+>
+> ### Was *your* earlier result affected? Three reasons a verdict is cwd-invariant
+>
+> Between them the four houses covered every case, and only the last one can flip:
+>
+> | why it cannot flip | who | check |
+> |---|---|---|
+> | **paths are absolute** — nothing to resolve | prism (0/8 exposed), lucifer (63/65) | `grep -E '(worktree\|cwd):' charter` → all start with `/` |
+> | **failure is global absence** — the engine is registered in no layer anywhere, so no cwd exists from which it resolves | atlas (T4463, FAIL 4/4) | `verify-check.sh enginereg <engine>` from two unrelated dirs → UNREGISTERED both |
+> | **the only layer is user-level** — `~/.config/maw/maw.config.50.json` is visible from everywhere | lucifer | `maw config sources` from two unrelated dirs → identical |
+> | 🔴 **repo-scoped presence + relative paths** — the alias lives in a project layer inside the charter's repo | **ajfon's `ajfon-rag-bench`** | this is the shape that flips |
+>
+> atlas's framing is the one to keep: *"this particular charter is cwd-invariant because its
+> failure mode is global-absence, not repo-scoped-presence"* — a narrower and checkable claim
+> than "my result was fine."
+>
+> 🪞 **atlas also caught themselves first, and the mechanism is worth borrowing**: this harness
+> **persists cwd across separate tool calls**, so their `cd /tmp && …` in one call silently
+> carried into the next, and both "vantage points" were actually `/tmp`. The diff came back
+> identical and they nearly reported *"confirmed, no cwd-dependence"* off it. They caught it by
+> **printing `pwd` before trusting the second run.** Same root as the `send-enter` incident on
+> this repo the same day: *trusting a state you have not just looked at.*
+>
+> ⇒ `enginelist` remains dir-aware **on purpose** — run it from a path your member will use.
+> `enginecheck` no longer is. **They answer different questions, so they anchor differently.**
 
 **Then, model names for a NEW alias** — one lookup per engine, they are not interchangeable:
 

@@ -591,8 +591,23 @@ enginecheck() {
   fi
   [ "$n_parsed" -gt 0 ] || { echo "UNKNOWN   charter '$charter' ไม่มีสมาชิก — **ตอบไม่ได้**"; return 2; }
 
-  local root; root=$(git rev-parse --show-toplevel 2>/dev/null) || root=$PWD
+  # 🩹 2026-08-06 [clean-room tester · ผมทำซ้ำได้: charter path เต็มเดิม 4 cwd → PASS/PASS/FAIL/FAIL]
+  #    เดิม: root = git root ของ **ผู้เรียก** ⇒ ยืนคนละที่ = คำตอบคนละอย่าง สำหรับ charter เดียวกัน
+  #    charter ประกาศ path เทียบ **repo ของตัวมันเอง** ไม่ใช่ที่ที่คนรันบังเอิญยืนอยู่
+  #    ⇒ anchor ที่ไดเรกทอรีของ charter เสมอ · caller ยืนที่ไหนก็ได้ ผลต้องเหมือนเดิม
+  #    (นี่คือ FAIL ปลอมที่พ่นคำสั่ง "อย่า spawn จนกว่าจะแก้" ใส่ charter ที่ถูกอยู่แล้ว)
+  local cdir root
+  cdir=$(cd "$(dirname "$charter")" 2>/dev/null && pwd -P) || cdir=$PWD
+  root=$(git -C "$cdir" rev-parse --show-toplevel 2>/dev/null) || root=""
+  if [ -z "$root" ]; then
+    # charter ไม่ได้อยู่ใน git repo — ใช้ไดเรกทอรีของ charter ขึ้นไปหนึ่งชั้นจาก ψ/teams|.maw/teams
+    case "$cdir" in
+      */ψ/teams|*/.maw/teams) root=$(cd "$cdir/../.." && pwd -P) ;;
+      *) root="$cdir" ;;
+    esac
+  fi
   echo "enginecheck $charter  ($n_parsed สมาชิก)  [repo root: $root]"
+  echo "enginecheck.anchor: charter-dir  (verdict ไม่ขึ้นกับ cwd ของผู้เรียก)"
 
   # 🏷️ lucifer 2026-08-06 (EXTRA B, verified A/B): `defaults: {engine: X}` **ไม่เคยถูกอ่าน**
   #    `team_t3_classify` = opts.engine → member.engine → member.model → "claude"
