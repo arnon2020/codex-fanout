@@ -262,6 +262,23 @@ done
 grep -E '^\s*-?\s*role:' "$CHARTER" | awk '{print $NF}' | while read -r r; do
   case "$r" in "${TEAM}"*) ;; *) echo "🟡 role '$r' is not prefixed with '$TEAM' — bare 'maw wake $r' can fuzzy-match something else entirely" ;; esac
 done
+
+# (d) 🔴 Every member needs worktree: or cwd:. Absent is NOT a harmless default.
+python3 - "$CHARTER" <<'PY'
+import re,sys
+src=open(sys.argv[1]).read()
+blocks=re.split(r'(?=^\s*-\s*role:)', src, flags=re.M)
+missing=[]
+for b in blocks:
+    m=re.search(r'role:\s*(\S+)', b)
+    if not m: continue
+    if re.search(r'worktree:\s*false', b): continue          # lead windows opt out on purpose
+    if not re.search(r'(?:worktree|cwd):\s*\S+', b): missing.append(m.group(1))
+if missing:
+    print(f"🔴 no worktree:/cwd: for {', '.join(missing)} — maw falls back to the IDENTITY directory,")
+    print("   so these members run in the oracle's own repo, several of them in the SAME directory,")
+    print("   with no isolation and nothing for teardown to remove. Declare a path per member.")
+PY
 ```
 
 > **(a)** lucifer's charter declared `session: 84-lucifer`, their own oracle's session. Teardown
