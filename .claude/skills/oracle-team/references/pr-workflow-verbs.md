@@ -19,11 +19,12 @@
 >
 > | verb | against a live team |
 > |---|---|
-> | `down` + `--clean` | ✅ **run once against a real 2-member team**, with a real `.env.local` sitting in one worktree. Session killed, dirty worktree kept with its files listed, clean worktree removed, `.env.local` committed **0** times and still on disk. `--clean` deleted the clean member's branch and git itself refused the other, because a kept worktree still holds it — the two guards compose |
-> | `lead` | ✅ **peek loop run against the same live team** — real output from both panes, base branch resolved to `main` on a repo with no origin, `maw hey` delivered to the real window |
+> | `down` + `--clean` | ✅ **run against two separate live 2-member teams**, each with a real `.env.local` sitting in one worktree. Both runs: session killed, dirty worktree kept with its files listed, clean worktree removed, `.env.local` committed **0** times and still on disk. `--clean` deleted the clean member's branch and git itself refused the other, because a kept worktree still holds it — the two guards compose. Run 2 is what established that git's `error:` line there is the **expected** result, documented at Step 4 |
+> | `lead` | ✅ **peek loop run against both live teams** — real output from every pane, base branch resolved to `main` on a repo with no origin (the `||`-binding bug that produced `--base ''` did not recur), `maw hey` delivered to the real window |
 > | `dispatch` | 🟡 **`codex exec` path now run for real** — a live worker completed a task and wrote the file. The GitHub-issue half is still unrun. That run is also what proved a model can boot and still be rejected on the first turn |
 >
-> One live run is not a track record. `up` needed five before a round came back clean.
+> Two live runs is a thin track record. `up` needed five before a round came back clean, and
+> `dispatch` is still half-unrun.
 >
 > **They also solve a different problem from the rest of the skill.** They assume GitHub
 > issues in, PRs out, and members living in disposable git worktrees. Reviewers whose teams
@@ -254,6 +255,16 @@ for b in blocks:
   git branch -d "$br" 2>&1        # -d only. Never -D: unmerged work must survive teardown.
 done
 ```
+
+> ⚠️ **`--clean` printing `error:` is often the correct outcome, not a failure.**
+> `[verified by running it twice, 2026-08-06]` When Step 3 keeps a worktree because it is dirty,
+> that worktree still holds its branch, so git refuses:
+> `error: cannot delete branch 'agents/r2-a' used by worktree at '.../agents/r2-a'`
+> This is the two guards composing — the dirty-worktree guard makes the branch undeletable, so
+> uncommitted work cannot be stranded on a deleted branch. **Do not "fix" it** by adding `-D`,
+> by removing the worktree first, or by committing to clear the dirt: each of those defeats the
+> guard that produced the message. A branch left behind next to a kept worktree is the intended
+> end state. Report it as kept, not as an error.
 
 Report: killed, removed, kept, branches.
 
