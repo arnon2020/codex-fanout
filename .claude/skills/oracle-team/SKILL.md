@@ -286,6 +286,30 @@ maw wake <member-identity> --no-attach --dry-run -e __no_such_engine__ --repo-pa
 discarded and both fell through to the same fallback. That comparison is the check that can
 fail; a single green line on its own proves nothing.
 
+#### Scripted form — shipped with this skill, no other repo needed
+
+```bash
+VC=~/.claude/skills/oracle-team/scripts/verify-check.sh
+
+bash "$VC" enginecheck <charter|team>     # whole roster, per member, from each member's path
+bash "$VC" engineone <engine> <dir>       # ONE engine, ONE directory — for single-worker gates
+bash "$VC" selftest                       # run this before trusting either of the above
+```
+
+Both emit **anchored machine keys at column 0** alongside the human output, so a gate can
+`grep` rather than scrape prose:
+
+```
+enginecheck.member: <role> PASS|FAIL|UNVERIFIED engine=<name> resolved=<command> [pinned=no]
+overall: PASS|FAIL|UNVERIFIED
+```
+`rc` 0=PASS · 1=FAIL · 2=UNVERIFIED. **UNVERIFIED is not a pass** — it means the check could
+not answer, which is a different thing from answering "fine". `pinned=no` marks the case where
+an unregistered engine currently resolves to the right binary by luck via `default`.
+
+Requires `maw` and `python3` on PATH. If your gate deliberately stays on grep/sed only, use
+the raw `maw` commands above instead — they need neither.
+
 After spawning, confirm on the engine's own UI (`maw peek <session>:<window>`) that the
 status bar shows the model you asked for. That is the only layer of evidence that covers
 whether the account can actually serve that model — nothing before it does.
