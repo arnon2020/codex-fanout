@@ -1135,11 +1135,31 @@ ls "$ROOT/agents/" 2>&1
 
 ### Step 4: --clean (optional branch cleanup)
 
-Only with `--clean`. Safe delete only (`-d`, never `-D`):
+Only with `--clean`. Safe delete only (`-d`, never `-D`).
+
+> 🔴 **The old form matched substrings and deleted a branch that was not the team's.**
+> `[verified by running it, 2026-08-06]` It was `git branch | grep -E "agents/"`, unanchored,
+> so a branch named `my-important-feature-agents/notes` — nothing to do with any team — was
+> matched and **deleted**, because it happened to be merged. The `-d` guard held for unmerged
+> work, which is the only reason this was not worse. `-d` protects unmerged commits; it does
+> **not** protect against deleting the wrong branch. Same substring-match trap this fleet has
+> been bitten by before with team-name prefixes.
+
+**Delete only branches this charter's members actually declare:**
 
 ```bash
-git branch | grep -E "agents/" | while read br; do
-  git branch -d "$br" 2>&1
+for ROLE in $CODERS; do
+  # a member's branch is its `branch:` if declared, else its role name — never a pattern
+  br=$(python3 -c "
+import re
+blocks=re.split(r'(?=^\s*-\s*role:)', open('$CHARTER').read(), flags=re.M)
+for b in blocks:
+    if re.search(r'role:\s*$ROLE\b', b):
+        m=re.search(r'branch:\s*(\S+)', b); print(m.group(1) if m else '$ROLE'); break
+")
+  [ -n "$br" ] || continue
+  git show-ref --verify --quiet "refs/heads/$br" || { echo "skip $br (no such branch)"; continue; }
+  git branch -d "$br" 2>&1        # -d only. Never -D: unmerged work must survive teardown.
 done
 ```
 
