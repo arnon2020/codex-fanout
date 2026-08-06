@@ -1,6 +1,6 @@
 ---
 name: oracle-team
-description: "Unified codex team lifecycle — up (tmux), down (teardown), lead (orchestrate), status (peek), dispatch (headless codex exec via background Agent). Reads charter from ψ/teams/*.yaml dynamically. Use when user says '/oracle-team up', '/oracle-team down', '/oracle-team lead', '/oracle-team status', '/oracle-team dispatch', 'bring up the team', 'tear down the team', 'lead cycle', 'team status', 'dispatch coders'."
+description: "Stand up a maw agent team with the engine and model each member is supposed to get — and prove they got it. Covers the full lifecycle: up (tmux), down (teardown), lead (orchestrate), status (peek), dispatch (headless codex exec). Gate 0 is the part most teams get wrong: a charter's `engine:` is only a lookup key into `commands.<name>` in a config layer visible from the WORKER's directory, and a charter's `model:` is discarded outright — so an unregistered name silently boots a different engine with exit 0. Use for any of: '/oracle-team up|down|lead|status|dispatch', 'bring up the team', 'spawn coders', 'set up a codex team', or whenever a member booted with the wrong engine/model, a charter's model: had no effect, or you need per-member engine/model selection (codex vs claude, gpt vs opus) in one team. Path-agnostic — works from any oracle's repo."
 argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | status | dispatch [issue#] [--model X]"
 ---
 
@@ -83,29 +83,111 @@ Parse the subcommand from `$ARGUMENTS`:
 
 Idempotent: skip live, relaunch dead, create missing.
 
-### Gate 0: engine + model actually reach the pane (MANDATORY, before preflight)
+### Gate 0: bind engine + model, then prove it (MANDATORY, before preflight)
+
+> Path-agnostic — everything below computes from YOUR repo and YOUR team. Nothing here
+> depends on another oracle's files or scripts. `[verified 2026-08-06 · maw-rs 325db65 ·
+> proven end-to-end by booting two live workers onto two different models]`
+
+**The one rule:** `engine:` in a charter is a *lookup key*, not a setting. It only takes
+effect if `commands.<name>` exists in a config layer visible **from the directory the worker
+runs in**. `model:` in a charter is parsed, validated, then **discarded** — `maw wake` has no
+`--model` flag anywhere in the binary. **A model can only live inside the alias's command
+string.** One alias name = one command = one model. Two members that name the same alias get
+the same model, necessarily.
+
+When the key is missing maw does **not** error. It falls through silently:
+`commands.<engine>` → `commands.<window-name>` → `commands.<oracle>-oracle` → glob →
+`commands.default`. Exit 0, no warning, and the pane boots a *working but wrong* engine.
+
+#### 0a. Where the layer file goes
+
+The layer must sit in an **ancestor of the worker's working directory** — not where you
+happen to be typing. Find where your workers actually run, then pick:
+
+| Your members' worktrees | Put the layer at |
+|---|---|
+| `<repo>/agents/<role>` (in-repo) | `<repo>/.maw/maw.config.60.json` — also in git, survives a machine move |
+| `~/.maw-teams/<team>/<role>` | `~/.maw-teams/<team>/.maw/maw.config.60.json` |
+| `${YOUR_STATE_ROOT}/<role>` | `${YOUR_STATE_ROOT}/.maw/maw.config.60.json` |
+
+- **Filename must match `maw.config.<digits>.json`.** A plain `maw.config.json` (no digits)
+  is **never read as a layer** — it is a legacy fallback used only when no numbered file
+  exists anywhere. Editing it looks like it worked and changes nothing.
+- **Pick N > 50.** Global user config is N=50; higher N merges later and wins. If two layers
+  share the same N, the **deeper** one wins — you do not need a unique number.
+- **Scope it exactly to the team.** Never put a layer at a directory that is an ancestor of
+  *other* teams (e.g. `~/.maw-teams/.maw/`) — that silently binds engines for teams that
+  never asked for them.
+- **`maw config set` cannot do this** — it supports only `node|port`. Write the file.
+- If you also use `maw team spawn` (not just `up`), that verb resolves from the **caller's
+  cwd**, so the layer is needed in **both** places: your repo *and* the team state root.
 
 ```bash
-bash ψ/teams/scripts/verify-check.sh enginecheck "$CHARTER"    # rc≠0 → STOP
+mkdir -p "$LAYER_DIR"          # "$ROOT/.maw"  or  "$TEAM_STATE_ROOT/.maw"
+cat > "$LAYER_DIR/maw.config.60.json" <<'JSON'
+{ "commands": {
+    "codex-hi":  "codex --model <MODEL-A> --ask-for-approval never --sandbox danger-full-access",
+    "codex-lo":  "codex --model <MODEL-B> --ask-for-approval never --sandbox danger-full-access",
+    "claude-hi": "claude --model <MODEL-C> --dangerously-skip-permissions"
+} }
+JSON
 ```
 
-**Do not skip this because `maw team preflight` and `maw team up --dry-run` are green.**
-Neither one checks it. `[verified 2026-08-06 · maw-rs 325db65]`
+Charter then references the **alias name** — and `model:` is documentation only:
 
-- `team up` forwards **only** `-e <engine-name>` to `maw wake`. If `commands.<engine-name>`
-  is not registered, the name is **discarded with no error, exit 0**, and the pane gets
-  whatever the *window name* resolves to (window key → `<oracle>-oracle` → glob → `default`).
-- `team up --dry-run` prints the engine it will **request**, echoed straight from the charter
-  — never the engine it will **get**. It cannot fail on this.
-- `model:` in a charter is parsed, validated, then **dropped**. `maw wake` has no `--model`
-  flag at all. **A model can only be expressed inside the alias command string.**
+```yaml
+members:
+  - role: coder-1
+    engine: codex-hi
+  - role: reviewer
+    engine: claude-hi
+```
 
-Register aliases in the repo-local layer `<repo>/.maw/maw.config.60.json` (merges over the
-global `maw.config.50.json`, travels with the repo, no global mutation). Full evidence,
-resolution ladder, and the upstream bugs: `ψ/teams/ENGINE-AND-MODEL.md`.
+#### 0b. Prove it — a check that can actually fail
 
-> This is the root cause of the "`Opus 4.8` in status bar when the charter said codex"
-> failure listed below — it was recorded here as a symptom for months without its cause.
+`maw team preflight` and `maw team up --dry-run` are **both green on this defect**. The
+dry-run echoes the engine out of the charter you just wrote; it cannot fail. Ask maw what
+will *really* launch, from the worker's own path:
+
+```bash
+cd "$MEMBER_DIR"                    # the directory that member will run in
+maw config sources                  # your layer file MUST appear in this list
+maw config explain commands.codex-hi   # "FINAL null" ⇒ not registered from here
+
+# decisive: the real launch line, plus a control that is deliberately unregistered
+maw wake <member-identity> --no-attach --dry-run -e codex-hi           --repo-path "$MEMBER_DIR"
+maw wake <member-identity> --no-attach --dry-run -e __no_such_engine__ --repo-path "$MEMBER_DIR"
+```
+
+**If both commands print the same launch line, your alias is not being read** — the name was
+discarded and both fell through to the same fallback. That comparison is the check that can
+fail; a single green line on its own proves nothing.
+
+After spawning, confirm on the engine's own UI (`maw peek <session>:<window>`) that the
+status bar shows the model you asked for. That is the only layer of evidence that covers
+whether the account can actually serve that model — nothing before it does.
+
+#### 0c. Traps confirmed by running them
+
+- **`maw team up -e <engine>` overrides every member's charter engine.** One flag flattens a
+  mixed-engine team (`a=codex-hi, b=claude-hi` → both become the flag's value). Omit `-e`
+  unless you mean "everyone on this one engine".
+- **`maw team resume` respawns every role as `claude`** — it never forwards engine. Prefer
+  `maw team up`, which reads the charter.
+- **`engines:` inside a charter is a dead field.** maw's parser stores it; no code reads it.
+  Engine commands belong in the config layer.
+- **Member identities must already be wake-resolvable.** `maw team up` exits 1 with
+  `wake: '<name>' was not found` for a member name that is not a known oracle/agent — you
+  cannot invent arbitrary member names in a charter.
+- **Reasoning effort does not come from the alias.** For codex it comes from
+  `$CODEX_HOME/config.toml` (`model_reasoning_effort`); the status bar shows both
+  (`<model> xhigh`). Pin it there or add the flag to the alias.
+- **First boot can stall on codex's "Update available!" prompt** and never reach the engine
+  UI. This is why the post-spawn peek below is mandatory, not optional.
+
+> This is also the root cause of the "`Opus` in the status bar when the charter said codex"
+> failure listed further down — carried here as a symptom for a long time without its cause.
 
 ```bash
 maw team preflight "$CHARTER"
