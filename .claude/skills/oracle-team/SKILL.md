@@ -452,11 +452,26 @@ maw team up "$TEAM"               # real
 > shared state irreversibly and killed the worker.
 >
 > ```bash
-> # ALWAYS, before the first send:
-> maw peek "${SESSION}:${ROLE}-oracle" | tail -20
+> # ALWAYS, before the first send — one command, whole team, read-only:
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh bootverify "$SESSION"
 > ```
-> Read it and answer one question: **is this screen the agent's, or the CLI's own?** Only send
-> once it is the agent's.
+> ```
+> bootverify.pane: coder-a  READY proc=codex model=gpt-5.6-sol cmd=codex --model gpt-5.6-sol …
+> bootverify.pane: coder-b  NOT-READY screen=cli-update-dialog — ห้ามส่ง Enter จะกด 'Update now'
+> bootverify.pane: coder-c  PROCESS-GONE — pane เหลือแต่ shell (engine ตายหรือยังไม่ boot)
+> overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY
+> ```
+> It reads `/proc` for what is **actually running** and `capture-pane` for **whose screen it
+> is**, sends nothing, and presses nothing. `NOT-READY` on a pane whose process is running and
+> correct is the case that matters — that is precisely the state that upgraded this machine.
+>
+> `[tested against four pane shapes]` engine as the pane process itself · engine as a child of a
+> shell (the `maw wake` shape) · a live process showing the update dialog · a bare shell where
+> the engine died. The first version walked only child processes and reported `PROCESS-GONE` for
+> panes that were running the engine directly — found by testing it, not by reading it.
+>
+> Or read it yourself with `maw peek "${SESSION}:${ROLE}-oracle" | tail -20` and answer one
+> question: **is this screen the agent's, or the CLI's own?** Only send once it is the agent's.
 >
 > 🔑 **This also breaks a rung of the evidence ladder that looked solid.** `/proc` confirmed the
 > pane was running `codex --model gpt-5.6-sol …` — the exact alias, correct flags. That claim was

@@ -437,6 +437,64 @@ for k,v in globs:
   echo "[ขอบเขต: การมีชื่ออยู่ในลิสต์ ไม่ได้แปลว่าบัญชีเสิร์ฟ model นั้นได้ — ต้อง boot ถึงจะรู้]"
 }
 
+# ── bootverify <session> ────────────────────────────────────────────────────
+# ตอบข้อที่ทั้งฟลีตยังไม่มีใครพิสูจน์: **pane boot เป็น engine ที่ขอไปจริงไหม**
+# และแยกให้ชัดว่า **process ถูก ≠ agent พร้อมรับงาน** (2026-08-06: /proc บอกว่า codex ถูกตัว
+# แต่จอเป็นหน้า "Update available!" ⇒ Enter เปล่าไปกด "Update now" อัปทั้งเครื่อง)
+# ⚠️ read-only ล้วน — ไม่ส่ง key ไม่กด Enter ไม่แตะอะไรใน pane
+bootverify() {
+  local sess="${1:?usage: bootverify <session>}"
+  binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
+  tmux has-session -t "=$sess" 2>/dev/null || { echo "FAIL      ไม่มี session '$sess'"; return 1; }
+
+  local wins w pid child cmd screen model rc=0 n=0
+  wins=$(tmux list-windows -t "=$sess" -F '#{window_name}' 2>/dev/null)
+  [ -n "$wins" ] || { echo "FAIL      session '$sess' ไม่มี window"; return 1; }
+
+  while IFS= read -r w; do
+    [ -n "$w" ] || continue
+    n=$((n+1))
+    pid=$(tmux list-panes -t "=${sess}:${w}" -F '#{pane_pid}' 2>/dev/null | head -1)
+    cmd=""
+    # 🩹 pane process อาจ **เป็นตัว engine เอง** (tmux รันคำสั่งตรง ๆ ไม่ผ่าน shell)
+    #    หรือเป็น shell ที่มี engine เป็นลูก (maw wake ผ่าน bash) — ต้องดูทั้งสองแบบ
+    #    [เจอตอนเทสต์: เวอร์ชันแรกเดินแต่ลูก ⇒ รายงาน PROCESS-GONE ให้ pane ที่รัน engine อยู่จริง]
+    if [ -r "/proc/${pid:-0}/cmdline" ]; then
+      cmd=$(tr '\0' ' ' < "/proc/${pid}/cmdline")
+    fi
+    case "$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename 2>/dev/null)" in
+      bash|sh|zsh|-bash|""|login)
+        cmd=""   # pane เป็นเชลล์เปล่า → หา engine จากลูกแทน
+        for child in $(pgrep -P "${pid:-0}" 2>/dev/null); do
+          [ -r "/proc/$child/cmdline" ] || continue
+          cmd=$(tr '\0' ' ' < "/proc/$child/cmdline")
+          [ -n "$cmd" ] && break
+        done ;;
+    esac
+    screen=$(tmux capture-pane -p -t "=${sess}:${w}" 2>/dev/null | grep -v '^\s*$' | tail -25)
+
+    if [ -z "$cmd" ]; then
+      echo "bootverify.pane: $w PROCESS-GONE — pane เหลือแต่ shell (engine ตายหรือยังไม่ boot)"
+      rc=1; continue
+    fi
+    # 🔴 จอเป็นของ installer/dialog ไม่ใช่ของ agent → ยังรับงานไม่ได้ และ Enter จะไปโดนเมนู
+    case "$screen" in
+      *"Update available!"*|*"Press enter to continue"*|*"1. Update now"*)
+        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog — **ห้ามส่ง Enter** จะกด 'Update now'"
+        rc=1; continue ;;
+      *"trust this folder"*|*"you trust"*)
+        echo "bootverify.pane: $w NOT-READY screen=trust-prompt — ตอบ '1' เฉพาะเจาะจง ไม่ใช่ Enter เปล่า"
+        rc=1; continue ;;
+    esac
+    model=$(printf '%s' "$cmd" | sed -n 's/.*--model \([^ ]*\).*/\1/p')
+    echo "bootverify.pane: $w READY proc=$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename) model=${model:--} cmd=$(printf '%s' "$cmd" | cut -c1-90)"
+  done <<< "$wins"
+
+  echo "bootverify.scope: อ่านอย่างเดียว · ยืนยัน process+จอ · **ไม่ยืนยันว่าบัญชีเสิร์ฟ model ได้** (ใช้ modelprobe)"
+  [ "$rc" = "0" ] && echo "overall: READY panes=$n" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY"
+  return $rc
+}
+
 # ── modelprobe <engine-alias> <dir> ─────────────────────────────────────────
 # ตอบคำถามเดียวที่ `enginecheck` ประกาศมาตลอดว่าตอบไม่ได้: **บัญชีเสิร์ฟ model นี้ได้จริงไหม**
 # 🏷️ 2026-08-06: `gpt-5.6-mini` บูตขึ้นปกติ · banner พิมพ์ `model: gpt-5.6-mini xhigh` ·
@@ -1046,7 +1104,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe relay teamclosed enginereg enginelist engineone enginecheck modelprobe selftest"
+VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify relay teamclosed enginereg enginelist engineone enginecheck modelprobe selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
@@ -1054,6 +1112,7 @@ verify_check_usage() {
   echo "  relay <session:window.pane> '<msg>' [--durable <slug>]  ·  teamclosed <team>"
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
   echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
+  echo "  bootverify <session>   ← หลัง spawn: pane boot ตรง engine ไหม + จอเป็นของ agent หรือ installer"
   echo "  selftest"
 }
 
