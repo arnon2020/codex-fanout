@@ -204,16 +204,27 @@ done
 **Match on identity; refuse any file that also holds someone else's.**
 
 ```bash
-[ -n "$SNAP" ] || { echo "run Step 0 first — \$SNAP is unset and 'mv \"\$F\" \"\$SNAP/\"' would move it to /"; return 1; }
-tmux has-session -t "=$SESSION" 2>/dev/null && { echo "⚠ session still live — releasing nothing"; return 1; }
+# A function, not loose lines: the guards below use `return`, which is an ERROR at top level
+# ("can only 'return' from a function or sourced script"). Paste this whole block, then call it.
+release_reservations() {
+  [ -n "$SNAP" ] || { echo "✗ run Step 0 first — \$SNAP unset; 'mv \"\$F\" \"\$SNAP/\"' would move it to /"; return 1; }
+  [ -n "$SESSION" ] || { echo "✗ \$SESSION unset — refusing"; return 1; }
+  tmux has-session -t "=$SESSION" 2>/dev/null && { echo "⚠ session still live — releasing nothing"; return 1; }
 
-# identities this charter owns: the member windows, plus the session itself
-OURS=$(for R in $CODERS; do echo "${R}-oracle"; echo "$R"; done; echo "$SESSION")
+  # identities this charter owns: member windows, bare role names, and the session itself.
+  # An ARRAY, so a name containing a space or a glob char stays one argument.
+  local OURS=(); local R
+  for R in $CODERS; do [ -n "$R" ] && OURS+=("${R}-oracle" "$R"); done
+  OURS+=("$SESSION")
+  # If $CODERS was empty, OURS holds only the session — every file would match nothing and this
+  # would release nothing while printing nothing. That is the silent-pass shape; refuse instead.
+  [ "${#OURS[@]}" -gt 1 ] || { echo "✗ no member identities resolved from \$CODERS — refusing (would have matched nothing and looked clean)"; return 1; }
 
-for f in "$HOME"/.maw/fleet/*.json; do
-  [ -e "$f" ] || continue                      # lucifer (A): unglobbed '*.json' otherwise counts as one
-  # identities go in argv, NOT stdin — see the warning under this block
-  python3 - "$f" "$SNAP" $OURS <<'PY'
+  local f
+  for f in "$HOME"/.maw/fleet/*.json; do
+    [ -e "$f" ] || continue                    # lucifer (A): unglobbed '*.json' otherwise counts as one
+    # identities go in argv (quoted!), NOT stdin — see the warning under this block
+    python3 - "$f" "$SNAP" "${OURS[@]}" <<'PY'
 import json,os,shutil,sys
 f,snap=sys.argv[1],sys.argv[2]
 ours=set(sys.argv[3:])
@@ -229,8 +240,36 @@ if theirs:
 shutil.move(f, os.path.join(snap, os.path.basename(f)))
 print(f"released {os.path.basename(f)} ({len(mine)} identities) → snapshot")
 PY
-done
+  done
+}
+
+release_reservations || echo "↑ teardown Step 3 refused — fix the cause, do not skip the step"
 ```
+
+> 🔴 **Why a function and not two loose guard lines.** `[found independently by ajfon and by
+> advisor review, 2026-08-06]` The shipped-and-then-fixed version used bare
+> `… || { echo …; return 1; }` at top level. ajfon tested all three ways this file's blocks are
+> actually used — pasted, saved as a script, heredoc'd into `bash` — and got the same result in
+> every one:
+>
+> ```
+> guard fired
+> bash: line N: return: can only `return' from a function or sourced script
+> unreachable      ← execution continued
+> exit_code=0
+> ```
+>
+> **The guard printed and did not stop.** The release loop ran anyway — against every file in
+> `~/.maw/fleet/` — with the session possibly still live, and a caller checking `$?` saw success.
+>
+> **This sharpens the rule at the bottom of this file.** "If it prints nothing when it breaks, it
+> is not a guard" is necessary and **not sufficient**: this one printed, in bash's own voice, and
+> was still not a guard. ⇒ **A guard must stop, and its refusal must be observable in the exit
+> status.** ajfon also named the assumption clash underneath: Step 0 sets `$SNAP` expecting Step 3
+> to run in the *same shell* (so `exit` is wrong — it would kill the operator's shell), while
+> `return` implies a function that did not exist. The function form satisfies both, which is why
+> it is used instead of ajfon's `exit 1` alternative. **Verified in all three modes: guard fires,
+> release loop not reached, function returns 1, shell survives.**
 
 > 🔴 **The first draft of this very block shipped a fifth dead check, and only a sandbox run
 > caught it.** `[2026-08-06]` It fed the identity list to Python as `<<<"$OURS"` **while the
@@ -239,11 +278,21 @@ done
 > was released or warned about.** Written one hour after documenting three other silently-dead
 > checks, in the block fixing them. Identities go in `argv`.
 >
-> **Verified against a fake fleet directory** (never `~/.maw/fleet/`) with four fixtures: a file
-> matching `$SESSION`, a mixed-ownership file, an unrelated file, and one named
-> `deliberately-not-the-tmux-session.json` holding one of ours. Result: the two all-ours files
-> released **including the misnamed one**, the mixed file warned and untouched, the unrelated one
-> ignored, empty directory produced no phantom entry, and unset `$SNAP` refused to run.
+> 🔴 **And a seventh, in the fix for the sixth — found by a reviewer reading the shipped code.**
+> `$OURS` was passed **unquoted** (`… "$SNAP" $OURS`), and the sandbox passed only because every
+> fixture identity happened to be one shell word. The dangerous half was not spaces: **if
+> `$CODERS` is empty, `$OURS` collapses to just the session, nothing matches any file, and the
+> loop releases nothing while printing nothing** — the silent-pass shape again, in the paragraph
+> defining it. Now an array, quoted, with an explicit refusal when no member identity resolves.
+> The block is also a **function**, because its guards use `return`, which is an error at top
+> level — the first sandbox hid that by supplying a scope the document didn't.
+>
+> **Verified against a fake fleet directory** (never `~/.maw/fleet/`), five cases: (1) normal —
+> the two all-ours files released **including `deliberately-not-the-tmux-session.json`, matched
+> by identity while its name matches nothing**, mixed-ownership file warned and untouched,
+> unrelated file ignored; (2) **empty `$CODERS` → prints a refusal and releases nothing**;
+> (3) an identity containing a space survives as one argument; (4) unset `$SNAP` refuses;
+> (5) empty directory produces no phantom entry.
 
 > 🔴 **Release only reservations that are entirely yours.** Everything else under `~/.maw/` belongs
 > to other oracles, and a mass sweep of someone else's state is not yours to run — `50-lucifer.json`
@@ -341,19 +390,34 @@ against two separate live 2-member teams — dirty worktree kept, `.env.local` c
 **Not run by anyone**: Steps 0, 3, and 4, and the block added under Step 2. Built from
 measurements four oracles took in their own houses, not from executing this file.
 
-**Reviewed without being run** `[2026-08-06]`: ajfon and lucifer both read Steps 2–3 statically
-and between them found **five defects, four of which made a check silently do nothing** —
-undefined `charter_branch`, out-of-scope `$WT`, unset `$SNAP` turning `mv "$F" "$SNAP/"` into
-`mv "$F" /`, the empty-directory phantom count, and the file-vs-identity unit error that would
-have released 2 of lucifer's 26 identities while reporting success. A sixth, in the rewrite
-itself, was caught by a sandbox run. All are fixed above; **Step 3's logic is now sandbox-tested,
-Steps 0, 2's added block, and 4 are not.**
+**Reviewed without being run** `[2026-08-06]`: ajfon and lucifer read Steps 2–3 statically —
+neither would execute Step 3, because it touches shared fleet state, and both were right to
+refuse. **Eight defects in total, across three rounds:**
 
-> **The pattern across all six is one thing**: a check that fails in a way that looks like
+| round | defects | found by |
+|---|---|---|
+| 1 — as first written | undefined `charter_branch` · out-of-scope `$WT` · unset `$SNAP` → `mv "$F" /` · empty-dir phantom count · **file-vs-identity unit error** (would release 2 of lucifer's 26 and report success) | ajfon (3), lucifer (2) |
+| 2 — in the code fixing round 1 | stdin collision: identity list executed *as* the Python program, four tracebacks, nothing released or warned | sandbox run |
+| 3 — in the code fixing round 2 | unquoted `$OURS` + **empty `$CODERS` matching nothing silently** · guards using `return` at top level, which **printed and then continued anyway, exit 0** | advisor review, ajfon (independently) |
+
+**Six of the eight made a check do nothing while looking fine.** Each round's fix contained the
+next defect — including the one written an hour after the postmortem naming the pattern, inside
+the block fixing it. lucifer's conclusion is the right one: *"รู้กฎแล้วไม่พอ — กฎแบบนี้ต้องมีคนอื่น
+หรือ sandbox เป็นคนบังคับ ไม่ใช่ความตั้งใจของคนเขียน."*
+
+All are fixed above. **Step 3 is sandbox-tested across five behaviours and three execution modes;
+Step 0, Step 2's added block, and Step 4 are neither run nor reviewed.**
+
+> **The pattern across all eight is one thing**: a check that fails in a way that looks like
 > passing. Undefined function → `|| continue`. Unset variable → empty match. Unglobbed pattern →
 > one phantom. Wrong unit → "released" after releasing almost nothing. Stdin collision → four
-> tracebacks and silence. **When adding a guard here, the question is not "does it work" but
-> "what does it print when it breaks" — if the answer is nothing, it is not a guard.**
+> tracebacks and silence. Empty `$CODERS` → matches nothing, says nothing.
+>
+> **When adding a guard here, do not ask "does it work". Ask two things:**
+> **1. What does it print when it breaks?** If nothing — it is not a guard.
+> **2. Does it actually stop, and can the caller tell?** The eighth defect *printed*, in bash's
+> own error voice, and execution continued past it with exit 0. **Printing is necessary and not
+> sufficient.**
 
 **The rest of this file has had no equivalent scrutiny.** Read it before running it.
 
