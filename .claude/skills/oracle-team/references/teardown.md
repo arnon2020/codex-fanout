@@ -149,29 +149,71 @@ Cheap, and it is the only thing that makes any later step reversible.
 > `tmux kill-session -t "=$SESSION"` in teardown **kills the oracle running the teardown.**
 > Nothing in Gate 0, preflight, or this file warned about it.
 
+> ## 🔴 `maw tmux kill` IS NOT A COMMAND — and it fails by printing and returning 0
+>
+> `[verified by running teardown against a live team, 2026-08-06]` Every earlier version of this
+> step, and of `SKILL.md`, said to kill member windows with `maw tmux kill`. **There is no such
+> subcommand:**
+>
+> ```
+> $ maw tmux --help
+> usage: maw tmux <ls|peek|split|attach|break> [...]
+>
+> $ maw tmux kill "rt3team:rt3-a-oracle"
+> tmux kill: pane 'rt3team:rt3-a-oracle' not found     ← on stdout
+> $ echo $?
+> 0                                                     ← success
+> $ tmux list-windows -t "=rt3team"
+> rt3-a-oracle    rt3-b-oracle                          ← both still alive
+> ```
+>
+> **The verb's primary action did nothing, said "not found" as though the window were already
+> gone, and reported success.** Worse, the surrounding text recommended it *as the fix* for
+> `maw team down --only` being broken — a broken command replaced by a nonexistent one. This is
+> the `maw` pattern this repo already documented for `maw team status`: **rc lies, the real
+> message goes to stdout.** Use `tmux kill-window` and **verify the window is gone.**
+
 ```bash
-SELF=$(tmux display-message -p '#{session_name}' 2>/dev/null)
+# Are we inside tmux at all, and if so, in which session?
+# NOTE: `tmux display-message -p '#{session_name}'` with NO client attached returns the most
+# recently active session — during this author's teardown it returned the very team being torn
+# down, producing a false "that's your own session" refusal. Anchor to $TMUX_PANE, and when
+# $TMUX is unset you are not in any session, so no collision is possible.
+if [ -n "${TMUX:-}" ] && [ -n "${TMUX_PANE:-}" ]; then
+  SELF=$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}' 2>/dev/null)
+else
+  SELF=""
+fi
 if [ -n "$SELF" ] && [ "$SELF" = "$SESSION" ]; then
-  echo "🔴 REFUSING: the charter's session ('$SESSION') is the session you are running in."
-  echo "   A session-level kill here terminates you, not just the team."
-  echo "   Kill only the member windows below, and never 'tmux kill-session' for this team."
+  echo "🔴 REFUSING session-level kill: the charter's session ('$SESSION') is the one you are in."
+  echo "   Killing it terminates you, not just the team. Per-window kill only."
   KILL_SESSION=no
 else
   KILL_SESSION=yes
 fi
 
-# Per-window kill is safe either way, and is what this step actually needs.
+# Per-window kill, each one verified. tmux kill-window — NOT `maw tmux kill`, which does not exist.
 for ROLE in $TARGETS; do
-  maw tmux kill "${SESSION}:${ROLE}-oracle" 2>&1 | tail -1
+  W="${ROLE}-oracle"
+  if ! tmux list-windows -t "=$SESSION" -F '#{window_name}' 2>/dev/null | grep -qx "$W"; then
+    echo "  $W: already gone"; continue
+  fi
+  tmux kill-window -t "=${SESSION}:${W}" 2>&1
+  if tmux list-windows -t "=$SESSION" -F '#{window_name}' 2>/dev/null | grep -qx "$W"; then
+    echo "  🔴 $W SURVIVED the kill — do not report this teardown as done"
+  else
+    echo "  ✓ $W killed and verified gone"
+  fi
 done
 ```
 
-> `maw team down --only` is BROKEN — it kills ALL. Use per-window kill.
-> Always quote `"${SESSION}:name"`, never bare `$SESSION:name`.
+> `maw team down --only` is BROKEN — it kills ALL. Always use `-t "=$SESSION:..."`, never a bare
+> `$SESSION:name`: the unanchored form prefix-matches and can hit a different team.
 >
 > **Anywhere this skill shows `tmux kill-session -t "=$SESSION"`, gate it on `$KILL_SESSION`.**
-> Per-window kill is enough for teardown; the session-level kill is the only thing that can turn
-> a teardown into suicide, and it buys nothing a window loop does not.
+> Per-window kill is enough — killing every window ends the session on its own, which is what
+> happened here. The session-level kill is the only thing that can turn a teardown into suicide,
+> and it buys nothing the window loop does not.
 
 ## Step 2: Git state — the guards that must not be "fixed"
 

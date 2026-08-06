@@ -180,7 +180,7 @@ When the harness notifies an agent completed:
 ## Verb: `down` — Safe teardown
 
 Built from hard-won lessons:
-- `maw team down --only` is BROKEN (kills ALL) → use `maw tmux kill` per window
+- `maw team down --only` is BROKEN (kills ALL) → use `tmux kill-window` per window and verify. **`maw tmux kill` does not exist** — it prints "not found", returns rc=0, and leaves the window running. See `teardown.md` Step 1.
 - Never `git worktree remove --force` → commit-save first
 - Zsh brace quoting: always `"${SESSION}:name"` not `$SESSION:name`
 
@@ -196,7 +196,7 @@ TARGETS=$(echo "$TARGETS" | tr ',' ' ')
 
 ```bash
 for ROLE in $TARGETS; do
-  maw tmux kill "${SESSION}:${ROLE}-oracle" 2>&1 | tail -1
+  tmux kill-window -t "=${SESSION}:${ROLE}-oracle" 2>&1     # NOT `maw tmux kill` - no such subcommand
 done
 maw ls -v 2>&1 | grep "${SESSION}:" | grep codex || echo "✓ no codex windows"
 ```

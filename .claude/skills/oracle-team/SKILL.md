@@ -279,6 +279,80 @@ done
 maw team up "$TEAM" --dry-run     # sanity: roles + engines listed
 maw team up "$TEAM"               # real
 ```
+
+> ## 🔴 Step 5b — LOOK at the pane before you send it anything. Not optional.
+>
+> `[verified the hard way, 2026-08-06 — this upgraded a binary for every oracle on the machine]`
+>
+> After `up`, a codex pane may not be sitting at the agent's prompt at all. It can be sitting on
+> **codex's own interactive screen** — an update offer, a trust-this-directory question, a
+> release-notes pager. **`maw send-enter` presses whatever is on screen.** In this author's run it
+> pressed:
+>
+> ```
+> ✨ Update available! 0.146.0 -> 0.146.1
+> › 1. Update now (runs `npm install -g @openai/codex`)
+>   2. Skip
+>   Press enter to continue
+> ```
+>
+> **Result: `npm install -g @openai/codex` upgraded codex globally for every oracle on this
+> shared machine, and codex then printed "Please restart Codex" and exited — the window
+> disappeared.** The prompt was never delivered to any model. One blind `send-enter` mutated
+> shared state irreversibly and killed the worker.
+>
+> ```bash
+> # ALWAYS, before the first send:
+> maw peek "${SESSION}:${ROLE}-oracle" | tail -20
+> ```
+> Read it and answer one question: **is this screen the agent's, or the CLI's own?** Only send
+> once it is the agent's.
+>
+> 🔑 **This also breaks a rung of the evidence ladder that looked solid.** `/proc` confirmed the
+> pane was running `codex --model gpt-5.6-sol …` — the exact alias, correct flags. That claim was
+> **true and useless**: the process was right while the screen belonged to an installer. So
+> insert a rung:
+>
+> | rung | means |
+> |---|---|
+> | `delivered` | text written to the pane |
+> | `capture-pane` shows it | it is in *a* input box — **possibly the CLI's, not the agent's** |
+> | **`/proc` cmdline correct** | **right process, right model — says NOTHING about readiness** |
+> | screen is the agent's own prompt | it can now receive a turn |
+> | agent quotes your content back | it entered a turn |
+>
+> **A correct process is not a ready agent**, and the two are indistinguishable from every check
+> above the last two.
+>
+> ### The dismissal pattern that already works — prism's, not invented here
+>
+> prism's launcher never hit this, and **not because they were more careful — because of
+> structure.** Their `team_dismiss_startup_prompts` **greps for the banner first and sends the
+> Skip number, never a bare Enter**:
+>
+> ```bash
+> # match the specific screen, then send the specific answer for THAT screen
+> if maw peek "$T" | grep -qF 'Update available!'; then
+>   tmux send-keys -t "=$T" '3' Enter        # 3 = "Skip until next version"
+> fi
+> if maw peek "$T" | grep -qF 'Is this a project you created or one you trust'; then
+>   tmux send-keys -t "=$T" '1' Enter        # 1 = "Yes, I trust this folder"
+> fi
+> ```
+>
+> **Never send a naked Enter to a screen you have not matched.** A blind Enter takes the
+> *highlighted default*, and on the update screen the default is **"Update now"** — which runs
+> `npm install -g` against the whole machine.
+>
+> ⏳ **This was known for five days and happened anyway.** lucifer banked it on **2026-08-01
+> against codex 0.145**: *"dialog-clearing loop ของ `spawn_team_member.sh` ไม่ match →
+> spawn fail-closed"*, ending with **"Script ยังไม่ patch."** The knowledge was written down,
+> searchable, and correct — and nothing stood between it and a hand pressing Enter.
+> **It also got worse across versions:** on 0.145 the mismatch failed *closed* (spawn just
+> didn't start); on 0.146 it fails *open* — the Enter lands on a live menu item and mutates the
+> machine. **A defect that fails closed can become the same defect failing open after an upgrade
+> you did not make.** This is the case for a matched-dismissal helper rather than a rule saying
+> "be careful."
 Two failures you will probably hit here, and neither error explains itself:
 
 - **`charter not found: <team>`** — `maw team up` looks for the charter **relative to your
@@ -1023,7 +1097,7 @@ For each coder, verify against charter:
 | Alive? | status bar visible | bare shell `❯` = engine died |
 
 **If any check fails:**
-1. Kill the bad coder: `maw tmux kill "${SESSION}:${ROLE}-oracle"`
+1. Kill the bad coder: `tmux kill-window -t "=${SESSION}:${ROLE}-oracle"` — **not `maw tmux kill`, which does not exist** (prints "not found", returns 0, window survives). Verify with `tmux list-windows`.
 2. Clean worktree: `mv agents/1-${ROLE} /tmp/cleanup-...`
 3. Fix root cause (config, engine name, reasoning_effort)
 4. Relaunch: `maw team up "$TEAM" --only "$ROLE"`
@@ -1093,7 +1167,7 @@ gh pr list --repo "$PROJECT" --base "$BASE" --state open 2>/dev/null || echo "no
 
 1. Lead orchestrates, coders code — lead NEVER writes code itself.
 2. Charter is the source of truth — session, members, engines, headless config all from yaml.
-3. `maw tmux kill` for windows — never `maw team down --only` (broken).
+3. `tmux kill-window -t "=$SESSION:$W"` for windows, then VERIFY it is gone — never `maw team down --only` (broken), and never `maw tmux kill` (does not exist; fails silently with rc=0).
 4. Never `git worktree remove --force` — commit-save first.
 5. Branches survive worktree removal → committed work is never lost.
 6. Always brace zsh vars: `"${SESSION}:${ROLE}-oracle"` not `$SESSION:$ROLE`.
