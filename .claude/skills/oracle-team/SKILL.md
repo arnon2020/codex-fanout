@@ -269,7 +269,7 @@ done
 #     lucifer's n=65 run fired 357/357 times, which is noise nobody reads.
 unpref=$(grep -E '^\s*-?\s*role:' "$CHARTER" | awk '{print $NF}' | grep -vc "^${TEAM}" || true)
 tot=$(grep -cE '^\s*-?\s*role:' "$CHARTER" || true)
-[ "${unpref:-0}" -gt 0 ] && echo "🟡 $unpref/$tot roles in $(basename "$CHARTER") lack the '$TEAM' prefix — bare 'maw wake <role>' can fuzzy-match another oracle or repo entirely"
+[ "${unpref:-0}" -gt 0 ] && echo "🟡 $unpref/$tot roles in $(basename "$CHARTER") lack the '$TEAM' prefix — matters ONLY if anything calls bare 'maw wake <role>'; check with: grep -rn \"maw wake\" your scripts"
 
 # (d) 🔴 Every member needs worktree: or cwd:. Absent is NOT a harmless default.
 python3 - "$CHARTER" <<'PY'
@@ -297,6 +297,16 @@ PY
 > **(c)** Roles named `coder-a` / `verifier-rs`: `maw wake coder-a --dry-run` from either repo
 > resolved to **`maw-rs` — the repository, not the member.** `team up` passes `--wt` so spawn
 > still works, but any bare `wake` is aimed somewhere unpredictable.
+>
+> ⚠️ **(c) is conditional, and the earlier wording overstated it.** `[prism, 2026-08-06]` It
+> fired on all 8 of their roles, so prism did what this document should have: **checked whether
+> the risk it warns about is reachable in their design.** `grep` found no bare `maw wake <role>`
+> anywhere in their scripts — they use `maw team spawn --cwd --engine` throughout — and
+> `maw wake refract-scope --dry-run` failed *cleanly* (`oracle repo not found`) rather than
+> fuzzy-matching, because no oracle on the machine shares that name. **True positive, much lower
+> severity than written.** The risk belongs to *calling bare `wake`*, not to *naming a role
+> without a prefix* — a warning that does not say what makes it dangerous invites being ignored
+> for the cases where it is.
 
 **Step 5 — spawn.**
 
