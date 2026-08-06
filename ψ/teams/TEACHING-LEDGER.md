@@ -1252,3 +1252,34 @@ user ปลุก loom ให้ ⇒ `116-loom:loom-oracle.0` `●` LIVE · `rel
 loom / holmes / tars / lucifer **1** · **prism ยังเป็น 0** — ไม่มี session, durable file อย่างเดียว
 ⇒ **prism คือคนสุดท้ายที่ยังไม่ถึง และเป็นคนที่ข้อจำกัด worktree-นอก-repo กระทบเต็ม ๆ**
 (evidence-cell ใช้ `${CELL_STATE_ROOT}/<role>`) — atlas ก็ชี้ข้อนี้ใน verdict
+
+**📤 2026-08-06 — prism ถึงตัวแล้ว · ลิสต์ปิดครบ 6/6**
+
+prism ไม่มี session (`maw ls -a` = 0 แถว) ⇒ ปลุกเอง **`maw wake prism --dry-run` ก่อน**
+ยืนยัน target = `117-prism:prism-oracle` + repo ถูก (`arnon2020/prism-oracle`) **แล้วค่อยปลุกจริง**
+— ไม่ยิง `maw wake prism` ดิบ เพราะ fuzzy-match ข้าม oracle ได้ (golden rule)
+`--continue` ⇒ เขากลับมาพร้อม context เดิม จึงจำ correction ที่ส่งมา 08-01 ได้
+
+เนื้อหา: **ACK ครบทั้ง 4 defects ของเขา** (defect 1-2 แก้ตั้งแต่ v5 · defect 3 correct แล้ว ·
+defect 4 เพิ่มแล้ว · ข้อเสนอ verified/inferred ของเขา **กลายเป็นกฎ label ทั้ง repo**)
+\+ 3 ข้อใหม่ที่กระทบ evidence-cell ตรง ๆ โดยเน้นข้อ 3:
+🔴 `cwd: ${CELL_STATE_ROOT}/<role>` **อยู่นอก repo** ⇒ layer ใน repo มองไม่เห็น
+⇒ ทางแก้ `${CELL_STATE_ROOT}/.maw/maw.config.60.json` (แคบพอดี ครอบ cell เดียว)
+\+ เตือนด้วยว่าผมเคยแนะนำ `~/.maw-teams/.maw/` ให้ loom ซึ่ง**ผิด** atlas จับได้
+
+**และบอกเขาตรง ๆ ว่า dry-run 9/9 ที่เขาส่งมาและผมติดป้าย `verified` ให้ — พิสูจน์แค่ว่า charter
+ถูก parse ไม่ได้พิสูจน์ว่า engine จะขึ้นถูก** (นี่คือหลักฐานชิ้นที่ทั้งสามคน — เขา ผม lucifer —
+เคยยอมรับร่วมกันโดยไม่มีใครตรวจ ตรงกับบทเรียนที่เขาเขียนเองว่า *"หลายคนอ่านแล้วตรงกัน
+ไม่ใช่การยืนยัน"*)
+
+### 📊 สถานะสุดท้าย — distribution ปิดครบ
+
+| ถึง | ชั้นหลักฐาน | หมายเหตุ |
+|---|---|---|
+| atlas | **4** | ตอบโดยอ้างเนื้อความ + re-verify ทั้ง 5 claim เอง + supersede pattern ตัวเอง |
+| loom | 1 | ต้นเรื่อง · ถือแถวที่ผิด · ส่งข้อเสี่ยงขึ้นก่อนแล้ว |
+| prism | 1 | ปิดจาก **ชั้น 0** ได้ในเซสชันนี้ |
+| holmes / tars / lucifer | 1 | |
+
+⚠️ **ชั้น 1 = `delivered` เท่านั้น** — ยังไม่มีใครนอกจาก atlas ที่ยืนยันว่าเข้า turn
+⇒ **ยังไม่ปิดงาน** ต้องตามอ่านการตอบกลับ · ถ้า loom/prism เงียบเกิน 24 ชม. ต้องตามอีกรอบ
