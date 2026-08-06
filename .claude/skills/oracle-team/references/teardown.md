@@ -82,8 +82,9 @@ SNAP="${SNAP:-$HOME/.maw-teams/.snapshots/${SESSION}-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$SNAP" || { echo "✗ cannot create snapshot dir $SNAP — stopping"; return 1 2>/dev/null || exit 1; }
 
 # $CHARTER unset used to fail here in silence, because stderr was discarded.
+got_charter=no
 if [ -n "${CHARTER:-}" ] && [ -f "$CHARTER" ]; then
-  cp "$CHARTER" "$SNAP/charter.yaml" || echo "⚠ could not copy charter"
+  cp "$CHARTER" "$SNAP/charter.yaml" && got_charter=yes || echo "⚠ could not copy charter"
 else
   echo "⚠ \$CHARTER is unset or missing — snapshot has NO charter, so teardown is only partly reversible"
 fi
@@ -101,7 +102,11 @@ cp ~/.maw/fleet/"${SESSION}".json "$SNAP/" 2>/dev/null || true   # absent is nor
 tmux list-windows -t "=$SESSION" -F '#{window_name}' > "$SNAP/windows.txt" 2>/dev/null
 git -C "$ROOT" worktree list > "$SNAP/worktrees.txt" 2>/dev/null
 git -C "$ROOT" branch -vv     > "$SNAP/branches.txt"  2>/dev/null
-echo "snapshot: $SNAP  (charter + $found layer file(s))"
+if [ "$got_charter" = yes ] && [ "$found" -gt 0 ]; then
+  echo "snapshot: $SNAP  (charter + $found layer file(s))"
+else
+  echo "🔴 PARTIAL snapshot: $SNAP  (charter=$got_charter, layers=$found) — teardown from here is NOT fully reversible"
+fi
 ```
 
 Cheap, and it is the only thing that makes any later step reversible.
@@ -114,6 +119,24 @@ Cheap, and it is the only thing that makes any later step reversible.
 > looked successful and could not restore what it claimed to. It now counts what it captured and
 > says when the count is zero — *a snapshot you cannot trust is worse than none, because the
 > later steps are written as if it exists.*
+>
+> 🔴 **Then running it — the first time anyone had — found a thirteenth defect that review had
+> not.** `[2026-08-06]` The fixed version warned correctly and then **contradicted itself one
+> line later**:
+>
+> ```
+> ⚠ $CHARTER is unset or missing — snapshot has NO charter …
+> snapshot: …/t0b-stamp  (charter + 2 layer file(s))     ← says "charter"
+> ```
+>
+> The warning scrolls past; **the summary line is what gets read, pasted into a report, and
+> believed.** So the step still ended by claiming a complete snapshot it did not have. It now
+> tracks what was actually captured and prints `🔴 PARTIAL snapshot … NOT fully reversible`
+> instead of a success line.
+>
+> This one matters beyond the bug: holmes read this block carefully enough to find two real
+> defects in it, and *this* survived, because it is not visible in the source — **you have to see
+> the two lines printed together.** Review and execution do not find the same class of thing.
 
 ## Step 1: Kill the session's windows
 
@@ -484,7 +507,7 @@ measurements four oracles took in their own houses, not from executing this file
 
 **Reviewed without being run** `[2026-08-06]`: ajfon, lucifer and holmes read this file
 statically — none would execute Step 3, because it touches shared fleet state, and all three were
-right to refuse. **Twelve defects in total, across four rounds:**
+right to refuse. **Thirteen defects in total, across five rounds:**
 
 | round | defects | found by |
 |---|---|---|
@@ -493,7 +516,9 @@ right to refuse. **Twelve defects in total, across four rounds:**
 | 3 — in the code fixing round 2 | unquoted `$OURS` + **empty `$CODERS` matching nothing silently** · guards using `return` at top level, which **printed and then continued anyway, exit 0** | advisor review, ajfon (independently) |
 | 4 — in the code fixing round 3 | **`branch = role` fallback missed the real branch entirely** (`prober-a` vs the actual `probe-prober-a`, skipping a member with unmerged commits) · Step 0's layer glob relative to `$PWD` not `$ROOT` · `cp "$CHARTER" 2>/dev/null` failing mute · Step 4's `grep -i` not fixed-string · **the session-is-your-own footgun** | holmes (4, against their own charter), lucifer (1, by *using* it) |
 
-**Ten of the twelve made a check do nothing while looking fine.** Every round's fix contained the
+| 5 — **first execution** of Step 0 | the summary line printed `(charter + 2 layer file(s))` **directly below its own warning that there was no charter** — the warning scrolls, the summary is what gets believed | running it |
+
+**Eleven of the thirteen made a check do nothing, or say something untrue, while looking fine.** Every round's fix contained the
 next defect — including one written an hour after the postmortem naming the pattern, inside the
 block fixing it. lucifer's conclusion is the right one: *"รู้กฎแล้วไม่พอ — กฎแบบนี้ต้องมีคนอื่น
 หรือ sandbox เป็นคนบังคับ ไม่ใช่ความตั้งใจของคนเขียน."*
@@ -508,8 +533,9 @@ block fixing it. lucifer's conclusion is the right one: *"รู้กฎแล�
 
 All are fixed above, each with a test reproducing the reporter's case. **Step 3 is sandbox-tested
 across five behaviours and three execution modes; Step 2's branch resolution and Step 4b's
-pre-spawn checks are sandbox-tested against the reporters' exact charters; Step 0 and Step 4 are
-now reviewed but still never executed against real state.**
+pre-spawn checks are sandbox-tested against the reporters' exact charters; Step 0 and Step 4 have
+now been executed for the first time, across five cases each, and that run is what produced
+defect 13. Nothing here has been run against a live team's real state.**
 
 > **The pattern across all eight is one thing**: a check that fails in a way that looks like
 > passing. Undefined function → `|| continue`. Unset variable → empty match. Unglobbed pattern →
