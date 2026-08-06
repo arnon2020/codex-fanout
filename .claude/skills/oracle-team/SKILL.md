@@ -333,7 +333,8 @@ report the discrepancy.
 > |---|---|
 > | **`up`** (this QUICKSTART + Gate 0) | **run 4× on 2026-08-06** — author ×2, fresh agent ×1, fresh agent on a non-repo dir ×1 |
 > | `status` | exercised only as the peek inside `up`; never run as its own verb |
-> | **`down`, `lead`, `dispatch`** | 🔴 **NEVER RUN — untested.** Documented from source and habit, not from execution |
+> | `down` | 🟡 **teardown steps run once (2026-08-06)** on a throwaway repo, both arms: clean worktree removed, dirty worktree kept. `--clean` branch deletion still never run |
+> | **`lead`, `dispatch`** | 🔴 **NEVER RUN — untested.** Documented from source and habit, not from execution |
 >
 > **Everything below the QUICKSTART describing `down`/`lead`/`dispatch` is unverified**, and
 > two reviewers found real defects in it (a `head -N` that is a syntax error, a `$N` that is
@@ -1074,8 +1075,18 @@ for b in blocks:
 ")
   for wt in $WT "agents/${ROLE}" "agents/1-${ROLE}"; do
     [ -d "$wt" ] || continue
-    git -C "$wt" add -A 2>/dev/null
-    git -C "$wt" commit -q -m "wip: auto-save before team-down" 2>/dev/null
+    # 🔴 DO NOT `git add -A` here. [verified by running it, 2026-08-06]
+    #    An earlier version of this block did, and it swept an untracked `.env.local`
+    #    straight into a commit on a branch that outlives the teardown — violating this
+    #    repo's own golden rule "Never commit secrets (.env, credentials, API keys)".
+    #    A teardown must never decide, unasked, that a worker's untracked files should
+    #    become permanent.
+    if [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
+      echo "KEPT $wt — uncommitted work present, NOT auto-committing:"
+      git -C "$wt" status --short | sed 's/^/      /'
+      echo "      → inspect, then commit what you want and re-run, or remove with --force"
+      continue
+    fi
     git worktree remove "$wt" 2>&1 && echo "removed $wt" || echo "KEPT $wt (inspect)"
   done
 done
