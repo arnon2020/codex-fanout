@@ -23,7 +23,7 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 > | part | evidence |
 > |---|---|
 > | Gate 0 + `scripts/verify-check.sh` | reviewed by 5 oracles · independently reinvented by prism before reading this · detector validated at n=65 |
-> | `up` | run 5× end to end — **the 5th, against this current text after ten rounds of edits, found zero new defects** |
+> | `up` | run 6× end to end. **Runs 5 and 6 found zero new defects** — but run 5 used a codex model this account cannot actually serve, so it proved booting, not working. Run 6 ran `modelprobe` first and is the one that means something |
 > | `status` | exercised only inside `up` |
 > | `dispatch` / `down` / `lead` | 🔴 each run once, each broken; **never run against a real team** |
 
@@ -73,7 +73,16 @@ A=${TEAM}-alpha                      # member 1 — MUST be prefixed with $TEAM 
 B=${TEAM}-beta                       # member 2
 ```
 
-**Step 1 — register the engines you want, with the model baked in.**
+**Step 1 — register the engines you want, with the model baked in, then PROVE the model works.**
+
+> 💸 **Run `modelprobe` on each new codex alias before Step 2, not after Step 6.** A model your
+> account cannot serve boots fine and prints itself in the banner; only a real turn finds out.
+> One probe per alias, once:
+> ```bash
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh modelprobe <alias> "$ROOT"
+> #   overall: PASS model-served=yes     ← proceed
+> #   overall: FAIL model-served=no      ← fix the alias now, before you build a team on it
+> ```
 This is the only place a model can be expressed. Filename must be `maw.config.<digits>.json`
 with a number above 50.
 
