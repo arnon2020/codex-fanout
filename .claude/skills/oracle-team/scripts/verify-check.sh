@@ -365,18 +365,41 @@ print(v.strip())
 # rc: 0=PASS 1=FAIL 2=UNVERIFIED (ตอบไม่ได้ ≠ ผ่าน)
 engineone() {
   local e="${1:?usage: engineone <engine-name> <dir>}" dir="${2:?usage: engineone <engine-name> <dir>}"
-  local reg_out reg_rc cmd=""
+  local reg_out reg_rc cmd="" scope actual
+
+  # 🏷️ atlas 2026-08-06 ข้อ (i): `enginereg` เดินขึ้นหาบรรพบุรุษที่ *มีอยู่จริง* เมื่อ dir ที่ขอ
+  #    ยังไม่ถูกสร้าง (เคสปกติของ gate ที่รัน **ก่อน spawn**) — แล้วเดิมมันไม่บอกว่าทำ
+  #    ⇒ ผู้เรียกแยกไม่ออกระหว่าง "dir มีจริงและ engine resolve ได้ที่นั่น" กับ
+  #      "dir ยังไม่มี เลยไปตอบจากสโคปอื่น" · **สโคปที่ตอบ ≠ สโคปที่ถาม แต่ผลดูเหมือนกัน**
+  #    ⇒ พ่น `scope=resolved|dir-absent` และเมื่อ dir-absent บอก path ที่ใช้ตอบจริงด้วย
+  #    (นี่ไม่ใช่ false-green — atlas ถอนข้อกล่าวหานั้นเอง เพราะ control พิสูจน์ว่า
+  #     alias ที่อยู่แค่ layer เฉพาะที่ ยัง FAIL ถูกต้องจากทั้ง /tmp และ dir ที่ไม่มี —
+  #     แต่ความ *แม่น* ของคำตอบยังขาดไป และ gate ต้องรู้ว่าครึ่ง dir-scoped ทำงานหรือเปล่า)
+  if [ -d "$dir" ]; then
+    scope="resolved"; actual="$dir"
+  else
+    scope="dir-absent"
+    actual="$dir"
+    while [ -n "$actual" ] && [ ! -d "$actual" ]; do
+      local up; up=$(dirname -- "$actual"); [ "$up" = "$actual" ] && break; actual="$up"
+    done
+    [ -d "$actual" ] || actual="."
+  fi
+
   reg_out=$(enginereg "$e" "$dir" 2>/dev/null); reg_rc=$?
+  local tail_field="scope=$scope"
+  [ "$scope" = "dir-absent" ] && tail_field="scope=dir-absent answered-from=$actual"
+
   if [ "$reg_rc" -eq 2 ]; then
-    printf 'enginecheck.engine: %s UNVERIFIED resolved=\n' "$e"
+    printf 'enginecheck.engine: %s UNVERIFIED resolved= %s\n' "$e" "$tail_field"
     printf 'overall: UNVERIFIED\n'; return 2
   fi
   if [ "$reg_rc" -eq 0 ]; then cmd=$(printf '%s\n' "$reg_out" | sed -n '2s/^ *//p'); fi
   if [ -n "$cmd" ]; then
-    printf 'enginecheck.engine: %s PASS resolved=%s\n' "$e" "$cmd"
+    printf 'enginecheck.engine: %s PASS resolved=%s %s\n' "$e" "$cmd" "$tail_field"
     printf 'overall: PASS\n'; return 0
   fi
-  printf 'enginecheck.engine: %s FAIL resolved=\n' "$e"
+  printf 'enginecheck.engine: %s FAIL resolved= %s\n' "$e" "$tail_field"
   printf 'overall: FAIL\n'; return 1
 }
 
@@ -718,6 +741,13 @@ YAML
     engineone __no_such_engine__ . >/dev/null 2>&1 && { echo "   ✗ engineone rc=0 ให้ engine ที่ไม่มี"; fail=1; }
     o10b=$(engineone __no_such_engine__ . 2>/dev/null || true)
     printf '%s\n' "$o10b" | grep -q '^overall: FAIL' || { echo "   ✗ ไม่พ่น ^overall: FAIL"; fail=1; }
+    echo "8g) engineone: ต้องแยก scope=resolved ออกจาก scope=dir-absent (atlas ข้อ i)"
+    local o10c o10d
+    o10c=$(engineone codex . 2>/dev/null || true)
+    printf '%s\n' "$o10c" | grep -q 'scope=resolved' || { echo "   ✗ dir มีจริง แต่ไม่ได้พ่น scope=resolved"; fail=1; }
+    o10d=$(engineone codex /no/such/dir/at/all 2>/dev/null || true)
+    printf '%s\n' "$o10d" | grep -q 'scope=dir-absent' || { echo "   ✗ dir ไม่มี แต่ไม่ได้พ่น scope=dir-absent"; fail=1; }
+    printf '%s\n' "$o10d" | grep -q 'answered-from=' || { echo "   ✗ dir-absent ต้องบอก path ที่ใช้ตอบจริง"; fail=1; }
   else
     echo "   (ไม่มี maw — ข้าม)"
   fi

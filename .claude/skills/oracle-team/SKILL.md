@@ -47,8 +47,10 @@ mkdir -p "$ROOT/agents/$A" "$ROOT/agents/$B"
 
 **Step 3 — write the charter.** Two rules that will otherwise cost you an hour:
 member names must be **unique across the whole fleet** (prefix with the team name), and every
-member needs a real `worktree:` path (without one, the member boots in whatever repo its
-*name* is registered to, and your engine aliases are invisible there).
+member needs a real path — `worktree:` or `cwd:`, either works. With neither, the member boots
+in whatever repo its *name* is registered to and your engine aliases are invisible there.
+Write `engine:` only; a `model:` line does not reach the pane and is actively harmful without
+an `engine:` beside it (see 0c).
 
 ```bash
 mkdir -p "$ROOT/ψ/teams"

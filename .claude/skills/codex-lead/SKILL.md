@@ -100,8 +100,19 @@ git checkout -b alpha && git push -u origin alpha && git checkout main   # PR ta
 #    - lead: worktree:false, branch:alpha
 #    - engine: must name an alias REGISTERED in `commands` (see step 1a). An unregistered
 #      name is discarded silently — the pane gets whatever the window name resolves to.
-#    - model: goes INSIDE the alias command string. `model:` in the charter is parsed,
-#      validated, then dropped; `maw wake` has no --model flag.
+#    - model: goes INSIDE the alias command string. `maw wake` has no --model flag at all.
+#      `model:` in the charter never reaches the pane, and it has TWO cases, not one
+#      (team_up_helpers.rs:235 — engine = -e flag → member.engine → member.model → "claude"):
+#        · WITH engine:  → model: is inert (parsed, validated, dropped)
+#        · WITHOUT engine: → the MODEL STRING becomes the engine name, misses `commands`,
+#          and falls through silently. Never write model: without engine:.
+#    - member names must be unique FLEET-WIDE (a bare `verifier` collides with every other
+#      team using it and `maw team up` exits 1 while --dry-run stays green).
+#    - every member needs `worktree:` OR `cwd:`; with neither, the worktree becomes the bare
+#      identity string. `team up` does NOT expand ${VARS} in either.
+#
+#    👉 The full, tested procedure now lives in the GLOBAL skill — use it rather than this
+#       comment block: ~/.claude/skills/oracle-team/  (QUICKSTART + Gate 0 + scripts/verify-check.sh)
 #
 # ⚠️ CORRECTED 2026-08-06 — this block previously told you to define the engine command
 #    inline under `engines:` in the charter. `charter.engines` is written by maw's parser

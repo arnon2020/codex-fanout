@@ -55,7 +55,32 @@ $ maw wake codex-fanout --no-attach --dry-run -e codex-xhigh
 
 ## ทำไม — 3 ข้อเท็จจริงจาก source
 
-### 1. `model:` ถูก parse ถูก validate แล้วถูกทิ้ง
+### 1. `model:` ไม่เคยถึง pane — แต่กฎมี **สองครึ่ง** ไม่ใช่ครึ่งเดียว
+
+> ❌ **CORRECTED 2026-08-06** — หัวข้อนี้เคยเขียนว่า *"parse → validate → ทิ้ง"* เฉย ๆ
+> **ครึ่งเดียวและอีกครึ่งอันตรายกว่า** · atlas verify ซ้ำเป็นอิสระที่ `325db65`
+>
+> `team_up_helpers.rs:235`
+> ```rust
+> engine = opts.engine.or_else(member.engine).or_else(member.model).unwrap_or_else("claude")
+> ```
+> ⇒ **`member.model` เป็น fallback ลำดับที่ 3 ของ *engine*** ไม่ใช่ฟิลด์ที่ถูกโยนทิ้ง
+>
+> | charter | เกิดอะไร |
+> |---|---|
+> | มี `engine:` + `model:` | `engine:` ชนะ ⇒ **`model:` ตายจริง** (กฎเดิมถูกเฉพาะเคสนี้) |
+> | **มี `model:` ไม่มี `engine:`** | 🔴 **model string กลายเป็นชื่อ engine** ⇒ `wake -e <model>` ⇒ miss ⇒ fallthrough เงียบ **แน่นอน** |
+> | ไม่มีทั้งคู่ | ได้ `claude` |
+>
+> ```
+> charter:  - role: mfb-a
+>             model: gpt-5.5            # ไม่มี engine:
+> dry-run:  mfb-a  mfb-a  gpt-5.5  missing  would fresh wake -e gpt-5.5
+> ```
+> ⇒ **ห้ามเขียน `model:` โดยไม่มี `engine:`** · "ถูกทิ้ง" กับ "กลายเป็น key ที่ miss แน่นอน"
+> พาไปคนละทางแก้
+
+### 1b. เมื่อมี `engine:` แล้ว — `model:` ถูก validate แล้วถูกทิ้ง
 
 | จุด | เกิดอะไร | citation (325db65) |
 |---|---|---|
