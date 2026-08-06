@@ -123,10 +123,33 @@ members:
 YAML
 ```
 
-Fields deliberately omitted, because they are not needed and their absence confuses people
-who copy fuller examples: `project: <owner>/<repo>` is validated by `maw team preflight` but
-is not required by `maw team up`; `branch:` is likewise not consulted when bringing a team
-up. Add them only if some other verb you use needs them.
+`project:` and `branch:` are omitted because **`maw team up` does not need them**.
+
+> ⚠️ **But `maw team preflight` does — and it will fail this charter.** `[found by ajfon,
+> 2026-08-06]` An earlier version of this doc told you to drop those fields in Step 3 and then,
+> in Gate 0, to stop if preflight is red. Those two instructions contradicted each other.
+>
+> **`maw team preflight` cannot pass before a spawn, by construction.** Even with every field
+> present it returns rc=1 on:
+> - `✗ spawn ordering: session '<x>' does not exist before spawn` — true by definition when
+>   you are about to create it
+> - `✗ codex trust: <role> missing trusted project entry … in ~/.codex/config.toml` — see the
+>   prerequisite below
+>
+> ⇒ **Do not gate on preflight before spawning.** Read it for the checks that *are* meaningful
+> pre-spawn (role uniqueness, artifact collisions, CODEX_HOME isolation, worktree collisions)
+> and ignore the two above. The check that decides whether to proceed is **Step 4**, which can
+> fail for exactly one reason and no other.
+
+> 🔑 **codex trust — a prerequisite nothing else here mentions, and the *cause* of the trust
+> prompt listed in Step 6.** codex refuses to run unattended in a directory it has not been
+> told to trust, so a fresh member directory stalls on `Is this a project you created or one
+> you trust?`. Either clear it interactively at Step 6, or pre-seed it before spawning:
+> ```bash
+> printf '\n[projects."%s"]\ntrust_level="trusted"\n' "$ROOT/agents/$A" >> ~/.codex/config.toml
+> ```
+> ⚠️ `~/.codex/config.toml` is **shared machine-wide state**. Appending a project entry is
+> additive and low-risk; do not edit anything else in that file for a team bring-up.
 
 **Step 4 — prove the aliases are actually visible.** Not optional: `maw team preflight` and
 `maw team up --dry-run` are both green even when this is broken.
@@ -164,7 +187,7 @@ which reads as "member is up and quiet". Always list the real names first:
 
 ```bash
 tmux list-windows -t "=$SESSION" -F '#{window_name}'      # the '=' prevents prefix matching
-sleep 40                                                   # see the loading note below
+# no fixed sleep — poll for the banner, see the loading note below
 tmux capture-pane -p -t "$SESSION:${A}-oracle" | grep -n . | head -30
 tmux capture-pane -p -t "$SESSION:${B}-oracle" | grep -n . | head -30
 ```
@@ -181,9 +204,21 @@ First-boot prompts that stall a member — each one leaves it looking merely qui
 | `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` (`1` = "Yes, I trust this folder") |
 | a bare shell prompt `❯` | any | the engine never started — go back to step 4 |
 
-⏳ **`model: loading` occupies the exact line you are told to read.** After clearing a prompt
-the codex banner shows `model:       loading` for ~25 more seconds before the real value
-appears. Do not accept the first banner you see — re-peek until the value is not `loading`.
+⏳ **`model: loading` occupies the exact line you are told to read.** After clearing a prompt,
+the codex banner shows `model:       loading` before the real value appears.
+
+**Do not use a fixed sleep — poll.** Timings observed on this machine ranged from ~25s to
+~35s across three runs (n=3, single machine, one codex version), and a reviewer correctly
+pointed out that this doc previously carried three different numbers for the same wait. Any
+constant here is a guess dressed as a measurement:
+
+```bash
+for _ in $(seq 30); do
+  tmux capture-pane -p -t "$SESSION:${A}-oracle" | grep -q 'model:.*loading' || break
+  sleep 3
+done
+```
+Then read the banner. **Never accept the first banner you see.**
 
 **Expected, and the only check that covers whether the account can actually serve the model:**
 the engine's own banner naming it. Per engine:
@@ -239,16 +274,25 @@ report the discrepancy.
   shell out to it. If your environment is deliberately grep/sed-only, use the raw `maw config`
   and `maw wake --dry-run` commands, which need neither.
 
-> **Test record.** Run start-to-finish twice: once by its author, once by an agent given only
-> this skill and no other context. The second run **succeeded but reported 5 blockers and 12
-> guesses** — every one of them is now fixed or documented above, including the two that
-> mattered most: `maw team up` requires a git repo even outside your oracle's repo (the
-> earlier "everything else is identical" line here was simply false), and the tmux window is
-> `<role>-oracle`, so the peek command in the old Step 6 silently targeted nothing.
-> **Three of the four failure modes that run hit returned rc=0.**
+> ## 🧭 Test record — what has actually been run, and what has not
 >
-> If a step still assumes knowledge you do not have, that is a defect in this document, not in
-> you. Say which step and what you had to guess.
+> | verb | status |
+> |---|---|
+> | **`up`** (this QUICKSTART + Gate 0) | **run 4× on 2026-08-06** — author ×2, fresh agent ×1, fresh agent on a non-repo dir ×1 |
+> | `status` | exercised only as the peek inside `up`; never run as its own verb |
+> | **`down`, `lead`, `dispatch`** | 🔴 **NEVER RUN — untested.** Documented from source and habit, not from execution |
+>
+> **Everything below the QUICKSTART describing `down`/`lead`/`dispatch` is unverified**, and
+> two reviewers found real defects in it (a `head -N` that is a syntax error, a `$N` that is
+> never set, a hardcoded `--base alpha`, and a lead-detection rule that contradicts the
+> QUICKSTART's own naming rule). Treat those sections as a sketch. `up`, Gate 0 and
+> `scripts/verify-check.sh` are the parts with evidence behind them.
+>
+> Reviewer-reported defect counts, so you can judge whether the list is closed: fresh-agent
+> round 1 → 5 blockers / 12 guesses · round 2 → 4 blockers / 10 guesses · atlas → 8 findings ·
+> ajfon → 7 defects + a claims audit. **Each round found new ones, so no round is an upper
+> bound.** If a step still assumes knowledge you do not have, that is a defect in this
+> document, not in you — say which step and what you had to guess.
 
 ---
 
@@ -315,9 +359,19 @@ CODERS=$(python3 -c "
 import re
 text = open('$CHARTER').read()
 roles = re.findall(r'role:\s*(\S+)', text)
-print(' '.join(r for r in roles if r != 'lead'))
+# A lead is a member with worktree: false — NOT one literally named 'lead'.
+# The QUICKSTART tells you to prefix every role with the team name, so a lead in a
+# conforming charter is called e.g. 'myteam-lead' and an == 'lead' test never matches it.
+# [found by ajfon 2026-08-06] With that test, the lead falls into CODERS and \`down\` kills it.
+blocks = re.split(r'(?=^\s*-\s*role:)', text, flags=re.M)
+leads = {m.group(1) for b in blocks
+         if (m := re.search(r'role:\s*(\S+)', b)) and re.search(r'worktree:\s*false', b)}
+print(' '.join(r for r in roles if r not in leads and r != 'lead'))
 ")
 ```
+⚠️ **Untested.** This block, and every verb below except `up`, has never been run — see the
+test record above. The lead-detection rule was wrong until a reviewer read it; assume the rest
+of this section carries similar defects and check before relying on it.
 
 Parse the subcommand from `$ARGUMENTS`:
 - First token = verb (`up`, `down`, `lead`, `status`, `dispatch`)
@@ -558,7 +612,14 @@ rm -f ~/.maw/fleet/"$SESSION".json      # otherwise the names stay claimed
 maw team preflight "$CHARTER"
 ```
 
-If preflight fails → stop.
+🔴 **Do NOT stop just because preflight is red.** It cannot pass before a spawn: `spawn
+ordering: session does not exist before spawn` is true by definition, and `codex trust:
+missing trusted project entry` fires on any member directory codex has not been told to trust
+(see the QUICKSTART Step 3 note — that is also the cause of the trust prompt in Step 6).
+
+Read preflight for the checks that *are* meaningful pre-spawn — role uniqueness, existing
+artifact collisions, CODEX_HOME isolation, worktree path collisions — and stop on **those**.
+The gate that decides whether to proceed is Gate 0b above, which fails for exactly one reason.
 
 With `--only`:
 ```bash
@@ -578,7 +639,7 @@ Wait 10s for engines to boot, then peek EVERY coder and check:
 sleep 10
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
-  maw peek "${SESSION}:${ROLE}" 2>&1 | tail -12
+  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | tail -12
 done
 ```
 
@@ -593,7 +654,7 @@ For each coder, verify against charter:
 | Alive? | status bar visible | bare shell `❯` = engine died |
 
 **If any check fails:**
-1. Kill the bad coder: `maw tmux kill "${SESSION}:${ROLE}"`
+1. Kill the bad coder: `maw tmux kill "${SESSION}:${ROLE}-oracle"`
 2. Clean worktree: `mv agents/1-${ROLE} /tmp/cleanup-...`
 3. Fix root cause (config, engine name, reasoning_effort)
 4. Relaunch: `maw team up "$TEAM" --only "$ROLE"`
@@ -627,7 +688,7 @@ ISSUES=$(echo "$ISSUE_ARGS" | tr ',' ' ')
 
 If no issues given, get all open:
 ```bash
-ISSUES=$(gh issue list --repo "$PROJECT" --state open --json number -q '.[].number' | head -N)
+ISSUES=$(gh issue list --repo "$PROJECT" --state open --json number -q '.[].number' | head -"${N:-5}")
 ```
 
 Where N = number of coders in charter.
@@ -716,7 +777,7 @@ TARGETS=$(echo "$TARGETS" | tr ',' ' ')
 
 ```bash
 for ROLE in $TARGETS; do
-  maw tmux kill "${SESSION}:${ROLE}" 2>&1 | tail -1
+  maw tmux kill "${SESSION}:${ROLE}-oracle" 2>&1 | tail -1
 done
 maw ls -v 2>&1 | grep "${SESSION}:" | grep codex || echo "✓ no codex windows"
 ```
@@ -768,7 +829,7 @@ Run on cadence: `/loop 5m /oracle-team lead`
 ```bash
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
-  maw peek "${SESSION}:${ROLE}" 2>&1 | tail -10
+  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | tail -10
 done
 ```
 
@@ -785,7 +846,7 @@ Classify each:
 ### Step 2: Review open PRs — merge greens
 
 ```bash
-gh pr list --repo "$PROJECT" --base alpha --state open
+gh pr list --repo "$PROJECT" --base "${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed s@^origin/@@ || echo main)}" --state open
 ```
 
 For each PR: base is `alpha` (NEVER `main`), mergeable, CI green,
@@ -804,7 +865,7 @@ gh issue list --repo "$PROJECT" --state open
 
 For each idle coder + unassigned issue, dispatch with concrete done-criteria:
 ```bash
-maw hey "${SESSION}:${ROLE}" "TASK: <what> — done: cargo test + cargo clippy green, commit on branch, PR --base alpha, never main"
+maw hey "${SESSION}:${ROLE}-oracle" "TASK: <what> — done: cargo test + cargo clippy green, commit on branch, PR --base alpha, never main"
 ```
 
 **NO-GAP DISPATCH**: when confirming a coder's done, include next task in same message.
@@ -813,7 +874,7 @@ maw hey "${SESSION}:${ROLE}" "TASK: <what> — done: cargo test + cargo clippy g
 
 If a coder's peek output unchanged >10 min (not done/standby) → nudge:
 ```bash
-maw hey "${SESSION}:${ROLE}" "stuck? report status/blocker clearly"
+maw hey "${SESSION}:${ROLE}-oracle" "stuck? report status/blocker clearly"
 ```
 
 If still silent next cycle, consider clean relaunch via `up --only`.
@@ -833,10 +894,10 @@ No dispatch, no merge, no nudge. Just report.
 ```bash
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
-  maw peek "${SESSION}:${ROLE}" 2>&1 | tail -5
+  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | tail -5
 done
 echo "--- PRs ---"
-gh pr list --repo "$PROJECT" --base alpha --state open 2>/dev/null || echo "no PRs"
+gh pr list --repo "$PROJECT" --base "${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed s@^origin/@@ || echo main)}" --state open 2>/dev/null || echo "no PRs"
 ```
 
 ---
@@ -848,7 +909,7 @@ gh pr list --repo "$PROJECT" --base alpha --state open 2>/dev/null || echo "no P
 3. `maw tmux kill` for windows — never `maw team down --only` (broken).
 4. Never `git worktree remove --force` — commit-save first.
 5. Branches survive worktree removal → committed work is never lost.
-6. Always brace zsh vars: `"${SESSION}:${ROLE}"` not `$SESSION:$ROLE`.
+6. Always brace zsh vars: `"${SESSION}:${ROLE}-oracle"` not `$SESSION:$ROLE`.
 7. PR → alpha only. Never push/merge to main.
 8. Merge greens immediately (standing approval).
 9. NO-GAP dispatch: next task in same message as done confirmation.

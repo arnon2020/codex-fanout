@@ -435,9 +435,11 @@ engineone() {
   if [ "$reg_rc" -eq 0 ]; then cmd=$(printf '%s\n' "$reg_out" | sed -n '2s/^ *//p'); fi
   if [ -n "$cmd" ]; then
     printf 'enginecheck.engine: %s PASS resolved=%s %s\n' "$e" "$cmd" "$tail_field"
+    printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
     printf 'overall: PASS\n'; return 0
   fi
   printf 'enginecheck.engine: %s FAIL resolved= %s\n' "$e" "$tail_field"
+  printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
   printf 'overall: FAIL\n'; return 1
 }
 
@@ -587,6 +589,12 @@ enginecheck() {
   #    ต่อสมาชิกที่ยึดคอลัมน์ 0 ⇒ เขาต้อง text-scrape ซึ่งคือความเปราะที่ anchored grep มีไว้เลี่ยง
   #    ⇒ พ่น machine block **ควบ** prose ไม่ใช่แทน (prose เป็นครึ่งที่ดีกว่าสำหรับคน — atlas)
   printf '%s\n' "$machine"
+  # 🏷️ ajfon 2026-08-06: เขาแต่งชื่อ model ที่ไม่มีอยู่จริง (`gpt-5.5-codex` ทั้งที่ default
+  #    ของเขาคือ `gpt-5.6-sol`) แล้ว enginecheck ตอบ `overall: PASS rc=0` — **ถูกตามนิยาม**
+  #    เพราะเราตรวจว่า *สตริงตรงกัน* ไม่ได้ตรวจว่า *บัญชีเสิร์ฟได้*
+  #    ⇒ แต่เราสอนให้ gate grep `^overall:` ⇒ **ขอบเขตนั้นต้องอยู่ในผลลัพธ์ ไม่ใช่แค่ในเอกสาร**
+  #    ⇒ พ่นเป็น machine key ยึดคอลัมน์ 0 เพื่อให้ gate เห็นข้อจำกัดพร้อมกับคำตัดสิน
+  echo "enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED"
   if [ $fail -eq 0 ]; then
     echo "overall: PASS"
     echo "ENGINECHECK OK   [ขอบเขต: ไม่ได้ตรวจว่าบัญชีเสิร์ฟ model นี้ได้ · ไม่ได้ตรวจว่า prompt ถึง worker]"
