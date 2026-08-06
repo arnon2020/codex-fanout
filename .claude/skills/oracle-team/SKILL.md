@@ -67,16 +67,31 @@ JSON
 ```
 **Finding model names that actually work — one per engine, they are not interchangeable:**
 
+**First: see what is already registered.** On a machine with an existing fleet, most of the
+aliases you need may exist already — and nothing else in this doc tells you how to look:
+
+```bash
+bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
+#   enginelist.count: 22
+#   enginelist.engine: codex        model=-               cmd=… codex --ask-for-approval never …
+#   enginelist.engine: claude-opus  model=claude-opus-5   cmd=claude --model claude-opus-5 …
+```
+It is dir-aware like everything else here, so run it from a path your member will use. An
+alias with `model=-` pins no model — it takes whatever the engine's own default is.
+
+**Then, model names for a NEW alias** — one lookup per engine, they are not interchangeable:
+
 | engine | how to list what your account serves |
 |---|---|
-| codex | `grep '^model' ~/.codex/config.toml` gives the current default · `codex --help` for the flag |
-| claude | `claude --help` lists the aliases (`opus`, `sonnet`, `haiku`) — an alias is fine in the command |
+| codex | `grep '^model' ~/.codex/config.toml` — this gives **one** value, the current default. `codex --help` documents the `-m` flag but **does not enumerate valid values** |
+| claude | `claude --help` lists the aliases it accepts — **read the list on your machine, do not copy one from here; it changes between versions** |
 | opencode | `opencode models` prints every `provider/model` it can reach |
 
-Do not invent names. If you need **two different models**, note that `~/.codex/config.toml`
-holds only one default — you either name a second codex model explicitly, or make the second
-member a different engine entirely (mixing codex and claude in one team is normal and is what
-the aliases above are for).
+🔑 **Getting two DIFFERENT models is the step people get stuck on.** codex exposes only its
+current default by the route above, so there may be **no way to discover a second codex model
+locally**. The reliable answer is to make the second member a **different engine** — codex for
+one, claude for the other. Mixing engines in one team is normal and is what the per-member
+aliases are for. Do not invent model names to fill the gap.
 
 **Step 2 — create each member's working directory. It must exist before spawn.**
 
@@ -150,16 +165,20 @@ which reads as "member is up and quiet". Always list the real names first:
 ```bash
 tmux list-windows -t "=$SESSION" -F '#{window_name}'      # the '=' prevents prefix matching
 sleep 40                                                   # see the loading note below
-tmux capture-pane -p -t "$SESSION:${A}-oracle" | tail -25
-tmux capture-pane -p -t "$SESSION:${B}-oracle" | tail -25
+tmux capture-pane -p -t "$SESSION:${A}-oracle" | grep -n . | head -30
+tmux capture-pane -p -t "$SESSION:${B}-oracle" | grep -n . | head -30
 ```
+🔴 **Do not use `| tail -25` here.** The engine banner sits in the *upper* half of the pane and
+the bottom is blank padding, so `tail` prints **nothing at all** — at the exact step where you
+are told to read the model. Empty output there reads as "dead pane" and is the single most
+misleading moment in this procedure. `grep -n .` drops the blank lines instead.
 
 First-boot prompts that stall a member — each one leaves it looking merely quiet:
 
 | what you see | engine | clear it with |
 |---|---|---|
-| `✨ Update available!` | codex | `tmux send-keys -t "$SESSION:${A}-oracle" 2 Enter` |
-| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` — **[reported by a tester, not reproduced by this doc's author]** |
+| `✨ Update available!` | codex | `tmux send-keys -t "$SESSION:${A}-oracle" 2 Enter` (`2` = "Skip"; `1` would upgrade the shared binary — read the menu, the numbering is not guaranteed) |
+| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` (`1` = "Yes, I trust this folder") |
 | a bare shell prompt `❯` | any | the engine never started — go back to step 4 |
 
 ⏳ **`model: loading` occupies the exact line you are told to read.** After clearing a prompt
@@ -197,6 +216,28 @@ running the team, not standing it up.
 **QUICKSTART is the procedure. Gate 0 below is the reference** — same job, more depth on
 *why* each check exists. If the two ever disagree, QUICKSTART is the one that has been run;
 report the discrepancy.
+
+### What this skill does and does not cover
+
+- **A one-member team is valid.** Nothing requires two. The QUICKSTART uses two only because
+  two different models is the case that exposes the engine/model binding. A single verifier,
+  scout, or one-off worker is a normal team — drop member B.
+- **`up` and `status` are engine-agnostic. `lead`, `dispatch`, and `down --clean` are not** —
+  they assume a GitHub-PR-and-tests workflow (issues, PRs, merged branches). A team whose
+  members read an inbox and write a verdict, or run measurements, can use `up`/`status` and
+  should ignore the other three rather than try to fit them.
+- **Gate 0 proves what will BOOT. It says nothing about independence.** If you are standing up
+  a verifier to check your own work, this skill cannot tell you whether that verifier is
+  meaningfully independent of you — same account, same machine, possibly the same model
+  family. Producer-≠-verifier is your call to make and to defend; the engine binding being
+  correct is not evidence of it.
+- **There is no budget step, and for a permanent lane you need one.** Engines here share
+  machine-wide accounts; a codex status bar showing `weekly 77% left` is a shared pool, not
+  yours. A one-off team is noise; a standing lane is a budget decision before it is a config
+  decision.
+- **Requires `python3`** — both `scripts/verify-check.sh` and any step here that parses config
+  shell out to it. If your environment is deliberately grep/sed-only, use the raw `maw config`
+  and `maw wake --dry-run` commands, which need neither.
 
 > **Test record.** Run start-to-finish twice: once by its author, once by an agent given only
 > this skill and no other context. The second run **succeeded but reported 5 blockers and 12
@@ -382,9 +423,11 @@ fail; a single green line on its own proves nothing.
 ```bash
 VC=~/.claude/skills/oracle-team/scripts/verify-check.sh
 
+bash "$VC" enginelist <dir>               # WHICH aliases exist here — start with this
 bash "$VC" enginecheck <charter|team>     # whole roster, per member, from each member's path
 bash "$VC" engineone <engine> <dir>       # ONE engine, ONE directory — for single-worker gates
-bash "$VC" selftest                       # run this before trusting either of the above
+bash "$VC" teamclosed <team>              # is the team really gone (asks tmux first, not maw)
+bash "$VC" selftest                       # run this before trusting any of the above
 ```
 
 Both emit **anchored machine keys at column 0** alongside the human output, so a gate can
@@ -481,9 +524,27 @@ rm -f ~/.maw/fleet/"$SESSION".json      # otherwise the names stay claimed
   `maw team up`, which reads the charter.
 - **`engines:` inside a charter is a dead field.** maw's parser stores it; no code reads it.
   Engine commands belong in the config layer.
-- **Member identities must already be wake-resolvable.** `maw team up` exits 1 with
-  `wake: '<name>' was not found` for a member name that is not a known oracle/agent — you
-  cannot invent arbitrary member names in a charter.
+- **✅ Invented member names are fine — as long as the member has a path.** `[verified by two
+  independent testers, 2026-08-06]` A name that is in no registry resolves normally once
+  `worktree:`/`cwd:` gives `team up` a `--repo-path`:
+  ```
+  wake <invented-name> --dry-run -e codex --repo-path <dir>   → resolves, rc=0
+  wake <invented-name> --dry-run -e codex                     → wake: repo not found for <name>, rc=1
+  ```
+  This matters most for exactly the case you are probably here for: **a brand-new lane — a
+  verifier, a scout, a one-off cell — has an unregistered name by definition.**
+
+  > ❌ **This bullet previously said the opposite** — "member identities must already be
+  > wake-resolvable… you cannot invent arbitrary member names" — which contradicted 0c three
+  > bullets above and made readers with a new lane stop before starting. It also quoted an
+  > error string that does not exist (`wake: '<name>' was not found`; the real text is
+  > `wake: repo not found for <name>`). It was never true, not merely stale: it described the
+  > no-path case as if it were the general rule. Grepping for outdated wording would never
+  > have found it — only running the case did.
+
+  Name collisions are still real when a member has **no** path (see the fleet-unique rule in
+  0c), so keep prefixing roles with the team name. With a path, a collision-prone name like
+  `verifier` also resolves — measured in dry-run only.
 - **Reasoning effort does not come from the alias.** For codex it comes from
   `$CODEX_HOME/config.toml` (`model_reasoning_effort`); the status bar shows both
   (`<model> xhigh`). Pin it there or add the flag to the alias.

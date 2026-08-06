@@ -351,6 +351,44 @@ print(v.strip())
 # ⚠️ ขอบเขตที่ตอบไม่ได้ (พิมพ์เอง ไม่เงียบ):
 #    · ตอบไม่ได้ว่า "บัญชีเสิร์ฟ model นี้ไหม" — ชื่อ model ผิดจะพังข้างใน engine หลัง pane ขึ้น
 #    · ตอบไม่ได้ว่า worker ได้ prompt ไหม (ดู learning 2026-08-04 charter-field-parsed)
+# ── enginelist [dir] ────────────────────────────────────────────────────────
+# "มี alias อะไรให้ใช้บ้างจากตรงนี้" — คำถามแรกของคนที่เข้ามาใน fleet ที่มีอยู่แล้ว
+# 🏷️ atlas 2026-08-06 (finding #2, จุดที่เขาต้องเดามากที่สุดในการรีวิวทั้งรอบ):
+#    เอกสารบอกวิธีหา *model* name แต่ **ไม่มีที่ไหนบอกวิธีดู *alias* ที่ลงทะเบียนแล้ว**
+#    · `maw config sources` = บอกไฟล์ ไม่ใช่ชื่อ · `maw config` = ทิ้งทุกอย่างออกมา
+#    · `engineone` = ทดสอบ **ชื่อเดียวที่ต้องรู้อยู่ก่อนแล้ว**
+#    ⇒ เขาต้องไปเปิด ~/.config/maw/maw.config.50.json ดิบ ๆ เพื่อรู้ว่า codex ลงทะเบียนแล้ว
+#      และ `commands.claude` ไม่ได้ลงทะเบียน
+# ตัดคีย์ที่ไม่ใช่ engine ออก: glob (`verifier*`) และ `_`-prefixed helper
+enginelist() {
+  local dir="${1:-.}"
+  while [ -n "$dir" ] && [ ! -d "$dir" ]; do
+    local up; up=$(dirname -- "$dir"); [ "$up" = "$dir" ] && break; dir="$up"
+  done
+  [ -d "$dir" ] || dir="."
+  ( cd "$dir" 2>/dev/null && maw config 2>/dev/null ) | python3 -c '
+import json,sys
+try: cfg=json.load(sys.stdin)
+except Exception:
+    print("UNKNOWN  อ่าน merged config ไม่ได้ — **ตอบไม่ได้ ไม่ใช่ว่าไม่มี**"); sys.exit(2)
+c=cfg.get("commands")
+if not isinstance(c,dict):
+    print("UNKNOWN  ไม่มี commands ใน merged config"); sys.exit(2)
+rows=[(k,v) for k,v in sorted(c.items())
+      if isinstance(v,str) and v.strip() and not k.startswith("_") and "*" not in k]
+print(f"enginelist.count: {len(rows)}")
+for k,v in rows:
+    m=""
+    p=v.split()
+    for i,t in enumerate(p):
+        if t in ("--model","-m") and i+1<len(p): m=p[i+1]; break
+        if t.startswith("--model="): m=t.split("=",1)[1]; break
+    print("enginelist.engine: %s model=%s cmd=%s" % (k, m or "-", v))
+' || return $?
+  echo "[ขอบเขต: คีย์ที่มี glob (เช่น verifier*) ถูกตัดออก เพราะมันแมตช์ *ชื่อ window* ไม่ใช่ชื่อ engine"
+  echo " · การมีชื่ออยู่ในลิสต์ ไม่ได้แปลว่าบัญชีเสิร์ฟ model นั้นได้ — ต้อง boot ถึงจะรู้]"
+}
+
 # ── engineone <engine-name> <dir> ───────────────────────────────────────────
 # โหมดสมาชิกเดี่ยว — สำหรับ gate ที่รับงานทีละ worker ไม่มี charter ไม่มี roster
 # 🏷️ ที่มา: atlas 2026-08-06 ตรวจ interface กับ T4543 แล้วพบว่า `enginecheck` เป็น
@@ -786,7 +824,7 @@ YAML
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 
 case "${1:-}" in
-  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|enginereg|engineone|enginecheck|selftest) "$@" ;;
+  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|enginereg|enginelist|engineone|enginecheck|selftest) "$@" ;;
   "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | teamclosed <team> | enginereg <engine> | enginecheck <charter|team> | selftest" ;;
   *) echo "unknown fn: $1"; exit 2 ;;
 esac
