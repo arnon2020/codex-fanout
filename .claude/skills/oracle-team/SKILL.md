@@ -17,9 +17,9 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 > **`down` (teardown) → [`references/teardown.md`](references/teardown.md) — read this one.**
 > Every team leaves state behind; only the *kind* differs. Four oracles measured their own
 > houses on 2026-08-06: worktrees and unmerged branches (lucifer 36, ajfon 5), stale fleet
-> reservations (**66 of 73 on this machine hold names of sessions that no longer exist**), and
-> systemd timers still firing at a cell that was frozen rather than torn down (prism). None of
-> those four ships PRs.
+> reservations (**130 of 143 reserved identities on this machine name sessions that no longer
+> exist** — count identities, not files; one file holds up to 24), and systemd timers still
+> firing at a cell that was frozen rather than torn down (prism). None of those four ships PRs.
 >
 > **`dispatch` / `lead` — the `gh` half stays in
 > [`references/pr-workflow-verbs.md`](references/pr-workflow-verbs.md).** Those steps assume
@@ -971,7 +971,7 @@ For each coder, verify against charter:
 
 | Check | How to verify | Bad sign |
 |-------|---------------|----------|
-| Engine correct? | peek shows `gpt-5.5` not `Opus` | Claude Code booted instead of codex/omx |
+| Engine correct? | peek shows `gpt-5.5` not `Opus` | Claude Code booted instead of the codex engine you asked for |
 | Model right? | peek status bar: `gpt-5.5 xhigh` | `low` = prompt misunderstanding |
 | Worktree right? | peek shows `agents/1-codex-N` | wrong dir or main checkout |
 | Waiting for task? | idle prompt or "waiting for maw hey" | auto-exploring (whoami, inbox, oracle ls) |
