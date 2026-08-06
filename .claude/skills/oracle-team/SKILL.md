@@ -681,6 +681,18 @@ whole check exists to prevent, one level up.
 > unfalsifiable. It still tells you the real thing: **only a post-spawn banner settles whether
 > the account serves the model.**
 
+> 🔬 **Measuring rc: never through a pipe.** `[holmes 2026-08-06 — they nearly filed a bug
+> against this tool because of it]`
+> ```bash
+> verify-check.sh engineone __no_such__ "$PWD" | tail -6; echo $?   # → 0, that is TAIL's rc
+> verify-check.sh engineone __no_such__ "$PWD" >/tmp/o 2>&1; echo $? # → 1, the script's rc
+> ```
+> A pipeline's status is its **last** command's, so piping to `tail`/`head`/`grep` to read the
+> output silently discards the verdict you were checking. This bites reviewers hardest: it
+> makes a correct tool look like it inherited the rc=0 disease, and a phantom bug report costs
+> more than a real one — it sends the author to fix something that is not broken. It is also
+> the same trap that produced four real defects in this skill's own history.
+
 `rc` 0=PASS · 1=FAIL · 2=UNVERIFIED. **UNVERIFIED is not a pass** — it means the check could
 not answer, which is different from answering "fine". Concretely: `engineone <alias> <dir>`
 where `<dir>` does not exist yet returns **UNVERIFIED rc=2**, not FAIL — it answered from an

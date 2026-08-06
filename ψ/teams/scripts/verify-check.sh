@@ -372,6 +372,16 @@ enginelist() {
     local up; up=$(dirname -- "$dir"); [ "$up" = "$dir" ] && break; dir="$up"
   done
   [ -d "$dir" ] || dir="."
+  # 🏷️ tars 2026-08-06 (v3): `enginelist.count` เดิมไม่บอกว่านับจากที่ไหน ⇒ ผมส่งเลข "27"
+  #    ให้เขาโดยบอกว่า "เลขของเครื่องนี้" **ผิด — มันคือเลขของ repo ผม** บ้านอื่นเห็น 19/14
+  #    ส่วนต่าง 8 คือ alias ใน .maw/maw.config.60.json ของผมเอง
+  #    ⇒ **คลาสเดียวกับที่ thread นี้เกิดมาเพื่อฆ่า**: เลขที่อ้างโดยไม่มีสโคป คนอื่นรันแล้วไม่ตรง
+  #      แล้วสรุปว่า "alias หาย" หรือ "เครื่องมือพัง" ทั้งที่ทั้งสองเลขถูก
+  #    ⇒ และมันเกิดกับ *ผู้เขียนเครื่องมือ ในข้อความที่อธิบายเครื่องมือ* ⇒ แก้ที่ output ไม่ใช่ที่วินัย
+  local abs; abs=$(cd "$dir" 2>/dev/null && pwd) || abs="$dir"
+  printf 'enginelist.scope: dir=%s layers=%s\n' "$abs" \
+    "$( ( cd "$dir" 2>/dev/null && maw config sources 2>/dev/null ) \
+        | awk '{printf "%s%s:%s", (NR>1?",":""), $1, $NF}' )"
   ( cd "$dir" 2>/dev/null && maw config 2>/dev/null ) | python3 -c '
 import json,sys
 try: cfg=json.load(sys.stdin)
@@ -896,6 +906,16 @@ YAML
       || { echo "   ✗ dir-absent+เจอ ควรลง unverified เป็น answered-from-ancestor"; fail=1; }
     printf '%s\n' "$o10f" | grep -q '^enginecheck.scope: out-of-scope=' \
       || { echo "   ✗ ขอบเขตถาวรต้องอยู่ namespace out-of-scope ไม่ปนกับผลที่ผันแปร"; fail=1; }
+  else
+    echo "   (ไม่มี maw — ข้าม)"
+  fi
+  echo "8j) enginelist: ทุกเลขต้องพก scope ติดตัว และ scope ต้องต่างกันจริงตาม dir (tars v3)"
+  if maw config >/dev/null 2>&1; then
+    local eh ei
+    eh=$(enginelist . 2>/dev/null | head -1)
+    ei=$(enginelist /tmp 2>/dev/null | head -1)
+    case "$eh" in enginelist.scope:*dir=*layers=*) ;; *) echo "   ✗ บรรทัดแรกต้องเป็น enginelist.scope: dir=… layers=…"; fail=1 ;; esac
+    [ "$eh" = "$ei" ] && { echo "   ✗ scope จากคนละ dir ออกมาเหมือนกัน = เลขยังไม่พกที่มา"; fail=1; }
   else
     echo "   (ไม่มี maw — ข้าม)"
   fi
