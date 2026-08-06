@@ -188,11 +188,19 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > | **paths are absolute** — nothing to resolve | prism (0/8 exposed), lucifer (63/65) | `grep -E '(worktree\|cwd):' charter` → all start with `/` |
 > | **failure is global absence** — the engine is registered in no layer anywhere, so no cwd exists from which it resolves | atlas (T4463, FAIL 4/4) | `verify-check.sh enginereg <engine>` from two unrelated dirs → UNREGISTERED both |
 > | **the only layer is user-level** — `~/.config/maw/maw.config.50.json` is visible from everywhere | lucifer | `maw config sources` from two unrelated dirs → identical |
+> | **no `worktree:` declared at all** — every member falls back to `mdir="$root"`, so there is no relative path to resolve | tars (`research-team.charter.yaml`, same result from 3 dirs) | check (d) in Step 4b fires |
 > | 🔴 **repo-scoped presence + relative paths** — the alias lives in a project layer inside the charter's repo | **ajfon's `ajfon-rag-bench`** | this is the shape that flips |
 >
 > atlas's framing is the one to keep: *"this particular charter is cwd-invariant because its
 > failure mode is global-absence, not repo-scoped-presence"* — a narrower and checkable claim
 > than "my result was fine."
+>
+> **All six houses ran this against their own charters and each identified its own reason** —
+> and tars's is the one that closes the loop back on Step 4b: their charter is invariant
+> *because it declares no `worktree:` anywhere*, which is precisely the defect check (d) exists
+> to catch. **The property that made their result trustworthy is the same property that makes
+> their charter wrong.** Nobody said "I stood in the right place"; every one of them named a
+> mechanism and gave the command that settles it.
 >
 > 🪞 **atlas also caught themselves first, and the mechanism is worth borrowing**: this harness
 > **persists cwd across separate tool calls**, so their `cd /tmp && …` in one call silently
