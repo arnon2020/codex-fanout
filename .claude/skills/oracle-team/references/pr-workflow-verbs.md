@@ -13,8 +13,17 @@
 > | `lead` | told coders to target a hardcoded branch, and its base-branch detection produced `--base ''` |
 >
 > Three reviewers read these blocks carefully and found none of it. Executing each one took
-> about two minutes. All are fixed below — **and every fix is still unvalidated at the level
-> that matters: nobody has run these verbs against a real team.**
+> about two minutes.
+>
+> **Status after the fixes** `[2026-08-06]`:
+>
+> | verb | against a live team |
+> |---|---|
+> | `down` + `--clean` | ✅ **run once against a real 2-member team**, with a real `.env.local` sitting in one worktree. Session killed, dirty worktree kept with its files listed, clean worktree removed, `.env.local` committed **0** times and still on disk. `--clean` deleted the clean member's branch and git itself refused the other, because a kept worktree still holds it — the two guards compose |
+> | `lead` | ✅ **peek loop run against the same live team** — real output from both panes, base branch resolved to `main` on a repo with no origin, `maw hey` delivered to the real window |
+> | `dispatch` | 🔴 **still never run against a real team.** Its mechanics were exercised in a scratch repo; the `codex exec` path needs GitHub issues and a real account and has not been executed |
+>
+> One live run is not a track record. `up` needed five before a round came back clean.
 >
 > **They also solve a different problem from the rest of the skill.** They assume GitHub
 > issues in, PRs out, and members living in disposable git worktrees. Reviewers whose teams
