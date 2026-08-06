@@ -76,18 +76,44 @@ a cell that was frozen, not torn down — `evidence-cell-rq001-watchdog.timer`,
 > reverse). This generalises wider than anything PR-specific, so it goes first.
 
 ```bash
+: "${ROOT:?Step 0 needs \$ROOT (the repo root) — set it before running}"
+: "${SESSION:?Step 0 needs \$SESSION}"
 SNAP="${SNAP:-$HOME/.maw-teams/.snapshots/${SESSION}-$(date +%Y%m%d-%H%M%S)}"
-mkdir -p "$SNAP"
-cp "$CHARTER" "$SNAP/charter.yaml" 2>/dev/null
-for L in .maw/maw.config.*.json; do [ -e "$L" ] && cp "$L" "$SNAP/"; done
-cp ~/.maw/fleet/"${SESSION}".json "$SNAP/" 2>/dev/null
+mkdir -p "$SNAP" || { echo "✗ cannot create snapshot dir $SNAP — stopping"; return 1 2>/dev/null || exit 1; }
+
+# $CHARTER unset used to fail here in silence, because stderr was discarded.
+if [ -n "${CHARTER:-}" ] && [ -f "$CHARTER" ]; then
+  cp "$CHARTER" "$SNAP/charter.yaml" || echo "⚠ could not copy charter"
+else
+  echo "⚠ \$CHARTER is unset or missing — snapshot has NO charter, so teardown is only partly reversible"
+fi
+
+# Config layers live under $ROOT, not $PWD. Other steps tell you to run from a member
+# directory; a relative glob there finds nothing and [ -e ] hides it. Anchor the path.
+found=0
+for L in "$ROOT"/.maw/maw.config.*.json; do
+  [ -e "$L" ] || continue
+  cp "$L" "$SNAP/" && found=$((found+1))
+done
+[ "$found" -gt 0 ] || echo "⚠ no engine-layer files found under $ROOT/.maw/ — if you expected some, you are in the wrong \$ROOT"
+
+cp ~/.maw/fleet/"${SESSION}".json "$SNAP/" 2>/dev/null || true   # absent is normal — see Step 3
 tmux list-windows -t "=$SESSION" -F '#{window_name}' > "$SNAP/windows.txt" 2>/dev/null
-git worktree list > "$SNAP/worktrees.txt" 2>/dev/null
-git branch -vv > "$SNAP/branches.txt" 2>/dev/null
-echo "snapshot: $SNAP"
+git -C "$ROOT" worktree list > "$SNAP/worktrees.txt" 2>/dev/null
+git -C "$ROOT" branch -vv     > "$SNAP/branches.txt"  2>/dev/null
+echo "snapshot: $SNAP  (charter + $found layer file(s))"
 ```
 
 Cheap, and it is the only thing that makes any later step reversible.
+
+> ⚠️ **Two ways this step used to under-record without saying so.** `[found by holmes, read-only,
+> 2026-08-06]` The layer glob was **relative to `$PWD`, not `$ROOT`** — and other steps in this
+> file tell you to work from a member directory, where it matches nothing and `[ -e "$L" ]`
+> swallows the miss. And `cp "$CHARTER" … 2>/dev/null` **failed silently when `$CHARTER` was
+> unset**, discarding the one error that would have told you. Both produced a snapshot that
+> looked successful and could not restore what it claimed to. It now counts what it captured and
+> says when the count is zero — *a snapshot you cannot trust is worse than none, because the
+> later steps are written as if it exists.*
 
 ## Step 1: Kill the session's windows
 
@@ -164,13 +190,13 @@ BASE_REF=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed '
 BASE_REF="${BASE_REF:-main}"
 
 for ROLE in $TARGETS; do
-  # branch + worktree resolved from the charter, in the same loop that uses them
+  # branch declared in the charter — may be absent, which is NOT the same as "equals the role"
   br=$(python3 -c "
 import re,sys
 blocks=re.split(r'(?=^\s*-\s*role:)', open('$CHARTER').read(), flags=re.M)
 for b in blocks:
     if re.search(r'role:\s*$ROLE\b', b):
-        m=re.search(r'branch:\s*(\S+)', b); print(m.group(1) if m else '$ROLE'); sys.exit(0)
+        m=re.search(r'branch:\s*(\S+)', b); print(m.group(1) if m else ''); sys.exit(0)
 sys.exit(1)") || { echo "⚠ $ROLE: no such role in $CHARTER — check the charter, not this script"; continue; }
   wt=$(python3 -c "
 import re,sys
@@ -182,10 +208,23 @@ for b in blocks:
         sys.exit(0)
 sys.exit(1)")
 
+  # Charter didn't declare a branch? ASK GIT which branch that worktree is on.
+  # Do NOT fall back to the role name — see the warning below.
+  if [ -z "$br" ] && [ -n "$wt" ]; then
+    br=$(git worktree list --porcelain 2>/dev/null | awk -v p="$(cd "$wt" 2>/dev/null && pwd -P)" '
+      $1=="worktree"{cur=$2} $1=="branch" && cur==p {sub("refs/heads/","",$2); print $2; exit}')
+  fi
+  if [ -z "$br" ]; then
+    echo "⚠ $ROLE: no branch declared in the charter and none bound to its worktree — skipping the stranded-commit check FOR THIS MEMBER (this is the check being skipped, not a pass)"
+    continue
+  fi
+
   # stranded-commit warning — lucifer had 36 branches in this state, 0 merged
   if git show-ref --verify --quiet "refs/heads/$br"; then
     ahead=$(git rev-list --count "$BASE_REF..$br" 2>/dev/null || echo 0)
     [ "$ahead" -gt 0 ] && echo "⚠ $br has $ahead commit(s) not on $BASE_REF — removing its worktree strands them"
+  else
+    echo "⚠ $ROLE: branch '$br' does not exist — the name is wrong, so this member was NOT checked for stranded commits"
   fi
 
   # lucifer (c): worktrees inside a repo show up as untracked forever.
@@ -200,6 +239,21 @@ sys.exit(1)")
   fi
 done
 ```
+
+> 🔴 **Never fall back to `branch = role`. It silently skipped members with real commits.**
+> `[found by holmes against their own charter, read-only, 2026-08-06]` `probe-codex.json`
+> declares no `branch:` at all, and the block fell back to the role name — `prober-a`. **The
+> actual branch is `probe-prober-a`**, because spawn created it with `git worktree add -b
+> "probe-$r"`, prefixing the team name. So `git show-ref refs/heads/prober-a` found nothing, and
+> the stranded-commit warning was **skipped in silence for a branch that may well have had
+> unmerged commits** — the seventh instance of this file's own pattern, inside the block that
+> had just fixed five of them.
+>
+> A charter with no `branch:` is a **charter that did not say**, which is not the same as
+> *"the branch equals the role."* Guessing turns missing information into a confident wrong
+> answer. The fix is holmes's: **ask `git worktree list`, which knows the real branch bound to
+> each path**, and when even that has no answer, say so per member rather than skipping quietly.
+> Both failure paths now print which member went unchecked.
 
 > ⚠️ **Check `.gitignore` per worktree, not per team.** `[found by lucifer, 2026-08-06]` Their
 > `ws-parity-port` charter puts members in **two different repos**: `maw-rs/agents/` **is**
@@ -384,10 +438,10 @@ Nothing in git or tmux will show these. **Check by name, report, do not auto-rem
 may be shared or deliberately kept.
 
 ```bash
-systemctl --user list-timers --all 2>/dev/null | grep -i "$SESSION" \
+systemctl --user list-timers --all 2>/dev/null | grep -iF -- "$SESSION" \
   || echo "no user timers matching $SESSION"
-systemctl --user list-units --all --type=service 2>/dev/null | grep -i "$SESSION"
-crontab -l 2>/dev/null | grep -i "$SESSION"
+systemctl --user list-units --all --type=service 2>/dev/null | grep -iF -- "$SESSION"
+crontab -l 2>/dev/null | grep -iF -- "$SESSION"
 ```
 
 > prism's case is the one to keep in mind: the cell was **frozen, not torn down**, so every
@@ -428,23 +482,34 @@ against two separate live 2-member teams — dirty worktree kept, `.env.local` c
 **Not run by anyone**: Steps 0, 3, and 4, and the block added under Step 2. Built from
 measurements four oracles took in their own houses, not from executing this file.
 
-**Reviewed without being run** `[2026-08-06]`: ajfon and lucifer read Steps 2–3 statically —
-neither would execute Step 3, because it touches shared fleet state, and both were right to
-refuse. **Eight defects in total, across three rounds:**
+**Reviewed without being run** `[2026-08-06]`: ajfon, lucifer and holmes read this file
+statically — none would execute Step 3, because it touches shared fleet state, and all three were
+right to refuse. **Twelve defects in total, across four rounds:**
 
 | round | defects | found by |
 |---|---|---|
 | 1 — as first written | undefined `charter_branch` · out-of-scope `$WT` · unset `$SNAP` → `mv "$F" /` · empty-dir phantom count · **file-vs-identity unit error** (would release 2 of lucifer's 26 and report success) | ajfon (3), lucifer (2) |
 | 2 — in the code fixing round 1 | stdin collision: identity list executed *as* the Python program, four tracebacks, nothing released or warned | sandbox run |
 | 3 — in the code fixing round 2 | unquoted `$OURS` + **empty `$CODERS` matching nothing silently** · guards using `return` at top level, which **printed and then continued anyway, exit 0** | advisor review, ajfon (independently) |
+| 4 — in the code fixing round 3 | **`branch = role` fallback missed the real branch entirely** (`prober-a` vs the actual `probe-prober-a`, skipping a member with unmerged commits) · Step 0's layer glob relative to `$PWD` not `$ROOT` · `cp "$CHARTER" 2>/dev/null` failing mute · Step 4's `grep -i` not fixed-string · **the session-is-your-own footgun** | holmes (4, against their own charter), lucifer (1, by *using* it) |
 
-**Six of the eight made a check do nothing while looking fine.** Each round's fix contained the
-next defect — including the one written an hour after the postmortem naming the pattern, inside
-the block fixing it. lucifer's conclusion is the right one: *"รู้กฎแล้วไม่พอ — กฎแบบนี้ต้องมีคนอื่น
+**Ten of the twelve made a check do nothing while looking fine.** Every round's fix contained the
+next defect — including one written an hour after the postmortem naming the pattern, inside the
+block fixing it. lucifer's conclusion is the right one: *"รู้กฎแล้วไม่พอ — กฎแบบนี้ต้องมีคนอื่น
 หรือ sandbox เป็นคนบังคับ ไม่ใช่ความตั้งใจของคนเขียน."*
 
-All are fixed above. **Step 3 is sandbox-tested across five behaviours and three execution modes;
-Step 0, Step 2's added block, and Step 4 are neither run nor reviewed.**
+> **Round 4 is the one that shows what review cannot reach.** holmes's four came from reading the
+> code against a **real charter of their own** rather than the code alone — `probe-codex.json` has
+> no `branch:`, so the guess was wrong in a way no amount of staring at the function would reveal.
+> lucifer's came from **running Gate 0 on a charter they intended to spawn**, and it surfaced an
+> assumption that four careful readers had passed over, because it was not a bug in the code at
+> all: *the team's session is not the session you live in* was never written down. **An unwritten
+> assumption cannot be reviewed — only violated.**
+
+All are fixed above, each with a test reproducing the reporter's case. **Step 3 is sandbox-tested
+across five behaviours and three execution modes; Step 2's branch resolution and Step 4b's
+pre-spawn checks are sandbox-tested against the reporters' exact charters; Step 0 and Step 4 are
+now reviewed but still never executed against real state.**
 
 > **The pattern across all eight is one thing**: a check that fails in a way that looks like
 > passing. Undefined function → `|| continue`. Unset variable → empty match. Unglobbed pattern →
