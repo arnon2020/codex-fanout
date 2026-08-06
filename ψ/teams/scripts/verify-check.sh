@@ -436,7 +436,7 @@ engineone() {
   if [ -n "$cmd" ]; then
     printf 'enginecheck.engine: %s PASS resolved=%s %s\n' "$e" "$cmd" "$tail_field"
     printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
-    printf 'overall: PASS\n'; return 0
+    printf 'overall: PASS requires-post-boot-verification=true\n'; return 0
   fi
   printf 'enginecheck.engine: %s FAIL resolved= %s\n' "$e" "$tail_field"
   printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
@@ -596,7 +596,12 @@ enginecheck() {
   #    ⇒ พ่นเป็น machine key ยึดคอลัมน์ 0 เพื่อให้ gate เห็นข้อจำกัดพร้อมกับคำตัดสิน
   echo "enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED"
   if [ $fail -eq 0 ]; then
-    echo "overall: PASS"
+    # 🏷️ atlas 2026-08-06: `overall: PASS` อยู่บรรทัดเดียวกับ `model-served=UNVERIFIED` ได้
+    #    ⇒ gate ที่ grep แค่ `^overall:` รับ worker ที่ไม่เคยยืนยัน model —
+    #    **false-green คลาสเดิม โผล่ขึ้นมาอีกชั้นข้างในตัวแก้ของมันเอง**
+    #    ⇒ ต่อท้ายข้อผูกมัดไว้ในบรรทัดเดียวกัน: `grep '^overall: PASS'` เดิมยังแมตช์
+    #      (ไม่ทำ parser ของใครพัง) แต่คนอ่านและ parser ที่ anchor ท้ายบรรทัดจะเห็นทันที
+    echo "overall: PASS requires-post-boot-verification=true"
     echo "ENGINECHECK OK   [ขอบเขต: ไม่ได้ตรวจว่าบัญชีเสิร์ฟ model นี้ได้ · ไม่ได้ตรวจว่า prompt ถึง worker]"
     return 0
   fi

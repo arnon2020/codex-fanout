@@ -633,13 +633,19 @@ maw team up "$TEAM"
 
 ### Verify step (MANDATORY after spawn)
 
-Wait 10s for engines to boot, then peek EVERY coder and check:
+Poll each coder until its banner is real, then check. **Do not use a fixed sleep** — measured
+boot-to-real-banner ran ~25s to ~35s (n=3, one machine, one codex version), and an earlier
+version of this block said 10s, which is short enough to read `model: loading` and believe it.
 
 ```bash
-sleep 10
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
-  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | tail -12
+  for _ in $(seq 30); do
+    tmux capture-pane -p -t "${SESSION}:${ROLE}-oracle" | grep -q 'model:.*loading' || break
+    sleep 3
+  done
+  # grep -n . not tail: the banner is in the pane's UPPER half, tail prints blank padding
+  tmux capture-pane -p -t "${SESSION}:${ROLE}-oracle" | grep -n . | head -30
 done
 ```
 
@@ -691,12 +697,16 @@ If no issues given, get all open:
 ISSUES=$(gh issue list --repo "$PROJECT" --state open --json number -q '.[].number' | head -"${N:-5}")
 ```
 
-Where N = number of coders in charter.
+`N` here is how many issues to take, and it is **not** set for you — the expression above
+defaults to 5 when unset, silently. Set `N` explicitly if you mean a different number.
 
 ### Step 2: Create worktrees (if not exist)
 
 For each coder, ensure a worktree exists:
 ```bash
+# NUM_CODERS is never set anywhere in this file — same defect class as the $N in `down`.
+# Derive it from the roster you already parsed rather than from a variable nobody assigns.
+NUM_CODERS=$(printf '%s\n' $CODERS | grep -c .)
 for N in $(seq 1 $NUM_CODERS); do
   wt="$ROOT/agents/coder-$N"
   [ -d "$wt" ] || git worktree add "$wt" -b "agents/coder-$N" HEAD
@@ -787,7 +797,20 @@ maw ls -v 2>&1 | grep "${SESSION}:" | grep codex || echo "✓ no codex windows"
 ```bash
 cd "$ROOT"
 for ROLE in $TARGETS; do
-  for wt in "agents/1-${ROLE}" "agents/${ROLE}" "agents/coder-${N}"; do
+  # [found by ajfon 2026-08-06] the third candidate used to be "agents/coder-${N}", but $N is
+  # never set anywhere in `down` — the only assignment in this file is dispatch's own loop, a
+  # different verb. Unset, it searched for the literal path "agents/coder-". Read the real
+  # path out of the charter instead of guessing at naming conventions.
+  WT=$(python3 -c "
+import re,sys
+blocks=re.split(r'(?=^\s*-\s*role:)', open('$CHARTER').read(), flags=re.M)
+for b in blocks:
+    if re.search(r'role:\s*$ROLE\b', b):
+        m=re.search(r'(?:worktree|cwd):\s*(\S+)', b)
+        if m and m.group(1) != 'false': print(m.group(1))
+        break
+")
+  for wt in $WT "agents/${ROLE}" "agents/1-${ROLE}"; do
     [ -d "$wt" ] || continue
     git -C "$wt" add -A 2>/dev/null
     git -C "$wt" commit -q -m "wip: auto-save before team-down" 2>/dev/null
@@ -829,7 +852,7 @@ Run on cadence: `/loop 5m /oracle-team lead`
 ```bash
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
-  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | tail -10
+  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | grep -n . | head -20
 done
 ```
 
@@ -894,7 +917,7 @@ No dispatch, no merge, no nudge. Just report.
 ```bash
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
-  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | tail -5
+  maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | grep -n . | head -12
 done
 echo "--- PRs ---"
 gh pr list --repo "$PROJECT" --base "${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed s@^origin/@@ || echo main)}" --state open 2>/dev/null || echo "no PRs"
