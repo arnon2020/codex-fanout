@@ -188,6 +188,35 @@ maw เดินขึ้นจาก cwd เก็บทุก `<ancestor>/.maw
 > (เวอร์ชันแรกของมันถามจาก cwd ของ lead เสมอ ⇒ **false-PASS** ให้สมาชิกที่อยู่นอก repo —
 > ที่ปรึกษาจับได้ ไม่ใช่ selftest)
 
+### 🧭 ให้ maw บอกเอง อย่าเดา — `maw config sources` / `maw config explain`
+
+> **สองคำสั่งนี้ตอบคำถาม "config อยู่ที่ไหน" ได้ตรง ๆ** และผมเพิ่งเจอตอนท้าย
+> — ก่อนหน้านั้นไปแกะ JSON จาก `maw config` เอง ทั้งที่ maw ตอบให้ได้อยู่แล้ว
+> `usage: maw config <show|sources|explain <key>|set <key> <value>> [--json]`
+
+```
+$ maw config sources                       # ← รันจาก dir ของสมาชิก ไม่ใช่ของ lead
+ 50 user          /home/user/.config/maw/maw.config.50.json
+ 60 project       <repo>/.maw/maw.config.60.json          ← เรียงตาม N · ตัวล่างชนะ
+
+$ maw config explain commands.codex-sol    # ← บอกด้วยว่ามาจาก layer ไหน
+key: commands.codex-sol
+60 project set <repo>/.maw/maw.config.60.json
+  "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol …"
+FINAL "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol …"
+```
+
+🔴 **`sources` เปลี่ยนตาม cwd — นี่คือข้อจำกัดสโคปที่พิสูจน์ตัวเองในบรรทัดเดียว**
+`[verified 2026-08-06]`
+
+```
+cd <repo>                      → 50 user + 60 project     ← เห็น alias ของเรา
+cd /tmp                        → 50 user เท่านั้น
+cd ~/.maw-teams/evidence-cell  → 50 user เท่านั้น          ← cell ของ prism ไม่มี layer เลย
+```
+
+⇒ **วิธีตรวจที่สั้นที่สุดว่า "สมาชิกคนนี้จะเห็น alias ไหม": `cd <worktree ของเขา> && maw config sources`**
+
 ไฟล์ของ repo นี้: [`.maw/maw.config.60.json`](../../.maw/maw.config.60.json)
 
 ```json
