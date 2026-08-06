@@ -63,7 +63,14 @@ procs_cmd() {
 }
 
 # ── alive <binary-basename> ─────────────────────────────────────────────────
-alive() { [ "$(procs "$1")" -gt 0 ] && echo "RUNNING  $1 ($(procs "$1"))" || echo "NONE     $1"; }
+# 🔑 lucifer 2026-08-06: verb ที่ให้ verdict ต้องบอกขอบเขตของตัวเองเสมอ
+#    `RUNNING` = มี process อยู่ **ไม่ได้แปลว่ารับงานได้** — 2026-08-06 codex process ถูกตัว
+#    ถูก flag ครบ แต่จอเป็นหน้า installer ⇒ ส่งงานเข้าไปไม่ถึงไหน และ Enter ไปกด "Update now"
+alive() {
+  if [ "$(procs "$1")" -gt 0 ]; then echo "RUNNING  $1 ($(procs "$1"))"; else echo "NONE     $1"; fi
+  echo "alive.scope: ตรวจ=มี process ตามชื่อ binary · **ไม่ตรวจ**=จอเป็นของ agent หรือ dialog, รับ turn ได้ไหม"
+  echo "          ⇒ ถ้าถามว่า pane พร้อมรับงานหรือยัง ใช้ bootverify <session> ไม่ใช่ alive"
+}
 
 # ── bootprobe '<full command>' [seconds] [expect-binary] ───────────────────
 # ตอบว่า "มันขึ้นไหม" โดย **เก็บ output ไว้เสมอ** — output คือคำตอบ ไม่ใช่ noise
@@ -286,6 +293,14 @@ teamclosed() {
   fi
   echo "CLOSED    $t  ไม่มี tmux session · ไม่อยู่ใน list · ไม่มี state ค้างใน store/vault (ไฟล์ charter ไม่ถูกแตะ)"
   echo "          [ขอบเขต: vault + charter อ่านจาก CWD ปัจจุบัน — ทีมของ oracle อื่นอยู่ใน repo เขา]"
+  # 🔑 lucifer 2026-08-06: *"ความพลาดทุกเคสวันนี้มาจากเครื่องมือที่รายงานผลโดยไม่บอกขอบเขต"*
+  #    `CLOSED` ตอบแค่ "session/list/store ไม่มีแล้ว" — **ไม่ได้แปลว่าเก็บกวาดครบ**
+  #    วันนี้พิสูจน์แล้วว่ามีของค้างอีก 3 ชนิดที่คำสั่งนี้มองไม่เห็นเลยสักชนิด:
+  #      git worktree/branch ค้าง (lucifer 36 unmerged · ajfon 5 อยู่ 3-4 วัน)
+  #      fleet reservation (130 identity ค้างจาก 143 บนเครื่องนี้)
+  #      external state (prism: systemd timer 3 ตัวยิงใส่ cell ที่ตายแล้วทุก 5 นาที)
+  echo "teamclosed.scope: ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron"
+  echo "          ⇒ CLOSED = 'session ไม่อยู่แล้ว' **ไม่ใช่** 'เก็บกวาดครบ' — ดู references/teardown.md"
   return 0
 }
 
@@ -1096,6 +1111,20 @@ YAML
     case "$uout" in
       *"$v"*) ;;
       *) echo "   ✗ '$v' รับได้แต่ไม่ถูกลิสต์ใน usage — drift แบบเดียวกับ maw tmux --help"; fail=1 ;;
+    esac
+  done
+
+  # 🔑 lucifer 2026-08-06: *"ทุกเคสที่เจอวันนี้เป็นเครื่องมือที่รายงานผลโดยไม่บอกขอบเขต"*
+  #    ⇒ verb ที่ให้ verdict ต้องพิมพ์ `<verb>.scope:` เสมอ · บังคับด้วยเทสต์ ไม่ใช่กฎที่เขียนเตือน
+  #    (verb ที่เป็น primitive ล้วน — binexists/procs/procs_cmd/relay/selftest — ยกเว้น
+  #     เพราะมันคืนตัวเลข/สถานะดิบ ไม่ได้ตัดสินอะไรแทนคนอ่าน · relay บอกขอบเขตในบรรทัด SENT อยู่แล้ว)
+  echo "10) verb ที่ให้ verdict ต้องประกาศขอบเขตตัวเอง (<verb>.scope:)"
+  local vsrc; vsrc=$(cat "${BASH_SOURCE[0]}")
+  local vb
+  for vb in alive teamclosed enginecheck enginelist bootverify; do
+    case "$vsrc" in
+      *"${vb}.scope:"*) ;;
+      *) echo "   ✗ '$vb' ให้ verdict แต่ไม่มีบรรทัด ${vb}.scope:"; fail=1 ;;
     esac
   done
 
