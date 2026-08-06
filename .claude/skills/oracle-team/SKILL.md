@@ -280,9 +280,19 @@ use it. Every earlier version of this document called the banner "the only check
 whether the account can serve the model" — that was wrong, and the example aliases shipped
 here used exactly the model that fails.
 
-**The banner tells you the flag arrived. Only a real turn tells you it works.** Send one
-trivial task to each new engine before trusting a team to it — this is what
-`model-served=UNVERIFIED` has been pointing at the whole time.
+**The banner tells you the flag arrived. Only a real turn tells you it works.** This is what
+`model-served=UNVERIFIED` has been pointing at the whole time — it is not boilerplate.
+
+```bash
+bash ~/.claude/skills/oracle-team/scripts/verify-check.sh modelprobe <alias> <dir>
+#   modelprobe.engine: codex-sol    PASS model=gpt-5.6-sol  served=yes
+#   modelprobe.engine: codex-medium FAIL model=gpt-5.6-mini served=no  "message":"The
+#     'gpt-5.6-mini' model is not supported when using Codex with a ChatGPT account."
+```
+💸 **It sends one real turn and costs quota** — that is the point; nothing cheaper can answer
+the question. Run it **once per new engine**, before trusting a team to it. Both arms verified
+above on the same account minutes apart. codex only; other engines report UNVERIFIED rather
+than guessing.
 
 **What the banner does establish** — that your alias reached the engine. Per engine:
 - **codex** — banner line `model: <MODEL> <effort>` and the status bar repeat it
@@ -615,6 +625,8 @@ bash "$VC" enginelist <dir>               # WHICH aliases exist here — start w
 
 bash "$VC" enginecheck <charter|team>     # whole roster, per member, from each member's path
 bash "$VC" engineone <engine> <dir>       # ONE engine, ONE directory — for single-worker gates
+bash "$VC" modelprobe <alias> <dir>       # 💸 SENDS A REAL TURN — the only thing that proves
+                                          #    the account can serve that model. Costs quota.
 bash "$VC" teamclosed <team>              # is the team really gone (asks tmux first, not maw)
 bash "$VC" selftest                       # run this before trusting any of the above
 ```

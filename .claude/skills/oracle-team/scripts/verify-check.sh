@@ -421,6 +421,47 @@ for k,v in globs:
   echo "[ขอบเขต: การมีชื่ออยู่ในลิสต์ ไม่ได้แปลว่าบัญชีเสิร์ฟ model นั้นได้ — ต้อง boot ถึงจะรู้]"
 }
 
+# ── modelprobe <engine-alias> <dir> ─────────────────────────────────────────
+# ตอบคำถามเดียวที่ `enginecheck` ประกาศมาตลอดว่าตอบไม่ได้: **บัญชีเสิร์ฟ model นี้ได้จริงไหม**
+# 🏷️ 2026-08-06: `gpt-5.6-mini` บูตขึ้นปกติ · banner พิมพ์ `model: gpt-5.6-mini xhigh` ·
+#    แล้ว turn แรกคืน `400 The 'gpt-5.6-mini' model is not supported ... ChatGPT account`
+#    ⇒ **banner บอกแค่ว่าแฟลกไปถึง engine** · มีแต่ turn จริงที่บอกว่ามันใช้ได้
+#    ⇒ ผมเองใส่ model ตัวนั้นเป็นตัวอย่างในเอกสารและใช้ทดสอบ up ทุกรอบ โดยไม่เคยส่ง turn
+# ⚠️ ตัวนี้ **เสียโควตาจริง** (turn เล็กที่สุดที่ทำได้) ⇒ ไม่ถูกเรียกจาก selftest และไม่ควร
+#    รันในลูป · รันหนึ่งครั้งต่อ engine ใหม่หนึ่งตัว ก่อนไว้ใจทั้งทีม
+modelprobe() {
+  local e="${1:?usage: modelprobe <engine-alias> <dir>}" dir="${2:?usage: modelprobe <engine-alias> <dir>}"
+  local reg_out reg_rc cmd
+  reg_out=$(enginereg "$e" "$dir" 2>/dev/null); reg_rc=$?
+  if [ "$reg_rc" -ne 0 ]; then
+    printf 'modelprobe.engine: %s UNVERIFIED reason=alias-not-registered\n' "$e"
+    printf 'overall: UNVERIFIED\n'; return 2
+  fi
+  cmd=$(printf '%s\n' "$reg_out" | sed -n '2s/^ *//p')
+  case "$cmd" in
+    *codex*) ;;
+    *) printf 'modelprobe.engine: %s UNVERIFIED reason=only-codex-supported-by-this-probe\n' "$e"
+       printf 'overall: UNVERIFIED\n'; return 2 ;;
+  esac
+  local model; model=$(printf '%s' "$cmd" | sed -n 's/.*--model[= ]\([^ ]*\).*/\1/p')
+  [ -n "$model" ] || model="(engine default from config.toml)"
+  local tmp out rc
+  tmp=$(mktemp -d)
+  out=$( cd "$tmp" && timeout 240 codex exec --dangerously-bypass-approvals-and-sandbox \
+           ${model:+-m "$model"} -c model_reasoning_effort=low \
+           "Create a file named probe.txt containing exactly OK. Then stop." 2>&1 ); rc=$?
+  local served="no"
+  [ -f "$tmp/probe.txt" ] && served="yes"
+  rm -rf "$tmp"
+  if [ "$served" = "yes" ]; then
+    printf 'modelprobe.engine: %s PASS model=%s served=yes\n' "$e" "$model"
+    printf 'overall: PASS model-served=yes\n'; return 0
+  fi
+  local why; why=$(printf '%s\n' "$out" | grep -oE '"message":"[^"]*"' | head -1)
+  printf 'modelprobe.engine: %s FAIL model=%s served=no rc=%s %s\n' "$e" "$model" "$rc" "${why:-no-file-produced}"
+  printf 'overall: FAIL model-served=no\n'; return 1
+}
+
 # ── engineone <engine-name> <dir> ───────────────────────────────────────────
 # โหมดสมาชิกเดี่ยว — สำหรับ gate ที่รับงานทีละ worker ไม่มี charter ไม่มี roster
 # 🏷️ ที่มา: atlas 2026-08-06 ตรวจ interface กับ T4543 แล้วพบว่า `enginecheck` เป็น
@@ -954,7 +995,7 @@ YAML
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 
 case "${1:-}" in
-  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|enginereg|enginelist|engineone|enginecheck|selftest) "$@" ;;
+  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|enginereg|enginelist|engineone|enginecheck|modelprobe|selftest) "$@" ;;
   "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | teamclosed <team> | enginereg <engine> | enginecheck <charter|team> | selftest" ;;
   *) echo "unknown fn: $1"; exit 2 ;;
 esac
