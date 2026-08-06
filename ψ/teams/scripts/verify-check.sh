@@ -166,6 +166,12 @@ relay() {
     fi
   fi
   echo "SENT      $target  [delivered · ยังไม่ยืนยันว่า agent รับเข้า turn]"
+  # 🔴 2026-08-06: ก่อนจะเขียนว่าใคร "เงียบ/ไม่ตอบ" ให้ `maw peek <target>` ก่อนเสมอ
+  #    ผม broadcast ว่า "holmes ไม่มีเสียง 2 รอบ" ให้ 6 oracle อ่าน — **เท็จ**
+  #    holmes รอคำตอบ yes/no จากผมอยู่ใน pane ตัวเอง `peek` ใช้เวลา 3 วินาที ผมไม่ได้ทำสักครั้ง
+  #    สโคปที่ผมค้นคือ "ข้อความที่เข้ามาหาผม" แต่ประโยคที่เขียนคือ "เขาไม่มีเสียง" — คนละอย่าง
+  #    ⇒ **ความว่างเปล่าไม่ใช่หลักฐาน จนกว่าจะไปดูปลายทาง** · ทิศลบไม่ได้ยกเว้นจากการตรวจ
+  echo "          ⚠ ถ้าไม่ได้รับคำตอบ: 'maw peek $target' ก่อนสรุปว่าเขาเงียบ — เขาอาจรอคุณอยู่"
 }
 
 # ── teamclosed <team> ───────────────────────────────────────────────────────
@@ -994,6 +1000,22 @@ YAML
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
+
+  # 🩹 2026-08-06 [clean-room tester] usage เคยตก 4 verb ที่ dispatcher รับจริง
+  #    ⇒ คนที่ถามเครื่องมือว่ามี verb อะไร ได้ลิสต์ที่ไม่มีตัวที่เอกสารสั่งให้ใช้
+  #    รูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — บังคับให้ตรงกันด้วยเทสต์
+  echo "9) ทุก verb ที่ dispatcher รับ ต้องเป็นฟังก์ชันจริง และต้องโผล่ใน usage"
+  local uout v; uout=$(verify_check_usage 2>&1)
+  for v in $VERIFY_CHECK_VERBS; do
+    if ! declare -F "$v" >/dev/null 2>&1; then
+      echo "   ✗ '$v' อยู่ในลิสต์ dispatcher แต่ไม่มีฟังก์ชันจริง"; fail=1
+    fi
+    case "$uout" in
+      *"$v"*) ;;
+      *) echo "   ✗ '$v' รับได้แต่ไม่ถูกลิสต์ใน usage — drift แบบเดียวกับ maw tmux --help"; fail=1 ;;
+    esac
+  done
+
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
 
@@ -1004,8 +1026,26 @@ YAML
 # ⇒ **เจอตอนใช้จริงครั้งแรก** — ซึ่งคือประเด็นทั้งหมดของ Tier 3
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 
-case "${1:-}" in
-  binexists|procs|procs_cmd|alive|bootprobe|relay|teamclosed|enginereg|enginelist|engineone|enginecheck|modelprobe|selftest) "$@" ;;
-  "") echo "fn: binexists <bin> | procs <bin> | procs_cmd <pattern> | alive <bin> | bootprobe '<cmd>' [s] [bin] | teamclosed <team> | enginereg <engine> | enginecheck <charter|team> | selftest" ;;
-  *) echo "unknown fn: $1"; exit 2 ;;
-esac
+# 🩹 2026-08-06 [clean-room tester] usage string และ case list เคย **แยกกันเขียน** ⇒ drift:
+#    case รับ relay/enginelist/engineone/modelprobe แต่ usage ไม่ลิสต์ทั้งสี่ตัว
+#    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
+#    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
+#    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
+VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe relay teamclosed enginereg enginelist engineone enginecheck modelprobe selftest"
+
+verify_check_usage() {
+  printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
+  echo "  binexists <bin> · procs <bin> · procs_cmd <pattern> · alive <bin> · bootprobe '<cmd>' [s] [bin]"
+  echo "  relay <session:window.pane> '<msg>' [--durable <slug>]  ·  teamclosed <team>"
+  echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
+  echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
+  echo "  selftest"
+}
+
+if [ -z "${1:-}" ]; then
+  verify_check_usage
+elif printf '%s\n' $VERIFY_CHECK_VERBS | grep -qxF -- "$1"; then
+  "$@"
+else
+  echo "unknown fn: $1"; verify_check_usage; exit 2
+fi

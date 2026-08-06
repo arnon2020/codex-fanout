@@ -32,7 +32,8 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 > | Gate 0 + `scripts/verify-check.sh` | reviewed by 5 oracles · independently reinvented by prism before reading this · detector validated at n=65 |
 > | `up` | run 6× end to end. **Runs 5 and 6 found zero new defects** — but run 5 used a codex model this account cannot actually serve, so it proved booting, not working. Run 6 ran `modelprobe` first and is the one that means something |
 > | `status` | exercised only inside `up` |
-> | `dispatch` / `down` / `lead` | 🔴 each run once, each broken; **never run against a real team** |
+> | `down` | 🔴 broken on first execution. **Since then: run end-to-end against three live teams.** Per-step coverage lives in [`references/teardown.md`](references/teardown.md) — **that file is the only authority; do not restate a count here** |
+> | `dispatch` / `lead` | 🔴 each run once, each broken. `dispatch`'s `codex exec` half has since completed real work; its GitHub-issue half and `lead`'s PR steps remain unrun |
 
 ---
 
@@ -126,8 +127,31 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 #   enginelist.engine: codex        model=-               cmd=… codex --ask-for-approval never …
 #   enginelist.engine: claude-opus  model=claude-opus-5   cmd=claude --model claude-opus-5 …
 ```
-It is dir-aware like everything else here, so run it from a path your member will use. An
-alias with `model=-` pins no model — it takes whatever the engine's own default is.
+`enginelist` is dir-aware — run it **from a path your member will use**. An alias with
+`model=-` pins no model; it takes whatever the engine's own default is.
+
+> 🔴 **Do NOT generalise that to `enginecheck`. They anchor differently, and getting it wrong
+> gives you a false FAIL with a hard-stop message.** `[measured by a clean-room tester, 2026-08-06]`
+> `enginecheck` resolves a charter's relative `worktree:` paths against the **caller's** repo
+> root (`git rev-parse --show-toplevel` of your cwd, falling back to cwd outside a repo) —
+> **not** against the charter's own location, even when you hand it an absolute charter path.
+> Same charter, three places to stand, three verdicts:
+>
+> | run from | verdict |
+> |---|---|
+> | an unrelated git repo | ❌ FAIL rc=1 |
+> | `/tmp` | ❌ FAIL rc=1 |
+> | the charter's repo, or a member dir inside it | ✅ PASS rc=0 |
+>
+> ⇒ **Run `enginecheck` from the charter's own repo root.** It failed for the tester on a
+> charter that was correct, and told them `ENGINECHECK FAILED อย่า spawn จนกว่าจะแก้` —
+> *"do not spawn until you fix it"* — naming a fix that was already in place.
+>
+> This matters most for the `~/.maw-teams/<team>/<role>` layout that Gate 0a explicitly
+> supports: there the member dirs are **not** inside the charter's repo, so "run it from a path
+> your member will use" is precisely the wrong instruction. A symmetric **false PASS** is
+> plausible — a caller standing in some other repo that happens to have its own `agents/<role>`
+> and its own layer — but nobody has constructed one, so treat that as reasoned, not measured.
 
 **Then, model names for a NEW alias** — one lookup per engine, they are not interchangeable:
 
@@ -237,8 +261,24 @@ discarded and both fell through to the same default — fix that before going on
 > และคุ้ม — จับ 3 อย่างในไม่กี่นาทีโดยไม่ต้อง spawn."*
 
 ```bash
+# ── These three are used by every check below and are NOT set anywhere earlier in
+#    the QUICKSTART. Pasted without them, check (a) compares against an empty string
+#    and passes silently — the exact failure the step exists to prevent.
+: "${TEAM:?set TEAM — the team name}"
+: "${ROOT:?set ROOT — your team repo root, NOT whatever repo you happen to stand in}"
+CHARTER="${CHARTER:-$ROOT/ψ/teams/${TEAM}.yaml}"
+[ -f "$CHARTER" ] || { echo "✗ no charter at $CHARTER — set CHARTER explicitly"; return 1 2>/dev/null || exit 1; }
+
 # (a) 🔴 Is the team's session the session YOU live in?
-SELF=$(tmux display-message -p '#{session_name}' 2>/dev/null)
+#     `tmux display-message` with NO client attached does NOT return empty — it returns
+#     tmux's most-recently-active session, i.e. SOMEONE ELSE'S. Measured: from an agent
+#     outside tmux it returned `113-tars`, an unrelated live oracle. Anchor to $TMUX_PANE;
+#     if $TMUX is unset you are not in any session and no collision is possible.
+if [ -n "${TMUX:-}" ] && [ -n "${TMUX_PANE:-}" ]; then
+  SELF=$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}' 2>/dev/null)
+else
+  SELF=""
+fi
 SESS=$(grep -m1 '^session:' "$CHARTER" | awk '{print $2}')
 [ -n "$SELF" ] && [ "$SELF" = "$SESS" ] && cat <<EOF
 🔴 charter session '$SESS' IS YOUR OWN SESSION.
@@ -504,7 +544,7 @@ Note also that a team created this way does **not** show up in `maw team list` e
 is alive — do not use that command to decide whether a team is running. `tmux list-sessions`
 is the source of truth.
 
-If all eight steps pass, the mechanism is working and the rest of this skill is about
+If every step above passes (0, 1, 2, 3, 4, 4b, 5, 5b, 6, 7 — ten, not eight; an earlier version said eight and never said which two did not count), the mechanism is working and the rest of this skill is about
 running the team, not standing it up.
 
 **QUICKSTART is the procedure. Gate 0 below is the reference** — same job, more depth on
@@ -535,12 +575,21 @@ report the discrepancy.
 
 > ## 🧭 Test record — what has actually been run, and what has not
 >
-> | verb | status |
+> 🔴 **This table used to restate run counts and drifted out of step with the one at the top of
+> the file.** `[found by a clean-room tester, 2026-08-06]` It gave `up` as 4× where the header
+> said 6×, and `down` as "run once on a throwaway repo" while two other places said "never run
+> against a real team" and "three live teams" — **four different answers to one question**, all
+> under headings that promise what has actually been run. Counts now live in **exactly two
+> places** and nowhere else:
+>
+> | verb | where its coverage is stated |
 > |---|---|
-> | **`up`** (this QUICKSTART + Gate 0) | **run 4× on 2026-08-06** — author ×2, fresh agent ×1, fresh agent on a non-repo dir ×1 |
-> | `status` | exercised only as the peek inside `up`; never run as its own verb |
-> | `down` | 🟡 **teardown steps run once (2026-08-06)** on a throwaway repo, both arms: clean worktree removed, dirty worktree kept. `--clean` branch deletion still never run |
-> | **`lead`, `dispatch`** | 🔴 **NEVER RUN — untested.** Documented from source and habit, not from execution |
+> | `up`, `status`, `dispatch`, `lead` | the table at the **top of this file** |
+> | `down` / teardown | [`references/teardown.md`](references/teardown.md), per step |
+>
+> **If you are about to write a run count anywhere else in this skill, don't.** A coverage claim
+> that appears twice will disagree with itself the first time either half is updated, and a
+> reader deciding whether to trust a verb gets to pick which number they like.
 >
 > **Everything below the QUICKSTART describing `down`/`lead`/`dispatch` is unverified**, and
 > two reviewers found real defects in it (a `head -N` that is a syntax error, a `$N` that is
