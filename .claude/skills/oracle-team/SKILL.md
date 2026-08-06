@@ -228,6 +228,51 @@ cd "$ROOT"
 Read both `command:` lines. **They must differ.** Identical output means your alias was
 discarded and both fell through to the same default — fix that before going on.
 
+**Step 4b — pre-spawn checklist. Three things that are cheap now and expensive after spawn.**
+
+> `[found by lucifer 2026-08-06, running Gate 0 against a real un-spawned 4-role charter]`
+> Gate 0 caught all three **before any process started** — but lucifer caught them because they
+> remembered from a review round, **not because this document led them there.** That is the gap
+> this step closes. Their verdict on the rest: *"Gate 0 + up ในรูปแบบปัจจุบัน ใช้กับงานจริงของผมได้
+> และคุ้ม — จับ 3 อย่างในไม่กี่นาทีโดยไม่ต้อง spawn."*
+
+```bash
+# (a) 🔴 Is the team's session the session YOU live in?
+SELF=$(tmux display-message -p '#{session_name}' 2>/dev/null)
+SESS=$(grep -m1 '^session:' "$CHARTER" | awk '{print $2}')
+[ -n "$SELF" ] && [ "$SELF" = "$SESS" ] && cat <<EOF
+🔴 charter session '$SESS' IS YOUR OWN SESSION.
+   The team spawns as windows beside you, and teardown's session-level kill
+   would terminate you along with it. Give the team its own session, or never
+   run 'tmux kill-session' for it. (See references/teardown.md Step 1.)
+EOF
+
+# (b) 🟡 .gitignore, per worktree — NOT per team. Same charter can be safe for
+#     some members and unsafe for others when members live in different repos.
+grep -E '^\s*(worktree|cwd):' "$CHARTER" | awk '{print $2}' | while read -r wt; do
+  [ -d "$wt" ] || continue
+  owner=$(git -C "$wt" rev-parse --show-toplevel 2>/dev/null) || continue
+  case "$wt" in "$owner"/*)
+    git -C "$owner" check-ignore -q "$wt" 2>/dev/null \
+      || echo "🟡 $wt is inside $owner and NOT ignored there — it will sit untracked forever" ;;
+  esac
+done
+
+# (c) 🟡 Member names should be prefixed with the team name.
+grep -E '^\s*-?\s*role:' "$CHARTER" | awk '{print $NF}' | while read -r r; do
+  case "$r" in "${TEAM}"*) ;; *) echo "🟡 role '$r' is not prefixed with '$TEAM' — bare 'maw wake $r' can fuzzy-match something else entirely" ;; esac
+done
+```
+
+> **(a)** lucifer's charter declared `session: 84-lucifer`, their own oracle's session. Teardown
+> would have killed them. Nothing warned.
+> **(b)** Their four members span two repos: `maw-rs/agents/` **is** ignored, `maw-ui-lite/agents/`
+> **is not** — *the same charter, safe for half its members.* A single team-level check passes and
+> misses the other two. This is where lucifer's 15 stray directories came from.
+> **(c)** Roles named `coder-a` / `verifier-rs`: `maw wake coder-a --dry-run` from either repo
+> resolved to **`maw-rs` — the repository, not the member.** `team up` passes `--wt` so spawn
+> still works, but any bare `wake` is aimed somewhere unpredictable.
+
 **Step 5 — spawn.**
 
 ```bash

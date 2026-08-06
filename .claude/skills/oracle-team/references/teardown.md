@@ -91,7 +91,27 @@ Cheap, and it is the only thing that makes any later step reversible.
 
 ## Step 1: Kill the session's windows
 
+> ## 🔴 First: is the team's session **your own**?
+>
+> `[found by lucifer, using Gate 0 on a real unspawned charter, 2026-08-06]` This file assumed
+> without ever saying so that the team's session is not the session you are living in. lucifer's
+> `ws-parity-port` charter declares `session: 84-lucifer` — **their own oracle's session**, where
+> `lucifer-oracle` runs. The team would be spawned as extra windows beside them, and any
+> `tmux kill-session -t "=$SESSION"` in teardown **kills the oracle running the teardown.**
+> Nothing in Gate 0, preflight, or this file warned about it.
+
 ```bash
+SELF=$(tmux display-message -p '#{session_name}' 2>/dev/null)
+if [ -n "$SELF" ] && [ "$SELF" = "$SESSION" ]; then
+  echo "🔴 REFUSING: the charter's session ('$SESSION') is the session you are running in."
+  echo "   A session-level kill here terminates you, not just the team."
+  echo "   Kill only the member windows below, and never 'tmux kill-session' for this team."
+  KILL_SESSION=no
+else
+  KILL_SESSION=yes
+fi
+
+# Per-window kill is safe either way, and is what this step actually needs.
 for ROLE in $TARGETS; do
   maw tmux kill "${SESSION}:${ROLE}-oracle" 2>&1 | tail -1
 done
@@ -99,6 +119,10 @@ done
 
 > `maw team down --only` is BROKEN — it kills ALL. Use per-window kill.
 > Always quote `"${SESSION}:name"`, never bare `$SESSION:name`.
+>
+> **Anywhere this skill shows `tmux kill-session -t "=$SESSION"`, gate it on `$KILL_SESSION`.**
+> Per-window kill is enough for teardown; the session-level kill is the only thing that can turn
+> a teardown into suicide, and it buys nothing a window loop does not.
 
 ## Step 2: Git state — the guards that must not be "fixed"
 
@@ -164,14 +188,28 @@ sys.exit(1)")
     [ "$ahead" -gt 0 ] && echo "⚠ $br has $ahead commit(s) not on $BASE_REF — removing its worktree strands them"
   fi
 
-  # lucifer (c): worktrees inside the repo show up as untracked forever
-  case "$wt" in
-    "$ROOT"/*) d=$(basename "$(dirname "$wt")")
-      grep -qs "^${d}/" .gitignore \
-        || echo "⚠ $wt is inside the repo and not in .gitignore — it shows as untracked and is one 'git add .' from being committed" ;;
-  esac
+  # lucifer (c): worktrees inside a repo show up as untracked forever.
+  # Ask GIT, per worktree — not `grep .gitignore` in $ROOT. See the warning below.
+  if [ -n "$wt" ] && [ -d "$wt" ]; then
+    owner=$(git -C "$wt" rev-parse --show-toplevel 2>/dev/null) || owner=""
+    if [ -n "$owner" ] && ! git -C "$owner" check-ignore -q "$wt" 2>/dev/null; then
+      case "$wt" in
+        "$owner"/*) echo "⚠ $wt sits inside $owner and is NOT ignored there — it shows as untracked and is one 'git add .' from being committed" ;;
+      esac
+    fi
+  fi
 done
 ```
+
+> ⚠️ **Check `.gitignore` per worktree, not per team.** `[found by lucifer, 2026-08-06]` Their
+> `ws-parity-port` charter puts members in **two different repos**: `maw-rs/agents/` **is**
+> ignored, `maw-ui-lite/agents/` **is not**. **The same charter is safe for half its members and
+> unsafe for the other half** — a team-level check against `$ROOT` passes and misses two
+> members. This is the exact origin of the 15 stray directories in lucifer's repo today.
+>
+> Use `git check-ignore` against **the repo that actually owns that worktree**, not a `grep` of
+> one `.gitignore`: `grep` misses negations, directory rules, nested `.gitignore` files, and
+> `core.excludesFile` — and it cannot know which repo it should have been reading.
 
 ## Step 3: Release the fleet reservation
 
