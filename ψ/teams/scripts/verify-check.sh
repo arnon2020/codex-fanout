@@ -351,6 +351,12 @@ print(v.strip())
 # ⚠️ ขอบเขตที่ตอบไม่ได้ (พิมพ์เอง ไม่เงียบ):
 #    · ตอบไม่ได้ว่า "บัญชีเสิร์ฟ model นี้ไหม" — ชื่อ model ผิดจะพังข้างใน engine หลัง pane ขึ้น
 #    · ตอบไม่ได้ว่า worker ได้ prompt ไหม (ดู learning 2026-08-04 charter-field-parsed)
+# ── ขอบเขตถาวรของเครื่องมือนี้ — คงที่ทุกรอบโดยธรรมชาติ ไม่ใช่ผลการวัด ───────
+# 🏷️ ajfon 2026-08-06 (รอบ 4): สามข้อนี้เครื่องมือนี้วัดไม่ได้ไม่ว่ารันกี่ครั้ง ⇒ มันคือ
+#    **คำประกาศขอบเขต** ไม่ใช่ **ผลการวัดรอบนี้** ⇒ ต้องอยู่คนละ namespace กับสิ่งที่ผันแปร
+#    ไม่งั้นกฎที่ผูกกับ "มี UNVERIFIED ไหม" จะเป็นจริงตลอดกาลและแยกแยะอะไรไม่ได้
+VC_SCOPE_LINE='enginecheck.scope: out-of-scope=model-served,prompt-delivery,account-quota'
+
 # ── enginelist [dir] ────────────────────────────────────────────────────────
 # "มี alias อะไรให้ใช้บ้างจากตรงนี้" — คำถามแรกของคนที่เข้ามาใน fleet ที่มีอยู่แล้ว
 # 🏷️ atlas 2026-08-06 (finding #2, จุดที่เขาต้องเดามากที่สุดในการรีวิวทั้งรอบ):
@@ -451,7 +457,18 @@ engineone() {
   if [ "$reg_rc" -eq 0 ]; then cmd=$(printf '%s\n' "$reg_out" | sed -n '2s/^ *//p'); fi
   if [ -n "$cmd" ]; then
     printf 'enginecheck.engine: %s PASS resolved=%s %s\n' "$e" "$cmd" "$tail_field"
-    printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
+    printf '%s\n' "$VC_SCOPE_LINE"
+    # 🏷️ ajfon 2026-08-06 (รอบ 4): เดิมบรรทัด scope hardcode UNVERIFIED ทั้งสามค่าทุก code path
+    #    ⇒ กฎของ atlas ("PASS + UNVERIFIED ใด ๆ ⇒ UNVERIFIED") **เป็นเท็จไม่ได้เลย**
+    #    ⇒ contract 3 ค่ายุบเหลือ 2 (FAIL / ไม่-FAIL) และ `overall: PASS` กลายเป็นค่าที่
+    #      พิมพ์ออกมาแต่ห้ามใช้ — **echo กลับทิศ** ซึ่งคือ defect ที่ Gate 0b ตั้งขึ้นมาแก้
+    #    ⇒ แยกสอง namespace: `scope` = ขอบเขตถาวรที่เครื่องมือนี้วัดไม่ได้โดยธรรมชาติ (คงที่)
+    #      · `unverified` = สิ่งที่ **ผันแปรจริงต่อรอบ** ⇒ กฎไปผูกกับตัวหลัง แล้วมันเป็นเท็จได้
+    if [ "$scope" = "dir-absent" ]; then
+      printf 'enginecheck.unverified: answered-from-ancestor=%s\n' "$actual"
+    else
+      printf 'enginecheck.unverified:\n'
+    fi
     printf 'overall: PASS requires-post-boot-verification=true\n'; return 0
   fi
   # 🏷️ ajfon 2026-08-06: **`dir-absent` + ไม่เจอ = "ตอบไม่ได้" ไม่ใช่ "ตอบว่าไม่ผ่าน"**
@@ -462,12 +479,14 @@ engineone() {
   #        เมื่อ dir ถูกสร้าง ⇒ อสมมาตรนี้ตั้งใจ ไม่ใช่ความพลาด
   if [ "$scope" = "dir-absent" ]; then
     printf 'enginecheck.engine: %s UNVERIFIED resolved= %s\n' "$e" "$tail_field"
-    printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED dir-existed=no\n'
-    printf 'overall: UNVERIFIED reason=asked-dir-does-not-exist\n'; return 2
+    printf '%s\n' "$VC_SCOPE_LINE"
+    printf 'enginecheck.unverified: asked-dir-does-not-exist\n'
+    printf 'overall: UNVERIFIED requires-post-boot-verification=true\n'; return 2
   fi
   printf 'enginecheck.engine: %s FAIL resolved= %s\n' "$e" "$tail_field"
-  printf 'enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED\n'
-  printf 'overall: FAIL\n'; return 1
+  printf '%s\n' "$VC_SCOPE_LINE"
+  printf 'enginecheck.unverified:\n'
+  printf 'overall: FAIL requires-post-boot-verification=true\n'; return 1
 }
 
 enginecheck() {
@@ -616,12 +635,18 @@ enginecheck() {
   #    ต่อสมาชิกที่ยึดคอลัมน์ 0 ⇒ เขาต้อง text-scrape ซึ่งคือความเปราะที่ anchored grep มีไว้เลี่ยง
   #    ⇒ พ่น machine block **ควบ** prose ไม่ใช่แทน (prose เป็นครึ่งที่ดีกว่าสำหรับคน — atlas)
   printf '%s\n' "$machine"
+  # รวมสิ่งที่ **ผันแปรจริง** ต่อรอบ — ว่างเมื่อไม่มี ⇒ กฎของ atlas เป็นเท็จได้จริง
+  local unv=""
+  printf '%s\n' "$machine" | grep -q 'pinned=no' && unv="${unv}${unv:+,}unpinned-alias"
+  printf '%s\n' "$machine" | grep -q ' UNVERIFIED ' && unv="${unv}${unv:+,}member-unresolvable"
+  printf '%s\n' "$machine" | grep -q 'scope=dir-absent' && unv="${unv}${unv:+,}answered-from-ancestor"
   # 🏷️ ajfon 2026-08-06: เขาแต่งชื่อ model ที่ไม่มีอยู่จริง (`gpt-5.5-codex` ทั้งที่ default
   #    ของเขาคือ `gpt-5.6-sol`) แล้ว enginecheck ตอบ `overall: PASS rc=0` — **ถูกตามนิยาม**
   #    เพราะเราตรวจว่า *สตริงตรงกัน* ไม่ได้ตรวจว่า *บัญชีเสิร์ฟได้*
   #    ⇒ แต่เราสอนให้ gate grep `^overall:` ⇒ **ขอบเขตนั้นต้องอยู่ในผลลัพธ์ ไม่ใช่แค่ในเอกสาร**
   #    ⇒ พ่นเป็น machine key ยึดคอลัมน์ 0 เพื่อให้ gate เห็นข้อจำกัดพร้อมกับคำตัดสิน
-  echo "enginecheck.scope: model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED"
+  printf '%s\n' "$VC_SCOPE_LINE"
+  printf 'enginecheck.unverified: %s\n' "$unv"
   if [ $fail -eq 0 ]; then
     # 🏷️ atlas 2026-08-06: `overall: PASS` อยู่บรรทัดเดียวกับ `model-served=UNVERIFIED` ได้
     #    ⇒ gate ที่ grep แค่ `^overall:` รับ worker ที่ไม่เคยยืนยัน model —
@@ -632,7 +657,7 @@ enginecheck() {
     echo "ENGINECHECK OK   [ขอบเขต: ไม่ได้ตรวจว่าบัญชีเสิร์ฟ model นี้ได้ · ไม่ได้ตรวจว่า prompt ถึง worker]"
     return 0
   fi
-  echo "overall: FAIL"
+  echo "overall: FAIL requires-post-boot-verification=true"
   echo "ENGINECHECK FAILED   อย่า spawn จนกว่าจะแก้ — ทีมจะขึ้นด้วย engine ที่ไม่ได้ขอ โดยไม่มี error"
   return 1
 }
@@ -834,6 +859,17 @@ YAML
     printf '%s\n' "$o10e" | grep -q '^overall: UNVERIFIED' || { echo "   ✗ ควรพ่น ^overall: UNVERIFIED"; fail=1; }
     # แต่ dir ที่มีจริงและหาไม่เจอ ต้องยัง FAIL — ไม่งั้นเราลบความสามารถในการตกทิ้ง
     engineone __no_such_engine__ /tmp >/dev/null 2>&1; [ "$?" = "1" ] || { echo "   ✗ dir มีจริง+ไม่เจอ ควร rc=1"; fail=1; }
+    echo "8i) enginecheck.unverified ต้อง **ว่างได้จริง** ไม่งั้นกฎของ atlas เป็นเท็จไม่ได้ (ajfon r4)"
+    # เกณฑ์ที่ให้ผลเดียวเสมอ แยกแยะอะไรไม่ได้ — echo กลับทิศ
+    local o10f o10g
+    o10f=$(engineone codex . 2>/dev/null || true)
+    printf '%s\n' "$o10f" | grep -q '^enginecheck.unverified:$' \
+      || { echo "   ✗ เคสที่ถูกสมบูรณ์ ควรพ่น unverified ว่าง — ถ้าไม่ว่างเสมอ กฎจะ degenerate"; fail=1; }
+    o10g=$(engineone codex /tmp/__vc_absent__ 2>/dev/null || true)
+    printf '%s\n' "$o10g" | grep -q '^enginecheck.unverified: answered-from-ancestor=' \
+      || { echo "   ✗ dir-absent+เจอ ควรลง unverified เป็น answered-from-ancestor"; fail=1; }
+    printf '%s\n' "$o10f" | grep -q '^enginecheck.scope: out-of-scope=' \
+      || { echo "   ✗ ขอบเขตถาวรต้องอยู่ namespace out-of-scope ไม่ปนกับผลที่ผันแปร"; fail=1; }
   else
     echo "   (ไม่มี maw — ข้าม)"
   fi

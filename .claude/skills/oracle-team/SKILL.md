@@ -512,9 +512,27 @@ Both emit **anchored machine keys at column 0** alongside the human output, so a
 ```
 enginecheck.member: <role> PASS|FAIL|UNVERIFIED engine=<name> resolved=<cmd> [pinned=no]
 enginecheck.engine: <name> PASS|FAIL|UNVERIFIED resolved=<cmd> scope=resolved|dir-absent [answered-from=<path>]
-enginecheck.scope:  model-served=UNVERIFIED prompt-delivery=UNVERIFIED account-quota=UNVERIFIED
+enginecheck.scope: out-of-scope=model-served,prompt-delivery,account-quota
+enginecheck.unverified: [<comma-list>]          ← EMPTY when this run had no variable gaps
 overall: PASS|FAIL|UNVERIFIED requires-post-boot-verification=true
 ```
+Every line is emitted on every run, in that order, with `overall:` last. `enginecheck.member:`
+repeats once per member in roster mode and is absent in `engineone`; `enginecheck.engine:`
+is the reverse.
+
+**Two namespaces, deliberately separate** `[ajfon, 2026-08-06]`:
+
+| line | meaning |
+|---|---|
+| `enginecheck.scope: out-of-scope=…` | things this tool **can never** measure, whatever it is run against. A constant. **Not** a result. |
+| `enginecheck.unverified: …` | gaps **in this particular run** — `unpinned-alias`, `member-unresolvable`, `answered-from-ancestor=<path>`, `asked-dir-does-not-exist`. **Empty means none.** |
+
+> Why they are split: an earlier version put both in one line, hardcoded, so **every run
+> always carried an UNVERIFIED field**. The rule below then evaluated true forever, the
+> three-value contract collapsed to FAIL / not-FAIL, and `overall: PASS` became a value that
+> was printed but must never be trusted. A criterion that always returns the same answer
+> discriminates nothing — the same defect this whole check exists to prevent, pointed the
+> other way.
 
 ### 🔴 `overall:` means ENGINE RESOLUTION ONLY. It is never total readiness.
 
@@ -529,14 +547,18 @@ whole check exists to prevent, one level up.
 | field | read it as |
 |---|---|
 | `overall:` | engine resolution — **necessary, never sufficient** |
+| `enginecheck.unverified:` | **non-empty ⇒ this run had a real gap.** Empty ⇒ it did not. |
 | `pinned=` | `no` ⇒ you got the right binary **by luck**, via `default`; a window-name change breaks it |
 | `scope=` | `dir-absent` ⇒ the answer came from `answered-from=<path>`, **not** the directory you asked about |
-| `model-served=` | `UNVERIFIED` ⇒ only a post-spawn banner settles it |
 
-> **Rule: `overall: PASS` + ANY `UNVERIFIED` sub-field ⇒ treat as UNVERIFIED, never PASS.**
-> `[atlas, T4543 parse contract, 2026-08-06]` A skip or a missing adapter is UNVERIFIED, not a
-> pass — the tool discloses its bounds instead of hiding them, and a gate that ignores the
-> disclosure has re-created the defect.
+> **Rule: `overall: PASS` + non-empty `enginecheck.unverified:` ⇒ treat as UNVERIFIED,
+> never PASS.** `[atlas T4543 contract, 2026-08-06; bound to the variable namespace after
+> ajfon showed the original form could never be false]`
+>
+> `enginecheck.scope: out-of-scope=…` is **not** part of that rule. It is a standing
+> declaration of what the tool cannot see at all, and folding it in makes the rule
+> unfalsifiable. It still tells you the real thing: **only a post-spawn banner settles whether
+> the account serves the model.**
 
 `rc` 0=PASS · 1=FAIL · 2=UNVERIFIED. **UNVERIFIED is not a pass** — it means the check could
 not answer, which is different from answering "fine". Concretely: `engineone <alias> <dir>`
