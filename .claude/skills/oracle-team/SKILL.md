@@ -209,10 +209,14 @@ Idempotent: skip live, relaunch dead, create missing.
 
 **The one rule:** `engine:` in a charter is a *lookup key*, not a setting. It only takes
 effect if `commands.<name>` exists in a config layer visible **from the directory the worker
-runs in**. `model:` in a charter is parsed, validated, then **discarded** — `maw wake` has no
-`--model` flag anywhere in the binary. **A model can only live inside the alias's command
-string.** One alias name = one command = one model. Two members that name the same alias get
-the same model, necessarily.
+runs in**. `maw wake` has no `--model` flag anywhere in the binary, so **a model can only
+live inside the alias's command string.** One alias name = one command = one model. Two
+members naming the same alias get the same model, necessarily.
+
+`model:` in a charter never reaches the pane. When `engine:` is present it is inert. When
+`engine:` is **absent**, it is worse than inert — the model string is used as the engine
+lookup key and silently misses (see 0c). Treat `model:` as a comment; put the real value in
+the alias.
 
 When the key is missing maw does **not** error. It falls through silently:
 `commands.<engine>` → `commands.<window-name>` → `commands.<oracle>-oracle` → glob →
@@ -300,12 +304,28 @@ resolve, and two independent rules decide whether it does:
   `team up` then exits 1 while `--dry-run` stayed green. Prefix every role with the team:
   `refract-scope`, `st-alpha` — not `coder-1`, `verifier`, `reviewer`.
 
-- **Give every member a `worktree:` path.** With `worktree: false`, `team up` sends no
-  `--repo-path`, so wake resolves the name against the oracle registry and boots the member
-  **in whatever repo that name is registered to — not your team's repo.** Your config layer
-  is then invisible to it and the alias silently does not apply. With `worktree: <path>`,
-  `team up` passes `--repo-path`, which both puts the member in the right tree *and* removes
-  the requirement that the name be a registered oracle at all. The path must already exist.
+- **Give every member a `worktree:` path — or a `cwd:`, either works.** `team up` resolves
+  it as `member.worktree` → falls back to `member.cwd` → falls back to **the identity string**
+  (`team_up_helpers.rs:236`). With `worktree: false` it sends no `--repo-path` at all, so wake
+  resolves the name against the oracle registry and boots the member **in whatever repo that
+  name is registered to — not your team's repo.** Your config layer is invisible there and
+  the alias silently does not apply. With a real path, `team up` passes `--repo-path`, which
+  both puts the member in the right tree *and* removes the requirement that the name be a
+  registered oracle. The path must already exist — and note `team up` does **not** expand
+  `${VARS}` in it, so `cwd: ${SOME_ROOT}/role` fails to canonicalize.
+
+- **🔴 A member with `model:` and no `engine:` uses the MODEL STRING as its engine name.**
+  `team up` resolves engine as `-e flag` → `member.engine` → **`member.model`** → `"claude"`
+  (`team_up_helpers.rs:235`). So `model: gpt-5.5` alone produces `wake -e gpt-5.5`, which is
+  not a registered command, and falls through silently. `model:` is genuinely inert *only*
+  when `engine:` is also present. Never write `model:` without `engine:`.
+
+```
+charter:  - role: mfb-a
+            model: gpt-5.5        # no engine:
+dry-run:  mfb-a  mfb-a  gpt-5.5  missing  would fresh wake -e gpt-5.5
+                        ^^^^^^^ the model string became the engine name
+```
 
 ```yaml
 members:
