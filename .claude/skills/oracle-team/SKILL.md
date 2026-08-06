@@ -1193,7 +1193,17 @@ Classify each:
 ### Step 2: Review open PRs — merge greens
 
 ```bash
-gh pr list --repo "$PROJECT" --base "${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed s@^origin/@@ || echo main)}" --state open
+# Derive the base branch ONCE, and default it in a separate step.
+# [verified by running it, 2026-08-06] Writing this as
+#   "${BASE:-$(git symbolic-ref … | sed … || echo main)}"
+# is broken: the `||` binds to the PIPELINE, whose exit status is sed's, and sed
+# succeeds on empty input — so in a repo with no origin the fallback never fires and
+# BASE comes out EMPTY, producing `gh pr list --base ''`. Same
+# rc-of-a-pipeline-is-the-last-command trap as `cmd | grep -q`.
+BASE_DETECTED=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+BASE="${BASE:-${BASE_DETECTED:-main}}"
+
+gh pr list --repo "$PROJECT" --base "$BASE" --state open
 ```
 
 For each PR: base is not `main`, mergeable, CI green, scope matches task.
@@ -1223,7 +1233,7 @@ gh issue list --repo "$PROJECT" --state open
 
 For each idle coder + unassigned issue, dispatch with concrete done-criteria:
 ```bash
-maw hey "${SESSION}:${ROLE}-oracle" "TASK: <what> — done: cargo test + cargo clippy green, commit on branch, PR --base alpha, never main"
+maw hey "${SESSION}:${ROLE}-oracle" "TASK: <what> — done: tests+lint green for THIS project, commit on your own branch, open the PR against ${BASE} (never the repo default unless that IS ${BASE})"
 ```
 
 **NO-GAP DISPATCH**: when confirming a coder's done, include next task in same message.
@@ -1255,7 +1265,9 @@ for ROLE in $CODERS; do
   maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | grep -n . | head -12
 done
 echo "--- PRs ---"
-gh pr list --repo "$PROJECT" --base "${BASE:-$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed s@^origin/@@ || echo main)}" --state open 2>/dev/null || echo "no PRs"
+BASE_DETECTED=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+BASE="${BASE:-${BASE_DETECTED:-main}}"
+gh pr list --repo "$PROJECT" --base "$BASE" --state open 2>/dev/null || echo "no PRs"
 ```
 
 ---
