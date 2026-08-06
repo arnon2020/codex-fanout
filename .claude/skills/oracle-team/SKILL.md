@@ -294,6 +294,22 @@ PY
 > **(b)** Their four members span two repos: `maw-rs/agents/` **is** ignored, `maw-ui-lite/agents/`
 > **is not** — *the same charter, safe for half its members.* A single team-level check passes and
 > misses the other two. This is where lucifer's 15 stray directories came from.
+> ### ✅ Step 4b's evidence — four houses, measured before and after the fix
+>
+> `[2026-08-06]` Each ran the same charter with the same commands; **only the skill changed.**
+>
+> | house | (a) session | (b) gitignore | (c) prefix | (d) worktree | Step 2b orphans |
+> |---|---|---|---|---|---|
+> | **lucifer** n=65 | 🔴 found `t4527-wake-parity.yaml`, a **second** charter on their own session they did not know existed | **0 → 8** · negative arm holds (`maw-rs` 0, genuinely ignored) | 357 → **65 lines** | 0/65 — negative arm only | — |
+> | **ajfon** | 🔴 fires — charter says `40-ajfon`, they run in `40-ajfon` | **0 → 3/3**, confirmed with `check-ignore -v` rc=1 | 3 → 1 line | correctly silent | **found all 5 stranded worktrees, `ahead` 2/0/7/4/7 — matching their manual count exactly** |
+> | **atlas** | true negative | **0 → 2**, sanity-checked directly, not taken from loop output | 4 → 1 line | — | — |
+> | **prism** | true negative | silent (member dirs are not git repos) — **skips, does not error** | 8 → 1 line | correctly silent | — |
+>
+> **(a) is the one that justifies the whole step**: it fired in *two* houses, and in lucifer's it
+> found a charter they had no memory of. **(d) has a passing negative arm and no positive
+> evidence yet** — lucifer's 65 charters all declare a path, so only tars has a real case.
+> Recorded as *unproven*, not as *passing*.
+
 > **(c)** Roles named `coder-a` / `verifier-rs`: `maw wake coder-a --dry-run` from either repo
 > resolved to **`maw-rs` — the repository, not the member.** `team up` passes `--wt` so spawn
 > still works, but any bare `wake` is aimed somewhere unpredictable.

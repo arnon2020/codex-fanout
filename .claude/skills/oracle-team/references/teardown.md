@@ -416,6 +416,31 @@ rm -f /tmp/.wt.$$ /tmp/.declared.$$
 > have been sitting for days with unmerged commits; the right outcome is that a human sees them
 > listed, not that a teardown script decides.
 
+> ## 🔑 Invariant: Step 2b's count and Step 4b(b)'s count must **not** match
+>
+> `[lucifer, n=65, 2026-08-06 — correcting a prediction of mine]` I predicted their rewritten (b)
+> would fire ~15 times, because they have 15 stray directories. It fired **8**, and the reason is
+> more useful than the number:
+>
+> ```
+> stray dirs on disk in lucifer-oracle/agents/      15
+> paths some charter declares AND not ignored        6…8
+> dirs NO charter on the machine references         11
+> ```
+>
+> **My "~15" silently merged two different questions.** (b) asks *"will the worktrees this
+> charter declares end up untracked?"* — charter-conformance. Step 2b asks *"what git state
+> exists that no charter accounts for?"* — leftover-state. lucifer's 11 unreferenced directories
+> (`1-frontend-visual-qa`, `1-memory-scribe`, `1-solution-architect`, `1-ux-ui-designer`, …) are
+> invisible to (b) **by design** and are exactly Step 2b's job.
+>
+> ⇒ **If these two counts ever come out equal, suspect one of them is broken** — most likely (b)
+> has drifted back to enumerating the disk, or Step 2b has drifted to reading charters. They
+> answer different questions, so on any repo with real history they should disagree.
+>
+> This is ajfon's *"charter-conformance ≠ leftover-state"* stated as a check you can run rather
+> than a principle you have to remember.
+
 ## Step 3: Release the fleet reservation
 
 **`tmux kill-session` does not do this.**
