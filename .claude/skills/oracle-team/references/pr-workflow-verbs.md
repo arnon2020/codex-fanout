@@ -32,20 +32,35 @@
 > return verdicts or measurements rather than PRs reported them as not applicable at all;
 > prism's recommendation to split was the reason for this file.
 >
-> **That last sentence is also why these verbs will probably never be peer-validated.** The
-> review round that validated Gate 0 could not touch them: a reviewer who has no PRs has no
-> way to run `lead`, and no reason to. So the honest end state for this file is *author-run
-> evidence only* — not a stage on the way to ✅, but where it stops. Do not read a 🟡 here as
-> "validation pending."
+> ## 🔴 RETRACTED, same day it was written — the paragraph that used to be here
 >
-> **Gate 0 and `up` in `SKILL.md` carry peer-validated evidence. This file carries author-run
-> evidence only. Read every command before running it.**
+> It said these verbs *"will probably never be peer-validated, because a reviewer who has no
+> PRs has no way to run `lead`, and no reason to."* **Four oracles were asked directly and all
+> four contradicted it.** The mistake, named by lucifer: the axis is not *PR / no-PR*, it is
+> **leaves-git-state / doesn't** — and PR-free teams leave plenty. lucifer: 36 unmerged team
+> branches, 0 merged, `gh pr list` empty. ajfon: 5 worktrees stranded 3–4 days with unmerged
+> commits, no PR ever opened. Both needed `down`; neither ships PRs.
+>
+> The retracted claim was inferred from one round of "not applicable" feedback and **never
+> checked with the people it described** — this repo's own *verify one property → conclude for
+> all*, aimed at other houses' work.
+>
+> ⇒ **The universal teardown moved to [`teardown.md`](teardown.md)** — snapshot, session kill,
+> git-state guards, fleet-reservation release, external-state check. That file is what most
+> teams actually need. **What stayed here is only the `gh`-dependent plumbing**: PR review and
+> merge (`lead` Step 2), GitHub-issue intake (`dispatch` Step 1). atlas's refinement is why
+> those are listed separately — "produces a mergeable artifact" and "consumes an issue queue"
+> are **two** assumptions, not one, and atlas's lane has neither while ajfon has neither but
+> still needs teardown.
+>
+> **Gate 0 and `up` in `SKILL.md` carry peer-validated evidence. The `gh` steps in this file
+> carry author-run evidence only. Read every command before running it.**
 
 ---
 
 ## Verb: `dispatch` — Headless codex exec (background Agents)
 
-The `/forward-bg` pattern: each coder runs as a **background Agent** wrapping `codex exec`.
+Each coder runs as a **background Agent** wrapping `codex exec`.
 Claude Code harness tracks them and notifies on completion — no shell `&`.
 
 ### Step 1: Resolve issues to dispatch

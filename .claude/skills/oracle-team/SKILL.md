@@ -14,11 +14,18 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 > any team on any layout. Independently arrived at, verb-for-verb, by prism before they read
 > this file, and reviewed by five oracles. Use it.
 >
-> **`dispatch` / `down` / `lead` — moved out to `references/pr-workflow-verbs.md`.** They
-> assume one specific workflow — GitHub issues in, PRs out, members in disposable git
-> worktrees — and **every one of them was defective the first time it was executed.** They are
-> fixed there and still unvalidated. Do not reach for them because the verb name sounds
-> generic; if your team returns a verdict or a measurement rather than a PR, they do not apply.
+> **`down` (teardown) → [`references/teardown.md`](references/teardown.md) — read this one.**
+> Every team leaves state behind; only the *kind* differs. Four oracles measured their own
+> houses on 2026-08-06: worktrees and unmerged branches (lucifer 36, ajfon 5), stale fleet
+> reservations (**66 of 73 on this machine hold names of sessions that no longer exist**), and
+> systemd timers still firing at a cell that was frozen rather than torn down (prism). None of
+> those four ships PRs.
+>
+> **`dispatch` / `lead` — the `gh` half stays in
+> [`references/pr-workflow-verbs.md`](references/pr-workflow-verbs.md).** Those steps assume
+> GitHub issues in and PRs out; **every verb in that file was defective the first time it was
+> executed**, and the `gh` steps are still author-run only. Do not reach for them because the
+> verb name sounds generic.
 >
 > | part | evidence |
 > |---|---|
@@ -402,8 +409,11 @@ One skill, five verbs. Reads everything from the charter (`ψ/teams/*.yaml`).
 | **tmux panes** | `up` | `maw team up` — persistent TUI coders | `maw peek` |
 | **headless** | `dispatch` | background Agent → `codex exec` — fire-and-forget | harness notifies on completion |
 
-Headless is the `/forward-bg` pattern: Haiku Agent wrapping `codex exec` with `run_in_background: true`.
-Claude Code harness tracks it and notifies when done. No shell `&` (invisible to harness).
+**Headless** means: no tmux pane, no persistent agent. You spawn a cheap background Agent whose
+only job is to run one `codex exec …` to completion and report back. Use
+`run_in_background: true` so the Claude Code harness tracks it and notifies you when it finishes
+— **never a shell `&`**, which the harness cannot see. (Some older notes call this the
+`/forward-bg` pattern; that is just a name for this shape, not a command you can run.)
 
 ---
 
@@ -771,7 +781,9 @@ The **only** survivor is a bool derived from whether the key `defaults.worktree`
 > 🪞 **There is a green unit test whose NAME is the false-confidence surface.**
 > `team_core.rs:763` is called
 > `team_charter_preserves_defaults_engines_and_coerces_yaml_worktree_true` and asserts that
-> `defaults.get("branch")` and `engines.get("omx-1")` round-trip through the parser. That is
+> `defaults.get("branch")` and `engines.get("omx-1")` round-trip through the parser
+(`"omx-1"` is maw's own fixture string in that test — **not an engine you can use**; nothing
+called `omx` exists on this machine). That is
 > true and proves only that the **parser stores** them — never that anything **consumes**
 > them. A suite passing with a test named *preserves_defaults_engines* reads like "defaults
 > and engines work". This is how a dead field survives with CI green, and it is the same shape
@@ -980,18 +992,32 @@ For each coder, verify against charter:
   `[verified 2026-08-06: wake coder-1 -e codex-xhigh → claude --model claude-opus-5]`
 - `gpt-5.5 low` → CODEX_HOME config has `model_reasoning_effort = "low"` → set to `xhigh`
 - Garbage files in worktree → model too dumb to parse prompt → fix reasoning_effort
-- Auto-exploring → omx --madmax starts working immediately → need "WAIT for maw hey" in prompt
+- Auto-exploring → some engines start working the moment they boot, before your first `maw hey`
+  → put "WAIT for maw hey before doing anything" in the charter prompt
 
 Report table: role, engine (expected vs actual), model, worktree, status (pass/fail).
 
 ---
 
-## Verbs `dispatch` / `down` / `lead` — moved to `references/pr-workflow-verbs.md`
+## Verbs `down` / `dispatch` / `lead` — moved to `references/`
 
 🔴 **Split out on 2026-08-06 because every one of them was defective on first execution** --
 `down` committed a `.env` file, `down --clean` deleted an unrelated branch, `dispatch` built a
 malformed command under `--dangerously-bypass-approvals-and-sandbox`, `lead` produced
-`--base ''`. All are fixed there; **none has ever been run against a real team.**
+`--base ''`. All are fixed there.
+
+- **[`references/teardown.md`](references/teardown.md)** — `down`, universal. Applies to every
+  team, PR or not. Peer-confirmed as needed by atlas, ajfon, prism and lucifer, two of whom
+  have leftovers right now that these steps target. Steps 1–2 and 5 are author-run twice;
+  Steps 0, 3, 4 are built from their measurements and **have not been executed by anyone.**
+- **[`references/pr-workflow-verbs.md`](references/pr-workflow-verbs.md)** — the `gh`-dependent
+  half of `dispatch` and `lead`: GitHub-issue intake, PR review and merge. Author-run only, and
+  the issue-intake path has never been run at all.
+
+> ⚠️ A second-order finding worth carrying: the rule *"merge greens immediately (standing
+> approval)"* was removed from `lead` and **survived in this file's rules list** until ajfon's
+> read caught the neighbouring problem. Fixing one site is not fixing the claim —
+> `grep` every surface.
 
 They also assume a workflow this skill does not otherwise require: GitHub issues in, PRs out,
 members in disposable git worktrees. If your team returns a verdict or a measurement, they do
@@ -1026,11 +1052,18 @@ gh pr list --repo "$PROJECT" --base "$BASE" --state open 2>/dev/null || echo "no
 4. Never `git worktree remove --force` — commit-save first.
 5. Branches survive worktree removal → committed work is never lost.
 6. Always brace zsh vars: `"${SESSION}:${ROLE}-oracle"` not `$SESSION:$ROLE`.
-7. PR → alpha only. Never push/merge to main.
-8. Merge greens immediately (standing approval).
+7. Never push or merge to `main`. **`alpha` is not a universal base** — it was this author's
+   repo's convention, hardcoded here and in `lead`. ajfon has no `alpha` and no PRs at all.
+   Detect the base (`git symbolic-ref --short refs/remotes/origin/HEAD`), fall back to `main`.
+8. 🔴 **Never merge a PR without human approval.** An earlier line here read *"merge greens
+   immediately (standing approval)"* — it was removed from `lead` on 2026-08-06 and **survived
+   in this list**, which is exactly the single-surface-fix failure this file warns about
+   elsewhere. It violated both prism's owner rule and this repo's own golden rules. Report
+   merge candidates; a human merges.
 9. NO-GAP dispatch: next task in same message as done confirmation.
-10. Never nag coders about context — omx auto-compacts.
-11. SendMessage = silent no-op for omx — always use `maw hey`.
+10. Context handling differs per engine — check before assuming auto-compaction.
+11. `SendMessage` does not reach a tmux pane — always use `maw hey`, and prefer
+    `verify-check.sh relay` so the target is validated and `delivered` is actually read.
 12. For Rust: build gate = `cargo test` + `cargo clippy -- -D warnings`.
 13. Headless dispatch uses background Agent (run_in_background=true), NOT shell `&`.
 14. Haiku wraps codex exec — cheap wrapper, real work is codex (gpt-5.5/o3).

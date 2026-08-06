@@ -125,6 +125,16 @@ relay() {
        echo "          หาได้จาก: maw ls -v"; return 2 ;;
   esac
 
+  # 🩹 2026-08-06 [verified: ยิงจริงแล้วโดน] ข้อความที่ **ขึ้นต้นด้วย `[`** ถูก maw ปฏิเสธ:
+  #    "hey: bracket-prefixed hey text is reserved for signed transport prefixes"
+  #    เพราะ maw เติม prefix ของมันเอง (`[local:<from>]`) ⇒ วงเล็บนำถูกจองไว้
+  #    รูปนี้ล่อมาก: `[codex-fanout → ajfon] ...` เป็นหัวข้อความที่เขียนกันทั้ง fleet
+  #    ดักที่นี่เพราะข้อความของ maw ไม่ได้บอกว่าต้องทำอะไรต่อ
+  case "$msg" in
+    \[*) echo "REFUSED   ข้อความขึ้นต้นด้วย '[' — maw จองไว้ให้ signed transport prefix"
+         echo "          เปลี่ยนหัวเป็น 'codex-fanout → <ใคร> · ...' (ไม่มีวงเล็บนำ)"; return 2 ;;
+  esac
+
   local sess="${target%%:*}" win="${target#*:}"; win="${win%%.*}"
   if ! maw ls -v 2>&1 | grep -qF "$sess"; then
     echo "REFUSED   ไม่พบ session '$sess' ใน maw ls -v"; return 2
