@@ -14,11 +14,29 @@ This is a complete, working sequence, in order, with nothing assumed. It was run
 on 2026-08-06 and produced a live two-member team on two different models. Substitute the
 five values in the first block; change nothing else until it works once.
 
+**Step 0 — check the prerequisites. Each one fails silently if missing.**
+
+```bash
+command -v maw  >/dev/null || { echo "STOP: maw is not on PATH"; exit 1; }
+command -v tmux >/dev/null || { echo "STOP: tmux is not on PATH"; exit 1; }
+git rev-parse --show-toplevel >/dev/null 2>&1 \
+  || { echo "STOP: not inside a git repository — see 'no repo?' below"; exit 1; }
+```
+Why this is a real step, not boilerplate: `ROOT=$(git rev-parse --show-toplevel)` outside a
+repo sets `ROOT` to the **empty string**, and every path after it silently becomes
+`/.maw/...`, `/agents/...`. Nothing errors until a confusing failure several steps later.
+
+> **No repo?** Teams can live entirely outside one — `~/.maw-teams/<team>/<role>` is a normal
+> layout. In that case set `ROOT=~/.maw-teams/$TEAM`, `mkdir -p "$ROOT"`, and use that
+> everywhere below; the config layer goes at `$ROOT/.maw/maw.config.60.json`. Everything else
+> is identical. You lose only one thing: the layer is then in nobody's git, so it vanishes on
+> a machine move and the symptom is a silently wrong engine, not an error.
+
 ```bash
 # ── things you choose ────────────────────────────────────────────────────────
 TEAM=myteam-v1                       # unique across the machine
 SESSION=$TEAM                        # tmux session name
-ROOT=$(git rev-parse --show-toplevel) # your repo
+ROOT=$(git rev-parse --show-toplevel) # your repo — or ~/.maw-teams/$TEAM, see above
 A=${TEAM}-alpha                      # member 1 — MUST be prefixed with $TEAM (see step 3)
 B=${TEAM}-beta                       # member 2
 ```
@@ -121,8 +139,14 @@ tmux kill-session -t "$SESSION"
 rm -f ~/.maw/fleet/"$SESSION".json
 ```
 
-If all seven steps pass, the mechanism is working and the rest of this skill is about
+If all eight steps pass, the mechanism is working and the rest of this skill is about
 running the team, not standing it up.
+
+> **This QUICKSTART has been run start-to-finish, but only by its author.** It produced a
+> live two-member team on two different models, and one step (`charter not found`) was fixed
+> because following it literally failed there. It has **not** yet been run by someone who did
+> not already know the answers — so if a step assumes knowledge you do not have, that is a
+> defect in this document, not in you. Say which step and what you had to guess.
 
 ---
 
