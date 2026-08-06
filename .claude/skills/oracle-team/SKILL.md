@@ -6,6 +6,124 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 
 # /oracle-team — Unified Codex Team Lifecycle
 
+---
+
+## QUICKSTART — never built a team before? Run exactly this.
+
+This is a complete, working sequence, in order, with nothing assumed. It was run end-to-end
+on 2026-08-06 and produced a live two-member team on two different models. Substitute the
+five values in the first block; change nothing else until it works once.
+
+```bash
+# ── things you choose ────────────────────────────────────────────────────────
+TEAM=myteam-v1                       # unique across the machine
+SESSION=$TEAM                        # tmux session name
+ROOT=$(git rev-parse --show-toplevel) # your repo
+A=${TEAM}-alpha                      # member 1 — MUST be prefixed with $TEAM (see step 3)
+B=${TEAM}-beta                       # member 2
+```
+
+**Step 1 — register the engines you want, with the model baked in.**
+This is the only place a model can be expressed. Filename must be `maw.config.<digits>.json`
+with a number above 50.
+
+```bash
+mkdir -p "$ROOT/.maw"
+cat > "$ROOT/.maw/maw.config.60.json" <<'JSON'
+{ "commands": {
+    "team-codex-hi": "codex --model <MODEL-A> --ask-for-approval never --sandbox danger-full-access",
+    "team-codex-lo": "codex --model <MODEL-B> --ask-for-approval never --sandbox danger-full-access"
+} }
+JSON
+```
+Do not invent model names. Use one your account actually serves — check what a working
+engine already uses: `grep '^model' ~/.codex/config.toml`.
+
+**Step 2 — create each member's working directory. It must exist before spawn.**
+
+```bash
+mkdir -p "$ROOT/agents/$A" "$ROOT/agents/$B"
+```
+
+**Step 3 — write the charter.** Two rules that will otherwise cost you an hour:
+member names must be **unique across the whole fleet** (prefix with the team name), and every
+member needs a real `worktree:` path (without one, the member boots in whatever repo its
+*name* is registered to, and your engine aliases are invisible there).
+
+```bash
+mkdir -p "$ROOT/ψ/teams"
+cat > "$ROOT/ψ/teams/$TEAM.yaml" <<YAML
+name: $TEAM
+project: <owner>/<repo>
+session: $SESSION
+members:
+  - role: $A
+    name: $A
+    engine: team-codex-hi
+    worktree: agents/$A
+    branch: alpha
+  - role: $B
+    name: $B
+    engine: team-codex-lo
+    worktree: agents/$B
+    branch: alpha
+YAML
+```
+
+**Step 4 — prove the aliases are actually visible.** Not optional: `maw team preflight` and
+`maw team up --dry-run` are both green even when this is broken.
+
+```bash
+cd "$ROOT/agents/$A"
+maw config sources        # your maw.config.60.json MUST be listed here
+maw wake "$A" --no-attach --dry-run -e team-codex-hi        --repo-path "$ROOT/agents/$A"
+maw wake "$A" --no-attach --dry-run -e __no_such_engine__   --repo-path "$ROOT/agents/$A"
+cd "$ROOT"
+```
+Read both `command:` lines. **They must differ.** Identical output means your alias was
+discarded and both fell through to the same default — fix that before going on.
+
+**Step 5 — spawn.**
+
+```bash
+maw team up "$TEAM" --dry-run     # sanity: roles + engines listed
+maw team up "$TEAM"               # real
+```
+Two failures you will probably hit here, and neither error explains itself:
+
+- **`charter not found: <team>`** — `maw team up` looks for the charter **relative to your
+  current directory** (`./.maw/teams/<team>.yaml`, then `./ψ/teams/<team>.yaml`). Step 4 left
+  you inside a member directory. `cd "$ROOT"` and re-run. Nothing is wrong with the charter.
+- **`exited with exit status: 1`** — almost always a member name that is ambiguous
+  fleet-wide. The message names no member; re-run the failing one by hand to see the reason:
+  `maw wake "$A" --no-attach --session "$SESSION" -e team-codex-hi`
+
+**Step 6 — peek every member. A spawn that "succeeded" often has not booted.**
+
+```bash
+sleep 15
+tmux capture-pane -p -t "$SESSION:$A" | tail -20
+tmux capture-pane -p -t "$SESSION:$B" | tail -20
+```
+- Sitting on `✨ Update available!` → send `2` + Enter, then peek again.
+- A bare shell prompt → the engine never started; go back to step 4.
+- Expected: the engine's own banner with `model: <MODEL-A> ...` — **confirm each member shows
+  the model you asked for.** This is the only check that covers whether the account can serve
+  that model; nothing earlier does.
+
+**Step 7 — tear down completely.** Killing tmux is not enough; the fleet entry keeps
+claiming your member names and breaks the *next* team.
+
+```bash
+tmux kill-session -t "$SESSION"
+rm -f ~/.maw/fleet/"$SESSION".json
+```
+
+If all seven steps pass, the mechanism is working and the rest of this skill is about
+running the team, not standing it up.
+
+---
+
 One skill, five verbs. Reads everything from the charter (`ψ/teams/*.yaml`).
 
 ```
