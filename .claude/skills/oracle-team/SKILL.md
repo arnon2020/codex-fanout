@@ -56,8 +56,21 @@ B=${TEAM}-beta                       # member 2
 This is the only place a model can be expressed. Filename must be `maw.config.<digits>.json`
 with a number above 50.
 
+> 🔴 **`$ROOT/.maw` is correct only if your members live UNDER `$ROOT`.** The layer must sit
+> at a **common ancestor of the member directories**, and nothing else. `[lucifer 2026-08-06 —
+> their 10-role team runs from `~/.maw-teams/<team>/<role>/`, which sees only the global
+> layer, so every role fell through to claude-opus-5 while the charter asked for codex-xhigh]`
+>
+> ```bash
+> # members under $ROOT/agents/<role>      → LAYER_DIR="$ROOT/.maw"
+> # members under ~/.maw-teams/<team>/<role> → LAYER_DIR=~/.maw-teams/<team>/.maw
+> # members under ${STATE_ROOT}/<role>     → LAYER_DIR="${STATE_ROOT}/.maw"
+> cd "<one member's directory>" && maw config sources   # ← your layer MUST appear
+> ```
+> Check it from a member's directory, not from where you are standing. See 0a for the table.
+
 ```bash
-mkdir -p "$ROOT/.maw"
+mkdir -p "$ROOT/.maw"       # ← or LAYER_DIR from the box above
 cat > "$ROOT/.maw/maw.config.60.json" <<'JSON'
 { "commands": {
     "team-codex-hi": "codex --model <MODEL-A> --ask-for-approval never --sandbox danger-full-access",
@@ -161,6 +174,20 @@ maw wake "$A" --no-attach --dry-run -e team-codex-hi        --repo-path "$ROOT/a
 maw wake "$A" --no-attach --dry-run -e __no_such_engine__   --repo-path "$ROOT/agents/$A"
 cd "$ROOT"
 ```
+
+> 🔁 **More than two or three members? Do not eyeball this.** `[lucifer 2026-08-06 — at 10
+> roles the two-command form is 20 invocations compared by hand, and the doc shipped no loop]`
+> Either run `scripts/verify-check.sh enginecheck <charter>`, which does exactly this per
+> member and prints a verdict, or loop it yourself:
+> ```bash
+> while IFS=$'\t' read -r ROLE DIR ENG; do
+>   real=$(maw wake "$ROLE" --no-attach --dry-run -e "$ENG"                --repo-path "$DIR" 2>&1 | sed -n 's/^ *command: *//p')
+>   ctrl=$(maw wake "$ROLE" --no-attach --dry-run -e __no_such_engine__    --repo-path "$DIR" 2>&1 | sed -n 's/^ *command: *//p')
+>   [ -n "$real" ] && [ "$real" != "$ctrl" ] \
+>     && echo "OK   $ROLE  $real" \
+>     || echo "FAIL $ROLE  (alias not read — same as control, or no output)"
+> done < <(your role/dir/engine triples)
+> ```
 Read both `command:` lines. **They must differ.** Identical output means your alias was
 discarded and both fell through to the same default — fix that before going on.
 
@@ -343,10 +370,14 @@ Otherwise **make the operator name the team — do not guess.**
 #    wrong team silently and every later step operates on it.
 if [ -z "${TEAM:-}" ]; then
   echo "Charters here — pass TEAM=<name> (the FILE STEM, see below):" >&2
-  ls "$ROOT"/ψ/teams/*.yaml "$ROOT"/.maw/teams/*.yaml 2>/dev/null | xargs -rn1 basename >&2
+  # .json charters are real and a *.yaml glob silently misses them — lucifer's .maw/teams
+  # holds 67 files, 2 of which are .json. [lucifer 2026-08-06]
+  ls "$ROOT"/ψ/teams/*.yaml "$ROOT"/ψ/teams/*.json \
+     "$ROOT"/.maw/teams/*.yaml "$ROOT"/.maw/teams/*.json 2>/dev/null | xargs -rn1 basename >&2
   exit 1
 fi
-CHARTER=$(ls "$ROOT"/ψ/teams/"$TEAM".yaml "$ROOT"/.maw/teams/"$TEAM".yaml 2>/dev/null | head -1)
+CHARTER=$(ls "$ROOT"/ψ/teams/"$TEAM".yaml "$ROOT"/ψ/teams/"$TEAM".json \
+             "$ROOT"/.maw/teams/"$TEAM".yaml "$ROOT"/.maw/teams/"$TEAM".json 2>/dev/null | head -1)
 [ -f "$CHARTER" ] || { echo "no charter for '$TEAM'" >&2; exit 1; }
 ```
 
@@ -500,10 +531,34 @@ fail; a single green line on its own proves nothing.
 VC=~/.claude/skills/oracle-team/scripts/verify-check.sh
 
 bash "$VC" enginelist <dir>               # WHICH aliases exist here — start with this
+
 bash "$VC" enginecheck <charter|team>     # whole roster, per member, from each member's path
 bash "$VC" engineone <engine> <dir>       # ONE engine, ONE directory — for single-worker gates
 bash "$VC" teamclosed <team>              # is the team really gone (asks tmux first, not maw)
 bash "$VC" selftest                       # run this before trusting any of the above
+```
+
+### The other scripts shipped in `scripts/` — status, because it is not what you'd assume
+
+`[lucifer 2026-08-06: none of these were referenced anywhere in this document, while one of
+them describes the exact failure mode at 9-10 roles that the document lists as a symptom with
+the wrong cause]`
+
+| script | what it is | status **on this machine** |
+|---|---|---|
+| `setup-codex-home.sh`, `codex-setup.ts`, `codex-local.ts`, `codex-local.sh` | give each codex member its **own `CODEX_HOME`**, seeded from a shared credential pool at `~/.codex-team/<N>` | 🔴 **no-ops.** `~/.codex-team/` is empty, so it finds no pool, creates nothing, prints a paste-ready engine block pointing at directories that do not exist — and **exits 0** |
+
+**Why you may still need what they do.** Without a per-member `CODEX_HOME`, every codex member
+shares `~/.codex`. `maw team preflight` flags this (`✗ CODEX_HOME isolation: … share
+/home/user/.codex`) and the script headers describe losers of the SQLite/PID race booting to a
+**bare shell** — which is the "bare shell prompt" symptom in Step 6 whose cause this document
+otherwise gets wrong. Observed fine with 2-5 concurrent members; the scripts were written after
+17+ raced on one home.
+
+⚠️ **A pinned `CODEX_HOME` also loses `~/.codex/config.toml`** — including `model` and
+`model_reasoning_effort`. Copy or symlink that file into each home, or pin both in the alias.
+
+```bash
 ```
 
 Both emit **anchored machine keys at column 0** alongside the human output, so a gate can
@@ -668,11 +723,19 @@ rm -f ~/.maw/fleet/"$SESSION".json      # otherwise the names stay claimed
 
   > ❌ **This bullet previously said the opposite** — "member identities must already be
   > wake-resolvable… you cannot invent arbitrary member names" — which contradicted 0c three
-  > bullets above and made readers with a new lane stop before starting. It also quoted an
-  > error string that does not exist (`wake: '<name>' was not found`; the real text is
-  > `wake: repo not found for <name>`). It was never true, not merely stale: it described the
-  > no-path case as if it were the general rule. Grepping for outdated wording would never
-  > have found it — only running the case did.
+  > bullets above and made readers with a new lane stop before starting. It was never true,
+  > not merely stale: it described the no-path case as if it were the general rule. Grepping
+  > for outdated wording would never have found it — only running the case did.
+
+  **Without a path there are TWO different failures, and one of them exits 0.**
+  `[lucifer 2026-08-06 — my first correction of this bullet named only the first form and
+  called the second nonexistent, which over-corrected in the other direction]`
+  ```
+  wake: repo not found for <name>                                    rc=1
+  wake: '<name>' was not found exactly. Found nearby: …              rc=0   ← fuzzy candidates exist
+  ```
+  The second is the common one on a populated fleet, and **`maw team up` swallows it**: the
+  name half-matches something, nothing spawns, and the exit code says fine.
 
   Name collisions are still real when a member has **no** path (see the fleet-unique rule in
   0c), so keep prefixing roles with the team name. With a path, a collision-prone name like
