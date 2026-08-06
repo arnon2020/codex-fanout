@@ -149,29 +149,54 @@ Cheap, and it is the only thing that makes any later step reversible.
 > `tmux kill-session -t "=$SESSION"` in teardown **kills the oracle running the teardown.**
 > Nothing in Gate 0, preflight, or this file warned about it.
 
-> ## 🔴 `maw tmux kill` IS NOT A COMMAND — and it fails by printing and returning 0
+> ## 🔴 `maw tmux kill` silently accepted a target form it cannot resolve — and this file hid the error
 >
-> `[verified by running teardown against a live team, 2026-08-06]` Every earlier version of this
-> step, and of `SKILL.md`, said to kill member windows with `maw tmux kill`. **There is no such
-> subcommand:**
+> `[measured on a throwaway session, 2026-08-06 — third version of this box, see below]`
+> Every earlier version of this step, and of `SKILL.md`, killed member windows with:
 >
-> ```
-> $ maw tmux --help
-> usage: maw tmux <ls|peek|split|attach|break> [...]
->
-> $ maw tmux kill "rt3team:rt3-a-oracle"
-> tmux kill: pane 'rt3team:rt3-a-oracle' not found     ← on stdout
-> $ echo $?
-> 0                                                     ← success
-> $ tmux list-windows -t "=rt3team"
-> rt3-a-oracle    rt3-b-oracle                          ← both still alive
+> ```bash
+> maw tmux kill "${SESSION}:${ROLE}-oracle" 2>&1 | tail -1     # the old Step 1
 > ```
 >
-> **The verb's primary action did nothing, said "not found" as though the window were already
-> gone, and reported success.** Worse, the surrounding text recommended it *as the fix* for
-> `maw team down --only` being broken — a broken command replaced by a nonexistent one. This is
-> the `maw` pattern this repo already documented for `maw team status`: **rc lies, the real
-> message goes to stdout.** Use `tmux kill-window` and **verify the window is gone.**
+> **`maw tmux kill` only resolves the numeric form `session:INDEX.PANE`.** Measured against a
+> session with windows `victim-oracle` and `keeper-oracle`:
+>
+> | target passed | rc | window killed? |
+> |---|---|---|
+> | `$S:victim-oracle` — **the form this skill used** | 1 | **no** |
+> | `$S:victim-oracle.0` | 1 | **no** |
+> | `$S:0.0` | **0** | **yes** |
+>
+> A charter gives you role names, so this skill only ever built the name form — **the one that
+> never matches.** maw said so every time (`pane '…' not found`, rc=1), and
+> **`| tail -1` threw the exit status away**: `$?` after that pipeline is *tail's*, which is 0.
+> The pipe was there to keep output tidy, and it silenced the only signal that mattered.
+>
+> ⇒ Use `tmux kill-window`, which accepts window **names**; never pipe a command whose exit
+> status you intend to read; and **verify the window is gone** instead of trusting rc or message.
+>
+> ### 🔁 This box was wrong twice before it was right. Both corrections came from peers.
+>
+> **v1 said `rc=0` — "maw lies about its exit code."** False, and false *by the mechanism it was
+> describing*: the rc was read through `maw … | tail -1`, so the 0 was tail's. atlas and ajfon
+> both ran it unpiped, got **rc=1**, and reported the mismatch. `PIPESTATUS` settles it: `1` maw,
+> `0` tail. **The pipeline-rc trap — which this repo has a selftest for — was used to diagnose a
+> different silent failure, and produced one.** atlas flagged it as an unreproducible difference
+> rather than a correction, because their target was fabricated and this one was a live window:
+> right discipline, and the simpler explanation was still mine.
+>
+> **v2 said "there is no such subcommand."** Also false. lucifer read the source: `kill` **is
+> implemented**, in `crates/maw-cli/src/core_impl/tmux_kill.rs`, registered through
+> `TMUX_SUB_FRAGMENTS` rather than `TMUX_BUILTIN_SUBS` — so the **hand-written** usage string
+> (`tmux_dispatch.rs:37`) lists only builtins and omits it. I had concluded "does not exist"
+> **from a usage line**, which is this repo's signature error — read one surface, conclude for
+> the whole — committed while documenting that very error class. `strings` on the installed
+> binary shows the symbol; the measurement above shows it working.
+>
+> **What survived all three versions: the fix.** `tmux kill-window` + verify was correct under
+> every explanation, which is why it shipped before the reasoning was settled. **But a right fix
+> with a wrong reason is a trap for the next reader** — they will carry the reason, not the
+> patch. lucifer's ask was exactly that: *"เก็บ fix ไว้ ไม่ต้องเปลี่ยน แต่แก้คำอธิบาย."*
 
 ```bash
 # Are we inside tmux at all, and if so, in which session?
@@ -192,7 +217,8 @@ else
   KILL_SESSION=yes
 fi
 
-# Per-window kill, each one verified. tmux kill-window — NOT `maw tmux kill`, which does not exist.
+# Per-window kill, each one verified. tmux kill-window accepts window NAMES;
+# `maw tmux kill` resolves only session:INDEX.PANE, so a name silently never matches.
 for ROLE in $TARGETS; do
   W="${ROLE}-oracle"
   if ! tmux list-windows -t "=$SESSION" -F '#{window_name}' 2>/dev/null | grep -qx "$W"; then

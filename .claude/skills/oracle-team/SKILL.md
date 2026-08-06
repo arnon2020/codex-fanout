@@ -1097,7 +1097,7 @@ For each coder, verify against charter:
 | Alive? | status bar visible | bare shell `❯` = engine died |
 
 **If any check fails:**
-1. Kill the bad coder: `tmux kill-window -t "=${SESSION}:${ROLE}-oracle"` — **not `maw tmux kill`, which does not exist** (prints "not found", returns 0, window survives). Verify with `tmux list-windows`.
+1. Kill the bad coder: `tmux kill-window -t "=${SESSION}:${ROLE}-oracle"`, then verify with `tmux list-windows`. **Not `maw tmux kill "$SESSION:$ROLE-oracle"`** — that subcommand exists but resolves only the numeric `session:INDEX.PANE` form, so a window *name* never matches (rc=1, "pane not found", window survives).
 2. Clean worktree: `mv agents/1-${ROLE} /tmp/cleanup-...`
 3. Fix root cause (config, engine name, reasoning_effort)
 4. Relaunch: `maw team up "$TEAM" --only "$ROLE"`
@@ -1167,7 +1167,7 @@ gh pr list --repo "$PROJECT" --base "$BASE" --state open 2>/dev/null || echo "no
 
 1. Lead orchestrates, coders code — lead NEVER writes code itself.
 2. Charter is the source of truth — session, members, engines, headless config all from yaml.
-3. `tmux kill-window -t "=$SESSION:$W"` for windows, then VERIFY it is gone — never `maw team down --only` (broken), and never `maw tmux kill` (does not exist; fails silently with rc=0).
+3. `tmux kill-window -t "=$SESSION:$W"` for windows, then VERIFY it is gone — never `maw team down --only` (broken). `maw tmux kill` takes only `session:INDEX.PANE`, never a window name, and piping it hides the rc=1.
 4. Never `git worktree remove --force` — commit-save first.
 5. Branches survive worktree removal → committed work is never lost.
 6. Always brace zsh vars: `"${SESSION}:${ROLE}-oracle"` not `$SESSION:$ROLE`.
