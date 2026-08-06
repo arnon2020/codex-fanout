@@ -19,20 +19,27 @@
 >
 > | verb | against a live team |
 > |---|---|
-> | `down` + `--clean` | ✅ **run against two separate live 2-member teams**, each with a real `.env.local` sitting in one worktree. Both runs: session killed, dirty worktree kept with its files listed, clean worktree removed, `.env.local` committed **0** times and still on disk. `--clean` deleted the clean member's branch and git itself refused the other, because a kept worktree still holds it — the two guards compose. Run 2 is what established that git's `error:` line there is the **expected** result, documented at Step 4 |
-> | `lead` | ✅ **peek loop run against both live teams** — real output from every pane, base branch resolved to `main` on a repo with no origin (the `||`-binding bug that produced `--base ''` did not recur), `maw hey` delivered to the real window |
+> | `down` + `--clean` | 🟡 **run against two separate live 2-member teams**, each with a real `.env.local` in one worktree. Both runs: session killed, dirty worktree kept with its files listed, clean worktree removed, `.env.local` committed **0** times and still on disk. `--clean` deleted the clean member's branch and git refused the other, because a kept worktree still holds it. Run 2 established that git's `error:` line there is the **expected** result (Step 4). **Not exercised by either run**: the `agents/${ROLE}` / `agents/1-${ROLE}` fallback paths, `rmdir *.maw-create.lock`, `git worktree prune` |
+> | `lead` | 🟡 **base detection verified** — lines 306–307 run byte-identical resolved to `main` on a repo with no origin, so the `||`-binding bug that produced `--base ''` did not recur. **The peek loop is NOT verified at content level**: run 2's harness truncated to `head -3`, so all it saw was maw's `--- r2team:0 ---` header. That proves the window resolves — evidence layer 1–2 — and says nothing about pane content |
 > | `dispatch` | 🟡 **`codex exec` path now run for real** — a live worker completed a task and wrote the file. The GitHub-issue half is still unrun. That run is also what proved a model can boot and still be rejected on the first turn |
 >
-> Two live runs is a thin track record. `up` needed five before a round came back clean, and
-> `dispatch` is still half-unrun.
+> **No row here has ever been run by anyone but this file's author.** That is the gap that
+> matters, and more author runs will not close it — see the note below on why this fleet's
+> reviewers structurally cannot close it either.
 >
 > **They also solve a different problem from the rest of the skill.** They assume GitHub
 > issues in, PRs out, and members living in disposable git worktrees. Reviewers whose teams
 > return verdicts or measurements rather than PRs reported them as not applicable at all;
 > prism's recommendation to split was the reason for this file.
 >
-> **Gate 0 and `up` in `SKILL.md` carry real evidence. This file does not. Read every command
-> before running it.**
+> **That last sentence is also why these verbs will probably never be peer-validated.** The
+> review round that validated Gate 0 could not touch them: a reviewer who has no PRs has no
+> way to run `lead`, and no reason to. So the honest end state for this file is *author-run
+> evidence only* — not a stage on the way to ✅, but where it stops. Do not read a 🟡 here as
+> "validation pending."
+>
+> **Gate 0 and `up` in `SKILL.md` carry peer-validated evidence. This file carries author-run
+> evidence only. Read every command before running it.**
 
 ---
 
