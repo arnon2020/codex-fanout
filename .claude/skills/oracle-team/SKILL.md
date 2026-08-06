@@ -607,9 +607,15 @@ leads = {m.group(1) for b in blocks
 print(' '.join(r for r in roles if r not in leads and r != 'lead'))
 ")
 ```
-⚠️ **Untested.** This block, and every verb below except `up`, has never been run — see the
-test record above. The lead-detection rule was wrong until a reviewer read it; assume the rest
-of this section carries similar defects and check before relying on it.
+⚠️ **This block itself is still untested.** The lead-detection rule was wrong until a reviewer
+read it; assume it carries similar defects and check before relying on it.
+
+> 📌 **Corrected 2026-08-06** — this used to add *"and every verb below except `up`, has never
+> been run."* No longer true, and leaving it would have made the file understate its own
+> evidence: `down` has since been executed end-to-end against **three** live teams, teardown
+> Steps 0–5 have all been run at least once, and `dispatch`'s `codex exec` path completed real
+> work. See `references/teardown.md` for what is run, sandboxed, or still only reviewed —
+> **that file is the authority on coverage, not this line.**
 
 Parse the subcommand from `$ARGUMENTS`:
 - First token = verb (`up`, `down`, `lead`, `status`, `dispatch`)

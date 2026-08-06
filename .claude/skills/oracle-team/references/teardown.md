@@ -197,6 +197,26 @@ Cheap, and it is the only thing that makes any later step reversible.
 > every explanation, which is why it shipped before the reasoning was settled. **But a right fix
 > with a wrong reason is a trap for the next reader** — they will carry the reason, not the
 > patch. lucifer's ask was exactly that: *"เก็บ fix ไว้ ไม่ต้องเปลี่ยน แต่แก้คำอธิบาย."*
+>
+> ### Independently reproduced, and the same wrong turn taken by three of us
+>
+> atlas and ajfon each rebuilt the table on disposable sessions of their own and matched it row
+> for row, including `| tail -1` yielding rc 0 while maw printed "not found". atlas then read
+> the dispatcher: `tmux_usage()` is a **hand-authored literal**, while the real dispatch chains
+> `TMUX_BUILTIN_SUBS` with `TMUX_SUB_FRAGMENTS.iter().flatten()`, and `tmux_kill.rs:4` registers
+> `names: &["kill"]` into the fragment list — **two sources of truth, and `--help` is the one
+> that lies.**
+>
+> **Three of us reached "the subcommand does not exist" independently**, from that same usage
+> string: atlas first via `--help`, then this author, then ajfon banked it from this author's
+> report. All three then withdrew it. A misleading surface does not produce one error — it
+> produces the *same* error in everyone who checks the cheap way, which is why "three people
+> agreed" is not corroboration when they all read one artifact.
+>
+> atlas's own separation is worth keeping: their rc readings were **correct at the measurement
+> layer** (never piped, always `PIPESTATUS` or bare `$?`) while the conclusion built on top was
+> wrong. *A correct low-level reading does not make the inference above it correct* — the same
+> shape as the pipeline-rc trap, one layer up the chain.
 
 ```bash
 # Are we inside tmux at all, and if so, in which session?
@@ -575,7 +595,7 @@ measurements four oracles took in their own houses, not from executing this file
 
 **Reviewed without being run** `[2026-08-06]`: ajfon, lucifer and holmes read this file
 statically — none would execute Step 3, because it touches shared fleet state, and all three were
-right to refuse. **Thirteen defects in total, across five rounds:**
+right to refuse. **Sixteen defects in total, across seven rounds:**
 
 | round | defects | found by |
 |---|---|---|
@@ -585,8 +605,10 @@ right to refuse. **Thirteen defects in total, across five rounds:**
 | 4 — in the code fixing round 3 | **`branch = role` fallback missed the real branch entirely** (`prober-a` vs the actual `probe-prober-a`, skipping a member with unmerged commits) · Step 0's layer glob relative to `$PWD` not `$ROOT` · `cp "$CHARTER" 2>/dev/null` failing mute · Step 4's `grep -i` not fixed-string · **the session-is-your-own footgun** | holmes (4, against their own charter), lucifer (1, by *using* it) |
 
 | 5 — **first execution** of Step 0 | the summary line printed `(charter + 2 layer file(s))` **directly below its own warning that there was no charter** — the warning scrolls, the summary is what gets believed | running it |
+| 6 — **first spawn + teardown of a live team** | **Step 1's kill never killed anything**: `maw tmux kill` resolves only `session:INDEX.PANE`, so the role-name target this skill always builds missed every time — and the prescribed `\| tail -1` discarded the rc=1 that said so | running it |
+| 7 — **in this file's explanation of round 6** | claimed `rc=0` (read through the same pipe) · then claimed the subcommand *did not exist* (inferred from a hand-written usage string) — **two wrong reasons attached to a correct fix** | atlas, ajfon, lucifer |
 
-**Eleven of the thirteen made a check do nothing, or say something untrue, while looking fine.** Every round's fix contained the
+**Fourteen of the sixteen made a check do nothing, or say something untrue, while looking fine.** Every round's fix contained the
 next defect — including one written an hour after the postmortem naming the pattern, inside the
 block fixing it. lucifer's conclusion is the right one: *"รู้กฎแล้วไม่พอ — กฎแบบนี้ต้องมีคนอื่น
 หรือ sandbox เป็นคนบังคับ ไม่ใช่ความตั้งใจของคนเขียน."*
