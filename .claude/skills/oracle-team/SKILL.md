@@ -168,7 +168,47 @@ After spawning, confirm on the engine's own UI (`maw peek <session>:<window>`) t
 status bar shows the model you asked for. That is the only layer of evidence that covers
 whether the account can actually serve that model — nothing before it does.
 
-#### 0c. Traps confirmed by running them
+#### 0c. Naming and worktree — the two things that make `maw team up` exit 1
+
+`maw team up` builds `maw wake <member-name> ... -e <engine>` per member. That wake must
+resolve, and two independent rules decide whether it does:
+
+- **Member names must be unique across the WHOLE FLEET, not just your team.** A generic
+  name collides with every other team using it and wake dies on ambiguity:
+  ```
+  wake: 'verifier' matches multiple targets. Found nearby:
+    1. session job2b-oracle-scan  2. session previews-port  3. session t4526-rs-fixes  ...
+  ```
+  `team up` then exits 1 while `--dry-run` stayed green. Prefix every role with the team:
+  `refract-scope`, `st-alpha` — not `coder-1`, `verifier`, `reviewer`.
+
+- **Give every member a `worktree:` path.** With `worktree: false`, `team up` sends no
+  `--repo-path`, so wake resolves the name against the oracle registry and boots the member
+  **in whatever repo that name is registered to — not your team's repo.** Your config layer
+  is then invisible to it and the alias silently does not apply. With `worktree: <path>`,
+  `team up` passes `--repo-path`, which both puts the member in the right tree *and* removes
+  the requirement that the name be a registered oracle at all. The path must already exist.
+
+```yaml
+members:
+  - role: st-alpha
+    name: st-alpha            # team-prefixed, unique fleet-wide
+    engine: t-codex-sol
+    worktree: agents/st-alpha  # exists, and makes the layer visible
+```
+
+#### 0d. Clean up after a team, or the next one fails
+
+`maw wake` registers the session in `~/.maw/fleet/<session>.json`, and **`tmux kill-session`
+does not remove it.** Stale entries keep answering to their member names and cause the
+ambiguity failure above for whoever spawns next. After tearing a team down:
+
+```bash
+tmux kill-session -t "$SESSION"
+rm -f ~/.maw/fleet/"$SESSION".json      # otherwise the names stay claimed
+```
+
+#### 0e. Traps confirmed by running them
 
 - **`maw team up -e <engine>` overrides every member's charter engine.** One flag flattens a
   mixed-engine team (`a=codex-hi, b=claude-hi` → both become the flag's value). Omit `-e`
