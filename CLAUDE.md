@@ -176,56 +176,6 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
   **การบอกว่าตัวเองไม่มีของ ดูถ่อมตัว ไม่ดูเหมือน overclaim**
   ⇒ ก่อนเขียนว่า skill ไม่มี: **`ls ~/.claude/skills/ .claude/skills/` — สองที่เสมอ**
   ⇒ **"ไม่ได้ติดตั้ง" ≠ "ไม่มีอยู่"** — สองสถานะนี้พาไปคนละทางแก้ (หาทางอื่น vs `git clone` แล้วจบ)
-- 🔬 **`maw --version` ที่ตรงกัน พิสูจน์ว่า *binary ไหนรัน* — ไม่ได้พิสูจน์ว่า *source ไหนที่เรากำลังอ่าน***
-  (2026-08-06 · atlas ชี้ตอน verify งานผม · ผมยืนยันเอง) — checkout ของ `maw-rs` บนเครื่องนี้อยู่บน
-  branch `agents/fix-wake-oracle-alias-hijack` @ `cc0fc61` และ
-  **`git merge-base --is-ancestor 325db65 HEAD` = NO** ⇒ **`grep` ใน working tree = อ่านโค้ดคนละตัว
-  กับที่รันอยู่ แล้วติดป้าย `[verified]` ให้มัน**
-  ⇒ อ่าน source ของ binary ที่รัน ต้อง `git show <sha>:<path>` / `git grep <pat> <sha> -- <path>` เสมอ
-  ⇒ `valid-if:` ที่เช็คแค่ version **จับข้อนี้ไม่ได้** — ต้องเช็ค ancestor ด้วยถ้าอ้าง citation จาก source
-  ⇒ ต่อยอด "ตรวจคุณสมบัติเดียว → เหมาว่าทั้งหมด": นี่คือ **ตรวจถูกคนละวัตถุ**
-- 🧷 **config layer / engine alias ต้องวางให้ *แคบที่สุดที่ครอบเป้าหมายพอดี*** (2026-08-06 · atlas DISSENT
-  — และเขาถูก) ผมแนะนำให้วาง `~/.maw-teams/.maw/` ซึ่งเป็นบรรพบุรุษของ **10 ทีม** ⇒ **ผูก engine
-  ให้ทีมที่ไม่เคยขอ เงียบ ๆ** — **defect class เดียวกับที่ผมกำลังแก้ แค่กลับทิศ**
-  ("ขอแล้วไม่ได้" ↔ "ไม่ได้ขอแล้วได้") ⇒ `~/.maw-teams/<team>/.maw/` ไม่ใช่ `~/.maw-teams/.maw/`
-  ⇒ **เวลาแก้ปัญหา silent-binding อย่าสร้าง silent-binding อันใหม่ที่กว้างกว่าเดิม**
-- 🎛️ **`engine:` ใน charter คือ *คำขอ* ไม่ใช่ *การตั้งค่า* · `model:` **ไม่มีผลเลย** — ตรวจด้วย
-  `verify-check.sh enginecheck <charter>` ก่อน spawn ทุกครั้ง** (2026-08-06 · fleet รายงาน
-  แต่ **loom รายงานเรื่องเดียวกันตั้งแต่ 08-01 และเราถือไว้ 5 วัน**)
-  `[verified: maw-rs 325db65]` `team up` ส่งให้ wake แค่ `-e <name>` (`team_up_apply.rs:149`
-  + unit test `:251`) · **`maw wake` ไม่มีแฟลก `--model` ทั้งไบนารี** · `engines:` block
-  เป็น **field ตาย** (parser เขียน ไม่มีใครอ่าน)
-  ⚠️ **`model:` มีสองครึ่ง — เดิมผมเขียนแค่ครึ่งเดียวและ broadcast ไป 6 oracle**
-  `team_up_helpers.rs:235` `engine = opts.engine.or(member.engine).or(member.model).unwrap_or("claude")`
-  ⇒ **มี `engine:`** → `model:` ตายจริง (validate แล้วทิ้ง `:186`) ·
-  **ไม่มี `engine:`** → 🔴 **model string กลายเป็น *ชื่อ engine*** → `wake -e <model>` → miss
-  → fallthrough เงียบ **แน่นอน** ⇒ **ห้ามเขียน `model:` โดยไม่มี `engine:`**
-  ⇒ ถ้า `commands.<engine>` ไม่มี **ไม่มี error ไม่มี warning exit 0** แล้วตกไปตาม
-  **ชื่อ window → `<oracle>-oracle` → glob → `default`**
-  `wake coder-1 -e codex-xhigh` → `claude --model claude-opus-5` · `wake hermes -e codex-xhigh`
-  → `hermes --yolo` · **`-e claude` ก็ไม่ได้ลงทะเบียน** — ได้ claude เพราะ `default` บังเอิญเป็น claude
-  ⇒ **`maw team up --dry-run` สะท้อน charter กลับมา ตกไม่ได้** — ถามทุกครั้งว่า
-  **"การตรวจนี้ตกได้ด้วยเหตุอะไร"** ถ้าตอบไม่ได้ มันคือ echo ไม่ใช่ check
-  ⇒ ลงทะเบียน alias ที่ **`<repo>/.maw/maw.config.60.json`** (merge ทับ global N=50 · เดินทาง
-  ไปกับ repo · ไม่แตะของกลาง) — `maw config set` ทำไม่ได้ รองรับแค่ `node|port`
-  ⇒ **"validate แล้วทิ้ง" หลอกหนักกว่า "ปฏิเสธ"** — ต่อยอด [[charter-field-parsed-but-never-read]]:
-  grep หาจุดที่ *อ่านไปใช้* ไม่ใช่จุดที่ประกาศ **และไม่ใช่จุดที่ validate**
-  ⇒ ดู `ψ/teams/ENGINE-AND-MODEL.md`
-  ⇒ กับดักที่เจอตอน **รันจริง** ไม่ใช่ตอนอ่าน source (2026-08-06): ชื่อ member ต้อง**ไม่ซ้ำทั้งฟลีต**
-  (`verifier` ชน 7 session → `team up` exit 1 ขณะ dry-run เขียว) · ต้องมี `worktree:` **หรือ** `cwd:`
-  (`:236` — ไม่มีทั้งคู่ worktree กลายเป็นชื่อ identity) · **`team up` ไม่ expand `${VAR}`** แม้ export
-  → `canonicalize` fail ⇒ cell ที่ layout มาจาก env var ใช้ `team up` ไม่ได้เลย ·
-  `charter not found` = **cwd ผิด ไม่ใช่ charter ผิด** · `tmux kill-session` **ไม่ลบ**
-  `~/.maw/fleet/<session>.json` ⇒ ชื่อยังถูกจอง ทีมถัดไปพัง (atlas วัดได้ **72 ไฟล์ ต่อ 7 session ที่มีชีวิต**)
-- 🔁 **claim หนึ่งอันอยู่หลายผิว — แก้ผิวเดียวแล้วรู้สึกว่าจบ คือรูปแบบ ไม่ใช่อุบัติเหตุ**
-  (2026-08-06 · atlas จับ 2 รอบ) กฎ `model:` เวอร์ชันไม่ครบอยู่บน **6 ผิว**: เนื้อ skill ·
-  **description ของ skill** (สิ่งแรกที่ agent ใหม่อ่าน และติดตั้ง global) · packet ที่ส่งไป 6 oracle ·
-  header ของ `verify-check.sh` · `CLAUDE.md` · `ENGINE-AND-MODEL.md`
-  ⇒ **แก้ claim ต้องไล่ทุกผิวที่ claim นั้นปรากฏ ไม่ใช่แค่ผิวที่เพิ่งแก้**
-  ⚠️ **และการไล่ผิวด้วย `grep` คำเก่า ก็ไม่ใช่การไล่ claim เก่า** — atlas ถอน defect ของตัวเอง
-  เพราะ pattern ไปโดนข้อความที่**แก้แล้ว** · ผมทำผิดท่าเดียวกันในนาทีถัดมา
-  ⇒ ถามว่าไฟล์นั้นมี **กฎใหม่** ไหม ไม่ใช่ยังมี **คำเก่า** ไหม
-  ⇒ 📮 **correction ที่ไปถึงคนน้อยกว่า error ทำให้ฟลีตแย่กว่าตอนยังไม่ส่งอะไรเลย** (atlas)
 - **คำสั่งของเจ้าของงานที่ขัดกับคำตัดสินที่ยังยืนอยู่ → ต้องบอกก่อนลงมือ ไม่ใช่หลังลงมือ**
   (ajfon D5.3, 2026-08-03 · เกิดจากผมเอง: arnon สั่งสลับ verifier เป็น zai ตอน 22:18 ทั้งที่ ajfon
   ตัดสิน D3 ปฏิเสธไป 21:50 — ผมรู้แต่ทำเลย) · **เจ้าของยังเป็นคนตัดสินเหมือนเดิม แค่ตัดสินโดยรู้ว่า
