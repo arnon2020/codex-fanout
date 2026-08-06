@@ -474,24 +474,34 @@ bootverify() {
     screen=$(tmux capture-pane -p -t "=${sess}:${w}" 2>/dev/null | grep -v '^\s*$' | tail -25)
 
     if [ -z "$cmd" ]; then
-      echo "bootverify.pane: $w PROCESS-GONE — pane เหลือแต่ shell (engine ตายหรือยังไม่ boot)"
+      # 🔑 lucifer 2026-08-06: PROCESS-GONE กับ NOT-READY **ต้องแยกจากกันเสมอ** เพราะทางแก้คนละทาง
+      #    NOT-READY = engine รันอยู่ รอ/เคลียร์จอ  ·  PROCESS-GONE = ไม่มี engine ต้อง spawn ใหม่
+      #    ⇒ **false ทิศ PROCESS-GONE แพงกว่าทิศ READY**: คนอ่านจะไป restart engine ที่รันอยู่ดี ๆ
+      #    (บั๊กแรกของ verb นี้เป็นทิศนั้นพอดี — เดินแต่ process ลูก)
+      echo "bootverify.pane: $w PROCESS-GONE — ไม่มี engine ใน pane นี้ · แก้: spawn ใหม่ (ไม่ใช่รอ)"
       rc=1; continue
     fi
     # 🔴 จอเป็นของ installer/dialog ไม่ใช่ของ agent → ยังรับงานไม่ได้ และ Enter จะไปโดนเมนู
     case "$screen" in
       *"Update available!"*|*"Press enter to continue"*|*"1. Update now"*)
-        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog — **ห้ามส่ง Enter** จะกด 'Update now'"
+        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog · engine รันอยู่ · แก้: เคลียร์จอด้วยเลขที่เจาะจง (3=Skip) **ห้าม Enter เปล่า** จะกด 'Update now'"
         rc=1; continue ;;
       *"trust this folder"*|*"you trust"*)
-        echo "bootverify.pane: $w NOT-READY screen=trust-prompt — ตอบ '1' เฉพาะเจาะจง ไม่ใช่ Enter เปล่า"
+        echo "bootverify.pane: $w NOT-READY screen=trust-prompt · engine รันอยู่ · แก้: ตอบ '1' เฉพาะเจาะจง ไม่ใช่ Enter เปล่า"
         rc=1; continue ;;
     esac
     model=$(printf '%s' "$cmd" | sed -n 's/.*--model \([^ ]*\).*/\1/p')
-    echo "bootverify.pane: $w READY proc=$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename) model=${model:--} cmd=$(printf '%s' "$cmd" | cut -c1-90)"
+    # 🩹 2026-08-06 [prism รัน bootverify กับ prism-cell ที่ live อยู่จริง 8 pane]
+    #    `cut -c1-90` ตัดท้ายคำสั่งทิ้งเงียบ ๆ ⇒ `--model gpt-5.5` ที่อยู่ท้ายหายไปจากจอ
+    #    ⇒ คนอ่านเข้าใจผิดได้ว่า model หาย ทั้งที่มันอยู่ตรงนั้น
+    #    ⇒ ใส่ `…` ให้เห็นว่าโดนตัด · และ `model=` อ่านจากคำสั่ง**เต็ม** เสมอ ไม่ใช่จากตัวที่ตัดแล้ว
+    local shown="$cmd" mark=""
+    if [ "${#cmd}" -gt 90 ]; then shown=$(printf '%s' "$cmd" | cut -c1-90); mark="…(ตัด ${#cmd} อักษร)"; fi
+    echo "bootverify.pane: $w READY proc=$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename) model=${model:--} cmd=${shown}${mark}"
   done <<< "$wins"
 
   echo "bootverify.scope: อ่านอย่างเดียว · ยืนยัน process+จอ · **ไม่ยืนยันว่าบัญชีเสิร์ฟ model ได้** (ใช้ modelprobe)"
-  [ "$rc" = "0" ] && echo "overall: READY panes=$n" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY"
+  [ "$rc" = "0" ] && echo "overall: READY panes=$n" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY · NOT-READY=รอ/เคลียร์จอ · PROCESS-GONE=spawn ใหม่ (คนละทางแก้)"
   return $rc
 }
 
