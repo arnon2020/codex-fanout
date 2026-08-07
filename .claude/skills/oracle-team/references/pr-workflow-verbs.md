@@ -106,6 +106,22 @@ echo "dispatching ${N:-5}-max of: $(printf '%s' "$ISSUES" | tr '\n' ' ')"
 `N` is how many issues to take and is **not** set for you — it defaults to 5 silently. Set it
 explicitly if you mean a different number.
 
+> ✅ **Two of the three arms are now tested; the third cannot be without creating real issues.**
+> `[2026-08-07]` No repo reachable from this machine has an open issue, so:
+>
+> | arm | result |
+> |---|---|
+> | repo exists, zero issues | `✓ no open issues — dispatching nothing, on purpose` |
+> | repo unreachable / no access | `✗ repo unreachable — NOT the same as having no issues` |
+> | repo with real issues | **untested — needs an issue that does not exist yet** |
+>
+> Side by side with the old one-liner on the same two inputs: `ISSUES=''` both times, loop ran
+> 0 times both times, no output either time. The guard's whole value is telling those two apart,
+> and it does.
+>
+> **Creating an issue purely to test this is not something to do quietly** — it is outward-facing
+> on a real repository. Ask the repo's owner first; the arm stays labelled untested until then.
+
 ### Step 2: Create worktrees (if not exist)
 
 > 🔴 **This step used to invent worktrees that had nothing to do with your team.**
