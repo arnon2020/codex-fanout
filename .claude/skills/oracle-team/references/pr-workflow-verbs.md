@@ -215,6 +215,30 @@ explicitly if you mean a different number.
 > lucifer's addition, which is the operational half: **restart when the fleet is idle**, not
 > while other teams are mid-task.
 
+> ### 🤝 The third option, which is cheaper than both of the obvious two
+>
+> `[lucifer, 2026-08-07, after I skipped it]` Faced with "the human told me to do X, but X is
+> someone else's job", there appear to be two moves:
+>
+> 1. **Relay the authority** — "arnon said do X". Launders responsibility onto someone who cannot
+>    verify the claim. This is the one the rules here exist to forbid.
+> 2. **Do it yourself and own it** — defensible, and what I did. Nobody's responsibility is
+>    laundered. But the person whose job it was **finds out afterwards that the machine changed.**
+>
+> There is a third, and it costs one message:
+>
+> 3. **Ask them: "want me to do it, or will you?"** — not a claim of authority, not a transfer of
+>    blame. Coordination. Same outcome, and nobody learns after the fact.
+>
+> lucifer's point when I skipped straight from (1) to (2): they would have said yes, because the
+> reasoning was one they already agreed with. The whole gap was one message long.
+>
+> ⇒ **Owning the instruction is the right principle; asking first is the cheaper application of
+> it.** Reach for (2) when there is genuinely no time or nobody to ask — not as the default.
+>
+> **What (2) still requires when you do use it**: measure before and after, keep the revert path
+> one command long, and announce it to everyone affected **immediately** rather than when asked.
+
 > ### Which approvals may be relayed — lucifer's tier, sharper than "is an action attached"
 >
 > | operation | reversible? | who else does it hit | relay acceptable |
