@@ -184,6 +184,30 @@ relay() {
     echo "          window name ของ charter role != tmux window name"; return 2
   fi
 
+  # 🩹 2026-08-07 — ข้อความที่ **พังก่อนถึง relay** ผ่านทุกด่านของบันไดหลักฐาน
+  #    ผมประกอบข้อความใน `"..."` ของ bash ⇒ ทุกอย่างใน backtick ถูกรันเป็นคำสั่ง แล้ว *ผลลัพธ์
+  #    หรือ error* ไปแทนที่ข้อความ · holmes ได้รับใบที่มีรูและมี "syntax error near unexpected
+  #    token" ปนอยู่ · `maw hey` คืน delivered · relay พิมพ์ SENT · **ถูกทุกด่าน**
+  #    ⇒ 🪜 บันไดชั้น 1-4 ตอบว่า *ข้อความถึงไหมและเข้า turn ไหม* — **ไม่มีชั้นไหนถามว่า
+  #      ข้อความยัง*เป็นสิ่งที่เราเขียน*อยู่ไหม** · จับได้ทางเดียวคือมีคนอ่านแล้วบอกว่าอ่านไม่รู้เรื่อง
+  #    ⇒ ด่านนี้จับ **ร่องรอยของความพัง** ไม่ได้จับสาเหตุ (สาเหตุเกิดก่อนเราเห็น $msg แล้ว)
+  #      แต่มันคือสิ่งเดียวที่จับได้อัตโนมัติ · **วิธีป้องกันจริงคือประกอบข้อความด้วย
+  #      heredoc ที่ปิด expansion (`<<'EOF'`) ไม่ใช่ `"..."`** — กฎนี้อยู่ใน CLAUDE.md ตั้งแต่ 07-30
+  #      และผมยังเหยียบเมื่อ 2026-08-07 ⇒ เขียนกฎครั้งที่ 2 ไม่ใช่การแก้ ด่านนี้คือการแก้
+  local _leak
+  for _leak in 'syntax error near unexpected token' 'unexpected end of file' \
+               'command not found' 'command substitution:' 'No such file or directory' \
+               'missing file operand'; do
+    case "$msg" in
+      *"$_leak"*)
+        echo "REFUSED   ข้อความมีร่องรอย shell error: \"$_leak\""
+        echo "          น่าจะเกิดจากประกอบข้อความใน \"...\" แล้ว backtick/\$(...) ถูกรัน"
+        echo "          แก้: MSG=\$(cat <<'EOF' ... EOF) แล้วส่ง \"\$MSG\""
+        echo "          (ถ้าตั้งใจส่งข้อความที่มีคำนี้จริง ๆ ให้ส่งผ่านไฟล์แทน)"
+        return 2 ;;
+    esac
+  done
+
   local out; out=$(maw hey "$target" "$msg" 2>&1); local rc=$?
   echo "$out" | head -1 | cut -c1-100
   if [ $rc -ne 0 ]; then echo "FAILED    maw hey exit=$rc — ยังไม่ถึง อย่าอ้างว่าส่งแล้ว"; return 1; fi
@@ -1821,6 +1845,26 @@ PY
   else
     echo "   (ไม่พบ census-selftest.sh ข้าง verify-check.sh — ข้าม ไม่นับผ่าน/ตก)"
   fi
+
+  # 🩹 2026-08-07 — ด่านกันข้อความที่ *พังก่อนถึง relay* (backtick ถูกรันใน "...")
+  #    ต้องล้มได้ทั้งสองทิศ ไม่งั้นเป็น echo: (ก) ข้อความเปื้อน error ต้องถูกปฏิเสธ
+  #    (ข) ข้อความสะอาดต้อง **ไม่** ถูกปฏิเสธด้วยเหตุผลนี้ — ใช้ target มั่วเพื่อให้มันไปตกที่
+  #    ด่านอื่นแทน ⇒ พิสูจน์ว่าด่านเนื้อหา *ไม่ได้* ยิง ไม่ใช่แค่ว่า rc ไม่เป็น 0
+  echo "19) relay: ข้อความที่มีร่องรอย shell error ต้องถูกปฏิเสธ · ข้อความสะอาดต้องผ่านด่านนี้ไป"
+  local _dirty _clean
+  _dirty=$(relay "18-holmes:holmes-oracle.0" \
+            "x /bin/bash: line 1: syntax error near unexpected token y" 2>&1)
+  _clean=$(relay "vc-selftest-no-such-session:nope.0" "ข้อความปกติ ไม่มีร่องรอย" 2>&1)
+  case "$_dirty" in
+    *"ร่องรอย shell error"*) echo "   ✓ ข้อความเปื้อนถูกปฏิเสธ (ไม่ได้ส่งออก)" ;;
+    *) echo "   ✗ ข้อความเปื้อน **ไม่** ถูกปฏิเสธ — ด่านนี้ไม่ทำงาน"; fail=1 ;;
+  esac
+  case "$_clean" in
+    *"ร่องรอย shell error"*)
+      echo "   ✗ ข้อความสะอาดถูกปฏิเสธด้วยด่านเนื้อหา — false positive"; fail=1 ;;
+    *"ไม่พบ session"*) echo "   ✓ ข้อความสะอาดผ่านด่านเนื้อหา (ไปตกที่ด่าน target ตามคาด)" ;;
+    *) echo "   ✗ ข้อความสะอาดตกด้วยเหตุที่คาดไม่ถึง — อ่าน: $_clean"; fail=1 ;;
+  esac
 
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
