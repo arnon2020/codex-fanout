@@ -561,7 +561,7 @@ charter's `engine:` silently misses and glob or default decides for you.
 | engine | how to list what your account serves |
 |---|---|
 | codex | `grep '^model' ~/.codex/config.toml` — this gives **one** value, the current default. `codex --help` documents the `-m` flag but **does not enumerate valid values** |
-| claude | ⚠️ **`claude --help` does NOT list them** — see the correction below. Ask the binary by giving it a wrong one: `claude --model zzz -p hi 2>&1 \| grep -o 'aliases\?([^)]*)'` → on 2.1.224 this replies *"Switch to a public model alias (opus, sonnet, fable)"*. Read the list **on your machine** |
+| claude | ⚠️ **`claude --help` does NOT list them** — see the correction below. Ask the binary by giving it a wrong one: `claude --model zzz -p hi 2>&1 \| grep -o 'alias[^)]*)'` → on 2.1.224 replies `alias (opus, sonnet, fable)`. Read the list **on your machine**. ⚠️ this line shipped a **different, non-matching regex** (`aliases\?([^)]*)`) for four hours — it requires `alias(` with no space, and the real text has one, so it printed **nothing, silently** |
 | opencode | `opencode models` prints every `provider/model` it can reach |
 
 🔑 **Getting two DIFFERENT models is the step people get stuck on.** codex exposes only its
@@ -594,11 +594,28 @@ aliases are for. Do not invent model names to fill the gap.
 > #   → Switch to a public model alias (opus, sonnet, fable)
 > ```
 >
-> 🔴 **And note what that command's exit code was: `rc=0`.** A wrong `--model` **warns and keeps
-> going** rather than failing. So `claude --model <typo>` inside an alias produces a member that
-> boots, runs, and answers — on some other model. **This is the same family as `maw team <typo>`
-> returning 0**, at the other end of the same spawn. Never conclude a model was applied because
-> the pane came up; read it back per Step 6.
+> ❌ **RETRACTED — this block said `rc=0` in bold for about four hours. It is `rc=1`.**
+> `[measured without a pipeline, 2026-08-07; caught by the second clean-room tester]`
+>
+> ```
+> out=$(claude --model zzz-not-a-model -p hi 2>&1); rc=$?   # rc=1
+> ```
+>
+> My original reading was `… 2>&1 | head -8; echo "rc=$?"` — **`$?` was `head`'s exit code, not
+> claude's.** That is the pipeline-rc trap this repository has a selftest for, committed **in the
+> same session in which I documented it**, and the false value then travelled to six oracles.
+>
+> **What is actually true**, and it is narrower than what I claimed:
+> - `claude --model <typo> -p …` (**headless**) → **rc=1**, and says *"There's an issue with the
+>   selected model … It may not exist or you may not have access to it."* It does signal.
+> - What happens to a **long-running pane** started from an alias with a bad `--model` was
+>   **never measured** — by me or anyone. Do not assume it matches the headless case in either
+>   direction.
+>
+> ⇒ So the earlier line *"same family as `maw team <typo>` returning 0"* was **wrong**: `maw team`
+> genuinely returns 0 and creates nothing; `claude -p` returns 1. **I generalised one binary's
+> convention onto another — the exact error this file warns about two sections up.**
+> Read the model back per Step 6 regardless; that advice never depended on the exit code.
 
 **Step 2 — create each member's working directory. It must exist before spawn.**
 
@@ -996,8 +1013,8 @@ First-boot prompts that stall a member — each one leaves it looking merely qui
 
 | what you see | engine | clear it with |
 |---|---|---|
-| `✨ Update available!` | codex | `tmux send-keys -t "$SESSION:${A}-oracle" 2 Enter` (`2` = "Skip"; `1` would upgrade the shared binary — read the menu, the numbering is not guaranteed) |
-| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "$SESSION:${B}-oracle" 1 Enter` (`1` = "Yes, I trust this folder") |
+| `✨ Update available!` | codex | `tmux send-keys -t "=$SESSION:${A}-oracle" 2 Enter` (`2` = "Skip"; `1` would upgrade the shared binary — read the menu, the numbering is not guaranteed) |
+| `Is this a project you created or one you trust?` | claude | `tmux send-keys -t "=$SESSION:${B}-oracle" 1 Enter` (`1` = "Yes, I trust this folder") |
 | a bare shell prompt `❯` | any | the engine never started — go back to step 4 |
 
 ⏳ **`model: loading` occupies the exact line you are told to read.** After clearing a prompt,
@@ -1044,7 +1061,7 @@ than guessing.
 
 **What the banner does establish** — that your alias reached the engine. Per engine:
 - **codex** — banner line `model: <MODEL> <effort>` and the status bar repeat it
-- **claude** — the banner scrolls away; use `tmux send-keys -t "$SESSION:${B}-oracle" "/status" Enter`
+- **claude** — the banner scrolls away; use `tmux send-keys -t "=$SESSION:${B}-oracle" "/status" Enter`
   then peek, and read `Model: <alias> (<full-id>)`
 
 **Step 7 — tear down.**

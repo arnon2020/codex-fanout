@@ -700,10 +700,22 @@ bootverify() {
         #      **เขียน preference ถาวรลง state ของ codex ที่ทุก oracle ใช้ร่วมกัน**
         #    ⇒ การ hardcode เลขใด ๆ คือตัวบั๊กเอง — เครื่องมือไม่รู้ว่าเครื่องนั้นเป็นเมนูแบบไหน
         #    [clean-room tester 2026-08-07 อ่านเมนูจริงแล้วส่ง `2` — และเขาถูก ผมผิด]
-        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog · engine รันอยู่"
-        echo "          ⇒ แก้: **อ่านเลขจากจอ** แล้วส่งเลขที่คู่กับ 'Skip' — **ห้าม Enter เปล่า** (จะโดน 'Update now')"
-        echo "          ⚠️ เลขไม่คงที่ข้ามเวอร์ชัน: 0.146.0 → 2=Skip · 0.146.1 → 2=Skip, **3='Skip until next version' (เขียน state ถาวร)**"
-        echo "          ⇒ เลือกตัวที่ **ไม่ทิ้งร่องรอย** เสมอ: maw peek \"$sess:$w\" แล้วดูเมนูก่อนกด"
+        # 🌐 2026-08-07 [clean-room tester #2] บรรทัดนี้เป็น **คำสั่งที่เสี่ยงที่สุดในทั้ง skill**
+        #    (กดผิด = `npm install -g` ทับ binary ของทั้งเครื่อง) **แต่เดิมเป็นภาษาไทยล้วน**
+        #    ⇒ สำหรับ skill ที่ทดสอบกับ "คนที่ไม่รู้คำตอบ" นี่เป็น defect ไม่ขึ้นกับว่าใครอ่านไทยได้
+        #    ⇒ คำเตือนความปลอดภัย = อังกฤษก่อน ไทยตาม · ที่เหลือคงเดิม
+        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog · engine is running"
+        echo "          ⇒ FIX: READ THE MENU ON SCREEN, then send the number next to 'Skip'."
+        echo "             NEVER send a bare Enter — the highlighted default is 'Update now',"
+        echo "             which runs 'npm install -g' against the whole machine."
+        echo "          ⚠️ The numbering is NOT stable across codex versions:"
+        echo "               0.146.0 → 2=Skip     0.146.1 → 2=Skip, 3='Skip until next version'"
+        echo "               '3' writes a PERSISTENT preference into shared codex state. Prefer the"
+        echo "               option that leaves no trace. Newer versions may differ again — read it."
+        echo "          ⇒ ไทย: **อ่านเลขจากจอก่อนกด** ส่งเลขที่คู่กับ 'Skip' · **ห้าม Enter เปล่า**"
+        echo "             (ค่า default คือ 'Update now' = อัปเกรด binary ของทั้งเครื่อง)"
+        echo "             เลขไม่คงที่ข้ามเวอร์ชัน · เลือกตัวที่ไม่ทิ้งร่องรอยเสมอ"
+        echo "          ⇒ maw peek \"$sess:$w\"   # look before you press"
         rc=1; continue ;;
       *"trust this folder"*|*"you trust"*)
         echo "bootverify.pane: $w NOT-READY screen=trust-prompt · engine รันอยู่ · แก้: ตอบ '1' เฉพาะเจาะจง ไม่ใช่ Enter เปล่า"

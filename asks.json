@@ -1,5 +1,62 @@
 [
   {
+    "context": "/home/user/.claude/jobs/5ee8a78a/tmp/fresh/agents/fresh-probe-beta\nQuick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work from your team). If not, take a moment to review what's in this\nfolder first.\nClaude Code'll be able to read, edit, and execute files here.",
+    "dismissed": true,
+    "id": "pane:fresh-probe:1:ozevq3",
+    "message": "\u001b]8;id=zaxmda;https://code.claude.com/docs/en/security\u001b\\Security guide\u001b]8;;\u001b\\",
+    "options": [
+      {
+        "index": 1,
+        "label": "Yes, I trust this folder",
+        "selected": true
+      },
+      {
+        "index": 2,
+        "label": "No, exit",
+        "selected": false
+      }
+    ],
+    "oracle": "fresh-probe-beta-oracle",
+    "promptKey": "ozevq3",
+    "resolution": "resolved",
+    "respondMode": "keys",
+    "source": "pane",
+    "target": "fresh-probe:1",
+    "ts": 1786079612730,
+    "type": "permission"
+  },
+  {
+    "context": "MAW_SESSION_WINDOW=fresh-probe-alpha-oracle codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-accessuser@user-virtual-machine:~/.claude/jobs/5ee8a78a/tmp/fresh/agents/fresh-probe-\nalpha$ MAW_SESSION_WINDOW=fresh-probe-alpha-oracle codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access\n✨ Update available! 0.146.1 -> 0.147.0",
+    "dismissed": true,
+    "id": "pane:fresh-probe:0:sf5qw8",
+    "message": "Release notes: \u001b]8;;https://github.com/openai/codex/releases/latest\u001b\\https://github.com/openai/codex/releases/latest\u001b]8;;\u001b\\",
+    "options": [
+      {
+        "index": 1,
+        "label": "Update now (runs `npm install -g @openai/codex`)",
+        "selected": true
+      },
+      {
+        "index": 2,
+        "label": "Skip",
+        "selected": false
+      },
+      {
+        "index": 3,
+        "label": "Skip until next version",
+        "selected": false
+      }
+    ],
+    "oracle": "fresh-probe-alpha-oracle",
+    "promptKey": "sf5qw8",
+    "resolution": "resolved",
+    "respondMode": "keys",
+    "source": "pane",
+    "target": "fresh-probe:0",
+    "ts": 1786079608473,
+    "type": "input"
+  },
+  {
     "context": "jobs/5ee8a78a/tmp/newbie/agents/newbie-probe-alpha$ MAW_SESSION_WINDOW=newbie-pr\nobe-alpha-oracle codex --model gpt-5.6-sol --ask-for-approval never --sandbox da\nnger-full-access\n✨ Update available! 0.146.1 -> 0.147.0",
     "dismissed": true,
     "id": "pane:newbie-probe:0:sf5qw8",

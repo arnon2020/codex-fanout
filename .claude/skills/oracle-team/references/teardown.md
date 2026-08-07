@@ -723,7 +723,8 @@ never told you to take it back**, so every team ever torn down has left one entr
 
 ```bash
 # report, then remove ONLY the exact blocks naming paths under this team's $ROOT
-cp ~/.codex/config.toml ~/.codex/config.toml.bak.$(date +%s)     # shared file — back it up first
+BAK=~/.codex/config.toml.bak.$(date +%s)
+cp ~/.codex/config.toml "$BAK"                                   # shared file — back it up first
 grep -n "projects\.\"$ROOT" ~/.codex/config.toml || echo "no trust entries for $ROOT"
 python3 - "$ROOT" <<'PY'
 import re, sys, pathlib
@@ -731,12 +732,37 @@ root = sys.argv[1]
 p = pathlib.Path.home()/".codex/config.toml"
 src = p.read_text()
 # a block runs from its [projects."…"] header to the next [ at column 0
-pat = re.compile(r'(?m)^\[projects\."' + re.escape(root) + r'[^"]*"\]\n(?:(?!^\[).*\n?)*')
+# ⚠️ the append in SKILL.md writes a LEADING "\n" before the header. Removing only from the
+#    header leaves that blank line behind — and `grep -c` then reports 0, i.e. clean.
+#    Consume the preceding blank line too, or the remove is not the inverse of the append.
+pat = re.compile(r'(?m)^\n?\[projects\."' + re.escape(root) + r'[^"]*"\]\n(?:(?!^\[).*\n?)*')
 out, n = pat.subn('', src)
 print(f"removed {n} trust block(s) for {root}")
 if n: p.write_text(out)
 PY
+
+# The check that actually catches it — byte identity against the backup, not a grep for absence:
+diff -q ~/.codex/config.toml "$BAK" && echo "✓ shared config byte-identical to pre-run" \
+  || echo "⚠ shared config still differs from pre-run — diff it, something of yours remains"
 ```
+
+> 🔴 **The remove was not the inverse of the append, and the prescribed verification passed
+> anyway.** `[found 2026-08-07 by the second clean-room tester, on the very step added that
+> morning to fix the *previous* missing-cleanup bug]`
+>
+> ```
+> grep -c 'projects."…/fresh' ~/.codex/config.toml   → 0        ← the doc's own check: PASSES
+> diff backup ~/.codex/config.toml                   → +1 line  ← a blank line, still there
+> ```
+>
+> **Every team ever torn down by this skill has left one blank line in machine-wide
+> `~/.codex/config.toml`, and the documented check reports clean.** The tester ran a byte-identity
+> comparison *that the documentation did not ask for* and found it.
+>
+> 🪞 This is verbatim the pattern at the top of `SKILL.md` — **measuring the signal that is easy
+> (absence of a string) instead of the one you want (the file is as you found it)** — and it
+> appeared **inside the fix for the same class of bug, written hours earlier.** Twice in one day,
+> the cleanup step was the thing that needed cleaning up.
 
 ⚠️ **Match the exact path prefix, never a bare team-name `grep`** — the same rule as the worktree
 deletions in Step 2, and for the same reason: this file lists **other oracles' project paths**,
@@ -746,6 +772,30 @@ and a loose pattern edits their trust settings. Verify with
 🪞 This is the *"knowledge has a distribution obligation"* rule pointed at cleanup instead of
 messages: **a step that creates shared state owes a step that removes it**, and the absence was
 invisible for as long as nobody ran the whole lifecycle end-to-end as a stranger.
+
+### 🔴 Engine session state — the same class again, and it needs no instruction to create
+
+`[found 2026-08-07 by the second clean-room tester, cold]` The trust entry at least came from a
+step you can read. **These two are created by *merely running the team*, and appear in none of the
+five buckets this file enumerates** (git · tmux · fleet · cron · codex-trust). `teamclosed`
+returned `CLOSED` with both still on disk:
+
+```bash
+# claude writes a transcript keyed to the MEMBER PATH, not the team name
+ls -d ~/.claude/projects/*"$(printf '%s' "$ROOT" | tr '/.' '--')"* 2>/dev/null
+
+# codex writes a rollout per session; find the ones that mention this team
+grep -rl "$TEAM" ~/.codex/sessions/ 2>/dev/null
+```
+
+**Report them; do not blanket-delete.** A transcript may be the only record of what a worker did,
+and `~/.codex/sessions/` holds every other oracle's rollouts too — the same shared-file hazard as
+the trust file, so match on **your team's own token**, never a date directory.
+
+⚠️ **The tester noted they would have reported CLEANUP complete without being nudged to look.**
+That is the honest reading: **these are invisible to anyone who trusts the enumerated buckets**,
+which is everyone who has used this file until now. The five buckets were never a closed set;
+they were the list of places we had happened to look.
 
 ## Step 5: Verify, then report
 
