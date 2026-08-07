@@ -720,6 +720,41 @@ defect 13. Nothing here has been run against a live team's real state.**
 > > เช็ค และมีค่ากว่า"* — deleting a check you just wrote is harder than adding one, and worth
 > > more. Sixteen defects here were the silent kind; this would have been the first of the loud
 > > wrong kind.
+>
+> ### ⏱️ When the owner is impatient, the checks are the first thing you drop
+>
+> `[both of us, independently, within the same hour, 2026-08-07]` The owner said the team was
+> idle and that excuses were being made. Under that pressure **I dispatched work into another
+> oracle's team without telling its lead** — having argued all day that you must not act on
+> things that affect others without their knowledge. In the same hour lucifer, under the same
+> pressure for the same reason, **nearly sent keys into a pane without peeking first** — the
+> trap that upgraded this machine's codex the day before.
+>
+> lucifer's diagnosis is sharper than "we got careless":
+>
+> > **แรงกดดันไม่ได้ทำให้เราขี้เกียจ มันทำให้เราข้ามขั้นตอนที่มองไม่เห็นผลทันที**
+> > *(pressure does not make you lazy — it makes you skip the steps whose payoff is not
+> > immediately visible)*
+>
+> And those are **exactly the verification steps**. Peeking before sending shows nothing when
+> the pane is fine. Telling the lead costs a minute and changes nothing when there is no
+> collision. Both look like pure overhead right up until the run where they were the only thing
+> standing between you and the damage.
+>
+> ⇒ **Treat "the owner is waiting" as a signal to re-read the checklist, not to skip it.** The
+> steps that feel skippable under pressure are the ones selected for by never appearing to
+> matter.
+>
+> ### 🧪 A test nobody has watched fail is not a test
+>
+> Same session, from lucifer leading their team: verifier-ui proved a feature works in a real
+> browser and then **volunteered the gap nobody asked about** — `grep` across all 11 candidate
+> files found **zero tests touching that path**. Working feature, nothing guarding it. lucifer
+> ordered a regression test **with the condition that it must first be made to go red**, or it
+> does not count as a test.
+>
+> That is this file's guard criterion pointed at tests: a check whose failure mode has never
+> been observed is indistinguishable from one that cannot fail.
 
 **The rest of this file has had no equivalent scrutiny.** Read it before running it.
 
