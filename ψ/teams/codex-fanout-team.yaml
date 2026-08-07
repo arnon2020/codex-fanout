@@ -2,7 +2,11 @@
 # Testing opencode as coder instead of codex (2026-07-25)
 name: codex-fanout-team
 project: arnon2020/codex-fanout
-session: 117-codex-fanout
+# 🩹 2026-08-07 — เคยเขียน `117-codex-fanout` · **`117` เป็นของ prism** และ session จริงของเราคือ
+#    `114-codex-fanout` `[verified: tmux display-message -p '#S' · maw ls -v]`
+#    เจอตอน real-usage test 15:32 แล้ว **บันทึกเป็น "ข้อข้าง" ไม่ได้แก้** — แก้ตอน /rrr
+#    ⇒ เลข session ใน charter คือ pointer ที่ตกยุคได้ (D15 shape D) และอันนี้ตกมาตั้งแต่ 07-25
+session: 114-codex-fanout
 
 goal: |
   Lead (Claude) dispatches tasks to a single opencode coder in an isolated worktree.
