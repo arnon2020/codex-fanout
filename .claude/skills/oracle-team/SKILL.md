@@ -312,7 +312,7 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > | **paths are absolute** — nothing to resolve | prism (0/8 exposed), lucifer (63/65) | `grep -E '(worktree\|cwd):' charter` → all start with `/` |
 > | **failure is global *unreadability*** — no layer maw reads has the key, so no cwd exists from which it resolves ⚠️ **this row said "registered in no layer anywhere" until 2026-08-07 and that was false** — atlas's engine (`codex-xhigh`) **is** registered, in the unnumbered `~/.config/maw/maw.config.json`, which maw never loads. Same verdict, different root cause, **different fix** (move the line, not invent a key) | atlas (T4463, FAIL 4/4) | ⚠️ **`enginereg` from two *unrelated* dirs has the same always-passes flaw as row 3** — `/tmp` and `/var` both say UNREGISTERED for `codex-xhigh`, which **is** registered in two repos. Run it from **the member's own directory** and read the `🔴 DEAD-LAYER` block |
 > | ⚠️ **~~the only layer is user-level~~ — RETRACTED 2026-08-07, see below** | lucifer | ~~`maw config sources` from two unrelated dirs → identical~~ **this check can only ever confirm itself** |
-> | **no `worktree:` declared at all** — every member falls back to `mdir="$root"`, so there is no relative path to resolve | tars (`research-team.charter.yaml`, same result from 3 dirs) | check (d) in Step 4b fires |
+> | **no `worktree:` declared at all** — every member falls back to `mdir="$root"`, so there is no relative path to resolve | tars (`research-team.charter.yaml`, same result from 3 dirs) | check (d) in Step 4b fires — ✅ **now proven on real data, both arms, same charter**, see below |
 > | 🔴 **repo-scoped presence + relative paths** — the alias lives in a project layer inside the charter's repo | **ajfon's `ajfon-rag-bench`** | this is the shape that flips |
 >
 > atlas's framing is the one to keep: *"this particular charter is cwd-invariant because its
@@ -320,6 +320,33 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > than "my result was fine." **(Read row 2's retraction above: "global absence" turned out to be
 > "global unreadability" for atlas's key. The framing survives; the instance it was applied to
 > did not.)**
+>
+> #### ✅ Check (d)'s positive arm — the longest-open gap in this file, now closed on real data
+>
+> `[verified 2026-08-07 · same charter, two revisions, check (d) run verbatim as shipped]`
+>
+> (d) — *every member needs `worktree:` or `cwd:`* — had **only a negative arm** for days: every
+> charter available to test it declared paths, so it had never been observed to fire on anything
+> real. tars's `research-team.charter.yaml` was the one known case, and it now supplies both arms:
+>
+> ```
+> committed 5a8066a (2026-06-29)  → 🔴 FIRES — researcher, scope_reviewer, verifier, banker
+> working tree today              → 🟢 silent
+> ```
+>
+> Between those two revisions the roles were also renamed
+> `researcher` → `research-team.charter-researcher` — **that is check (c)'s fleet-uniqueness
+> prefix**, applied to the same file. So both Step 4b checks show a before and an after in real
+> state, on someone else's charter, in their own repo. *(The remediation is uncommitted in tars's
+> working tree; I am reporting what the file does, not asserting why they changed it — tars owns
+> that.)*
+>
+> ⚠️ **What this cost me**: I had written into this table that tars's charter *"declares no
+> `worktree:` anywhere"* in the present tense, and repeated it to them as a falsifiable
+> prediction. **By the time I checked, it was false** — and running (d) against today's file
+> returns 🟢, which reads like *the check is broken* rather than *the defect was fixed.*
+> ⇒ 🔑 **A claim about another house's state is perishable, and a stale one fails in the
+> direction that discredits your own tool.** Cite the revision, not the file.
 >
 > #### ⚠️ Row 3 is retracted, and the check attached to it could never have failed
 >
@@ -356,6 +383,34 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > 🔑 **A check that can only be satisfied is not a check.** Before shipping one, ask the third
 > guard question — *if it fires, is what it accuses true?* — **and its inverse: can it fail at
 > all, and what input makes it fail?** Row 3's had no such input.
+>
+> ⚠️ **The replacement has a hole at exactly the moment it is meant to run** `[atlas, 2026-08-07]`
+> — at Gate 0 the member dirs **do not exist yet**, so you cannot `cd "$MEMBER_DIR"`. atlas's
+> substitute is stronger than the literal test and is what to use pre-spawn:
+>
+> ```bash
+> # 1. is there ANY layer anywhere in the tree the members will live under?
+> find "$ROOT" -name 'maw.config.*.json' -print          # zero hits ⇒ nothing can appear below
+> # 2. then the nearest existing ancestor is a sound proxy for what the member will see
+> for d in /tmp "$ROOT"; do echo "--- $d"; ( cd "$d" && maw config sources ); done
+> ```
+>
+> Zero hits from `find` is what licenses the proxy: nothing between `$ROOT` and an unborn member
+> dir can introduce a layer that is already absent at `$ROOT`. **With hits, the proxy is void** —
+> resolve per member after spawn instead. atlas insisted on recording the proxy reasoning rather
+> than letting *"I ran the new command"* stand in for *"I tested the literal thing"*, which is
+> the same conflation this section is about. (`enginereg` already walks to the nearest existing
+> ancestor internally, so it needs no such workaround — this applies to raw `maw config sources`.)
+>
+> 🔴 **And lucifer, running the corrected pair, found their own n=65 was measured from a
+> privileged vantage**: `lucifer-oracle` sees `50 + 60`, but the actual member dirs mostly see
+> **`50` only** (`~/.maw-teams/lucifer-fullstack-v1/architect`, `maw-rs/agents/wsparity-coder`).
+> **The direction matters more than the admission** — they measured from where *more* config is
+> visible, so the error **under-reports failures**: ⇒ **64/65 FAIL is a floor, not an overestimate.**
+> Two consequences they surfaced: `ws-parity-port` is **genuinely clean** (its members see layer
+> 50, and `codex` really is in layer 50 — not borrowing lucifer's 60), while `lucifer-dev-v1`
+> passes Gate 0b **only because its members sit inside lucifer's repo** — move them under
+> `~/.maw-teams/` and it breaks with nothing to warn you.
 >
 > **All six houses ran this against their own charters and each identified its own reason** —
 > and tars's is the one that closes the loop back on Step 4b: their charter is invariant
