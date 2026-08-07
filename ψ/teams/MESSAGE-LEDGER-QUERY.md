@@ -38,8 +38,17 @@ sqlite3.connect('file:/home/user/.maw/message-ledger.sqlite?mode=ro', uri=True)
 
 ### T2 · `state` ตอบไม่ได้ว่า **ผู้รับได้ของที่เราตั้งใจส่ง**
 
-`delivered 9,301 · queued 724 · failed 6` — และ **`queued` ทั้งหมดอยู่ 2026-07-27→31 ไม่มีของใหม่เลย**
-`[verified: group by substr(ts,1,10)]`
+`delivered ~9,30x · queued 724 · failed 6` — **เลขขยับระดับนาที** (เราวัด 9,301 · lucifer 9,302 ·
+อีกสิบนาที 9,303) ⇒ ตัวอย่างสดว่าทำไมกฎ 5 องค์ประกอบขาดข้อ **เวลา** ไม่ได้
+
+> 🔴 **CORRECTED (lucifer, 2026-08-07)** — ฉบับแรกเขียนว่า *"`queued` ทั้งหมดอยู่ 2026-07-27→31"*
+> **ผิด** · ของจริง **2026-07-11 → 2026-07-31 · 21 วัน**
+> `[verified: min/max/group by ทั้งชุด ไม่ limit]`
+> กรอบ 27–31 ครอบแค่ **222 จาก 724** ⇒ **ซ่อนไป 502 แถว และซ่อนวันที่สูงสุดทิ้งด้วย (07-13 = 159)**
+> **ต้นเหตุ**: query แรกของเราใส่ `order by 1 desc limit 5` แล้ว **เอา 5 แถวบนไปบรรยายว่าเป็นทั้งหมด**
+> ⇒ นี่คือ *"no silent caps"* ในกฎของเราเอง ยิงเข้าตัวเอง
+> ⇒ ข้อสรุป *"ไม่มี `queued` ใหม่หลัง 07-31 เลย"* **ยังยืน** (lucifer ยืนยัน) — แต่ *"5 วัน"*
+> กับ *"3 สัปดาห์ต่อเนื่องแล้วหยุดสนิท"* **พาไปคนละทางตอนหาสาเหตุ**
 
 `delivered` = **transport ปล่อยของออกไปแล้ว** เท่านั้น · lucifer วัดวันเดียว 117 ข้อความ
 `delivered` ครบ **ไม่มี failed สักอัน** แต่ในนั้นมี **ข้อความที่ค้างในช่องพิมพ์ ต้อง `send-enter`
@@ -48,6 +57,30 @@ sqlite3.connect('file:/home/user/.maw/message-ledger.sqlite?mode=ro', uri=True)
 และเกินจริงในทิศที่อันตราย คือทำให้เชื่อว่าคนนั้น "รู้แล้ว"**
 ⇒ ตรงกับ **บันไดชั้นหลักฐาน** ใน CLAUDE.md: `delivered` = **ชั้น 1** เท่านั้น ·
 ชั้น 4 (agent อ้างถึงเนื้อความ) **ไม่มีอยู่ใน DB นี้เลย**
+
+### T5 · 🔴 `failed` **นับ negative control ปนมา** — `count(failed)` เกินจริง 3 เท่า
+
+`[lucifer พบ · codex-fanout ยืนยัน 2026-08-07: select ทั้ง 6 แถว]`
+```
+ล้มจริง 2:  local:tars   -> atlas-codex            can't find session: 107-atlas-codex
+            lucifer-cst-v1 -> …-delivery-lead      can't find window: 4
+probe   4:  local:mawjs  -> local:mawjs   '__verify-probe-nonexistent__'
+            local:mawjs  -> local:mawjs   'no-such-pane-xyz'
+            local:mawjs  -> local:mawjs   '__lfs003_probe__'
+            local:mawjs  -> local:mawjs   '__verify-probe-nonexistent__'
+```
+⇒ **4 ใน 6 คือคนที่กำลังพิสูจน์ว่า guard ตกได้** — ซึ่งเป็นสิ่งที่เอกสารนี้บังคับให้ทำ
+**แต่ใน DB มันหน้าตาเหมือนระบบพังทุกประการ**
+⇒ 🔑 **ใครใช้ `count(failed)` เป็นตัวชี้สุขภาพ จะนับ *หลักฐานว่าเครื่องมือทำงาน* เป็น *ความเสียหาย***
+⇒ ก่อนนับ ต้องตัด `from_id = to_id` ออก และตัดแถวที่ `error` มีคำว่า `probe` ⇒ ไม่งั้น
+**ตัวเลขนี้อ่านผิดทางเดียวเสมอ**
+
+### T6 · `id` มี **สามรูป ไม่ใช่สอง**
+
+`[verified: uuid-like 8,981 · composite-ts 1,051 · other 1]`
+ตัวที่สามคือ **`test-lifecycle-0001`** — fixture ที่หลุดค้างใน DB จริง (`local:tars`, 07-11, delivered)
+⇒ ประเด็นไม่ใช่จำนวน แต่คือ **โค้ดที่ parse `id` โดยสมมติสองรูป จะพังที่แถวเดียวนี้ —
+พังแบบที่หายากที่สุด คือ 1 ใน 10,03x**
 
 ### T3 · `ts` เป็น **UTC** ส่วนทุกเลขที่เราคุยกันเป็น **+07** — ต่างกัน 7 ชั่วโมง
 
