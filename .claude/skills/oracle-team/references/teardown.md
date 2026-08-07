@@ -697,12 +697,26 @@ defect 13. Nothing here has been run against a live team's real state.**
 > one phantom. Wrong unit → "released" after releasing almost nothing. Stdin collision → four
 > tracebacks and silence. Empty `$CODERS` → matches nothing, says nothing.
 >
-> **When adding a guard here, do not ask "does it work". Ask three things:**
+> **When adding a guard here, do not ask "does it work". Ask four things:**
 > **1. What does it print when it breaks?** If nothing — it is not a guard.
 > **2. Does it actually stop, and can the caller tell?** The eighth defect *printed*, in bash's
 > own error voice, and execution continued past it with exit 0. **Printing is necessary and not
 > sufficient.**
 > **3. If it fires, is what it accuses true?** — a second, more expensive failure class.
+> **4. Can it fail at all — name the input that makes it fail.** If you cannot, it is not a
+> check; it is a sentence that always passes.
+>
+> > 🪤 **Question 4 was added 2026-08-07, after auditing SKILL.md turned up one of these already
+> > shipped.** A row justifying a house's verdict as cwd-invariant offered the check
+> > *"`maw config sources` from two unrelated dirs → identical"*. **`/tmp` and `/var` satisfy it
+> > perfectly and prove nothing** — its passing condition was *picking two directories that
+> > happen to sit outside any repo with a layer*. The house it credited **has a project layer**,
+> > so the stated reason was false and the check could not have revealed that. Replaced with one
+> > that names the pair that matters: **one of the two dirs must be the member's own directory.**
+> >
+> > Questions 1–3 all assume the check *can* run wrong. This one asks whether it can run at all.
+> > It is the cheapest of the four to answer and the easiest to skip, because a check that always
+> > passes looks exactly like a check that keeps passing.
 >
 > > 🔴 **"Checks and stays silent" is the cheap failure. "Checks loudly and names the wrong
 > > party" is the expensive one.** `[2026-08-07]` I wrote a detector for `bootverify` that

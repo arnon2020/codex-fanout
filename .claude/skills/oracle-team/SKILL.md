@@ -310,14 +310,52 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > | why it cannot flip | who | check |
 > |---|---|---|
 > | **paths are absolute** — nothing to resolve | prism (0/8 exposed), lucifer (63/65) | `grep -E '(worktree\|cwd):' charter` → all start with `/` |
-> | **failure is global *unreadability*** — no layer maw reads has the key, so no cwd exists from which it resolves ⚠️ **this row said "registered in no layer anywhere" until 2026-08-07 and that was false** — atlas's engine (`codex-xhigh`) **is** registered, in the unnumbered `~/.config/maw/maw.config.json`, which maw never loads. Same verdict, different root cause, **different fix** (move the line, not invent a key) | atlas (T4463, FAIL 4/4) | `verify-check.sh enginereg <engine>` from two unrelated dirs → UNREGISTERED both **and read the `🔴 DEAD-LAYER` line if it prints one** |
-> | **the only layer is user-level** — `~/.config/maw/maw.config.50.json` is visible from everywhere | lucifer | `maw config sources` from two unrelated dirs → identical |
+> | **failure is global *unreadability*** — no layer maw reads has the key, so no cwd exists from which it resolves ⚠️ **this row said "registered in no layer anywhere" until 2026-08-07 and that was false** — atlas's engine (`codex-xhigh`) **is** registered, in the unnumbered `~/.config/maw/maw.config.json`, which maw never loads. Same verdict, different root cause, **different fix** (move the line, not invent a key) | atlas (T4463, FAIL 4/4) | ⚠️ **`enginereg` from two *unrelated* dirs has the same always-passes flaw as row 3** — `/tmp` and `/var` both say UNREGISTERED for `codex-xhigh`, which **is** registered in two repos. Run it from **the member's own directory** and read the `🔴 DEAD-LAYER` block |
+> | ⚠️ **~~the only layer is user-level~~ — RETRACTED 2026-08-07, see below** | lucifer | ~~`maw config sources` from two unrelated dirs → identical~~ **this check can only ever confirm itself** |
 > | **no `worktree:` declared at all** — every member falls back to `mdir="$root"`, so there is no relative path to resolve | tars (`research-team.charter.yaml`, same result from 3 dirs) | check (d) in Step 4b fires |
 > | 🔴 **repo-scoped presence + relative paths** — the alias lives in a project layer inside the charter's repo | **ajfon's `ajfon-rag-bench`** | this is the shape that flips |
 >
 > atlas's framing is the one to keep: *"this particular charter is cwd-invariant because its
 > failure mode is global-absence, not repo-scoped-presence"* — a narrower and checkable claim
-> than "my result was fine."
+> than "my result was fine." **(Read row 2's retraction above: "global absence" turned out to be
+> "global unreadability" for atlas's key. The framing survives; the instance it was applied to
+> did not.)**
+>
+> #### ⚠️ Row 3 is retracted, and the check attached to it could never have failed
+>
+> `[found by auditing this table, 2026-08-07 — not reported by anyone]`
+>
+> It claimed lucifer's verdict was cwd-invariant *because the only layer is user-level*, and
+> offered this check: **`maw config sources` from two unrelated dirs → identical.**
+>
+> `lucifer-oracle` **has a project layer.** Measured:
+>
+> ```
+> cd /tmp                → 50 user  /home/user/.config/maw/maw.config.50.json
+> cd lucifer-oracle      → 50 user  …/maw.config.50.json
+>                          60 project  …/lucifer-oracle/.maw/maw.config.60.json   ← not identical
+> ```
+>
+> So the reason was false for the house credited with it. **And the check cannot detect that**:
+> "two unrelated dirs" is satisfied by any two directories that happen to sit outside a repo with
+> a layer — `/tmp` and `/var` agree perfectly and tell you nothing. It is a check whose passing
+> condition is *choosing the right pair of directories*, which is the vantage-point artifact this
+> whole section exists to warn about, **written into the section itself.**
+>
+> ⇒ **Replacement — the pair must include the place that matters, not two arbitrary places:**
+>
+> ```bash
+> # one of the two dirs MUST be a member's own directory (mdir), not a neutral one
+> for d in /tmp "$MEMBER_DIR"; do echo "--- $d"; ( cd "$d" && maw config sources ); done
+> ```
+>
+> Identical output ⇒ the member sees nothing beyond user level ⇒ the verdict is cwd-invariant
+> **for that member**. Different ⇒ a project layer is in play and the verdict must be taken from
+> `mdir`, never from where you happen to be standing.
+>
+> 🔑 **A check that can only be satisfied is not a check.** Before shipping one, ask the third
+> guard question — *if it fires, is what it accuses true?* — **and its inverse: can it fail at
+> all, and what input makes it fail?** Row 3's had no such input.
 >
 > **All six houses ran this against their own charters and each identified its own reason** —
 > and tars's is the one that closes the loop back on Step 4b: their charter is invariant
