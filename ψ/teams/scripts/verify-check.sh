@@ -650,6 +650,18 @@ YAML
   echo "6) pipefail trap: cmd | grep -q ต้องไม่ทำให้ผลกลายเป็นล้มเหลว"
   local rc6; echo hi | grep -q hi; rc6=$?
   [ "$rc6" = "0" ] || { echo "   ✗ grep -q rc=$rc6"; fail=1; }
+  # 🔌 2026-08-07 — census-selftest.sh ถูกสร้างขึ้นเพื่อแทน "คอมเมนต์ลงวันที่ที่เสื่อมเงียบ ๆ"
+  #    แต่ **ไม่มีอะไรเรียกมันเลย** (grep เจอแต่ prose) ⇒ มันจะเสื่อมด้วยวิธีเดียวกันเป๊ะ
+  #    — defect shape ของ D15.8 เอง สูงขึ้นไปอีกชั้น สร้างในชั่วโมงเดียวกับที่เขียน D15.8
+  #    ⇒ ต่อสายเข้ามาที่นี่ เพราะ `selftest` คือสิ่งที่ CLAUDE.md สั่งให้รันก่อนเชื่อสคริปต์
+  echo "7) census-selftest (3 แขน — negative control / positive / regression)"
+  local _cs="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/census-selftest.sh"
+  if [ -x "$_cs" ]; then
+    if bash "$_cs" >/dev/null 2>&1; then echo "   ✓ census 3/3"
+    else echo "   ✗ census-selftest ตก — รัน $_cs เพื่อดูว่าแขนไหน"; fail=1; fi
+  else
+    echo "   (ไม่พบ census-selftest.sh ข้าง verify-check.sh — ข้าม ไม่นับผ่าน/ตก)"
+  fi
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
 

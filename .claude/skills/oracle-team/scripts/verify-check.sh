@@ -1809,6 +1809,19 @@ PY
   grep -q '/home/other/oracle' "$t17/cfg.toml" || { echo "   ✗ ลบของบ้านอื่นไปด้วย"; fail=1; }
   rm -rf "$t17"
 
+  # 🔌 2026-08-07 — census-selftest.sh ถูกสร้างเพื่อแทน "คอมเมนต์ลงวันที่ที่เสื่อมเงียบ ๆ"
+  #    แต่ /rrr พบว่า **ไม่มีอะไรเรียกมันเลย** — grep เจอแต่ prose ⇒ มันจะเสื่อมด้วยวิธีเดียวกันเป๊ะ
+  #    กับสิ่งที่มันถูกสร้างมาแทน · defect shape ของ D15.8 เอง สูงขึ้นอีกชั้น สร้างในชั่วโมงเดียวกัน
+  #    ⇒ ต่อสายมาที่นี่ เพราะ CLAUDE.md สั่งให้ `รัน selftest ก่อนเชื่อสคริปต์`
+  echo "18) census-selftest (3 แขน — negative control / positive / regression)"
+  local _cs="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)/census-selftest.sh"
+  if [ -x "$_cs" ]; then
+    if bash "$_cs" >/dev/null 2>&1; then echo "   ✓ census 3/3"
+    else echo "   ✗ census-selftest ตก — รัน $_cs เพื่อดูว่าแขนไหน"; fail=1; fi
+  else
+    echo "   (ไม่พบ census-selftest.sh ข้าง verify-check.sh — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
 
