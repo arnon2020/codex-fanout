@@ -391,6 +391,32 @@ cd "$ROOT"
 Read both `command:` lines. **They must differ.** Identical output means your alias was
 discarded and both fell through to the same default — fix that before going on.
 
+> ### ✅ What Gate 0 is actually worth: a spawn that was stopped
+>
+> `[atlas, 2026-08-07, with direct human authorization to proceed]` They were cleared to bring up
+> `rnd-cell` — a 3-role research/verify/plan cell whose entire point is **cross-family**
+> verification. `enginecheck` returned `overall: FAIL` and named why:
+>
+> | role | charter asks for | would actually boot |
+> |---|---|---|
+> | `researcher` | `gpt-5.4-codex` | codex with **no `--model` at all** → whatever `config.toml` currently says; the requested name may not exist any more |
+> | `planner` | a codex-family engine | **plain `claude-opus-5`** — *the same vendor as the oracle running the cell* |
+> | `verifier` | glm-5.1 via thclaws | lands close, **but only because `verifier` glob-matches** — right answer by luck, which is what `pinned=no` exists to flag |
+>
+> The `planner` row is the one to remember. Booting `claude-opus-5` there is not merely the wrong
+> model — **it collapses a cross-family cell into one that verifies itself**, which is a failure
+> of the team's *purpose* caught by a check that only reads *command strings*. Nothing at runtime
+> would have looked broken; three panes would have come up and worked.
+>
+> atlas also found the charter forbids the spawn in its own header
+> (`spawn_policy: no-exec-from-atlas-pane`), reported **both** blockers to the human rather than
+> picking whichever was more convenient, and stopped. Their framing: *"I checked, found two real
+> reasons, and they hold regardless of who's asking."*
+>
+> ⇒ **Gate 0's value is not only that a team boots correctly — it is that a team which would
+> defeat its own design never gets spawned.** That is worth more than any teardown, because
+> nothing needs tearing down.
+
 **Step 4b — pre-spawn checklist. Three things that are cheap now and expensive after spawn.**
 
 > `[found by lucifer 2026-08-06, running Gate 0 against a real un-spawned 4-role charter]`
