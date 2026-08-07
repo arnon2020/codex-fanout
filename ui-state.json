@@ -6,109 +6,109 @@
   "muted": false,
   "recentMap": {
     "112-atlas:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "atlas-oracle",
       "session": "112-atlas",
       "target": "112-atlas:0"
     },
     "113-tars:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "tars-oracle",
       "session": "113-tars",
       "target": "113-tars:0"
     },
     "114-codex-fanout:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "codex-fanout",
       "session": "114-codex-fanout",
       "target": "114-codex-fanout:0"
     },
     "116-loom:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "loom-oracle",
       "session": "116-loom",
       "target": "116-loom:0"
     },
     "116-loom:1": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "workflow-controller",
       "session": "116-loom",
       "target": "116-loom:1"
     },
     "116-loom:2": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "reality-grounder",
       "session": "116-loom",
       "target": "116-loom:2"
     },
     "116-loom:3": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "learning-architect",
       "session": "116-loom",
       "target": "116-loom:3"
     },
     "116-loom:4": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "thai-native-instructional-writer-editor",
       "session": "116-loom",
       "target": "116-loom:4"
     },
     "116-loom:5": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "media-engineer",
       "session": "116-loom",
       "target": "116-loom:5"
     },
     "116-loom:6": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "media-integrator",
       "session": "116-loom",
       "target": "116-loom:6"
     },
     "116-loom:7": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "failure-diagnostician",
       "session": "116-loom",
       "target": "116-loom:7"
     },
     "116-loom:8": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "media-verifier",
       "session": "116-loom",
       "target": "116-loom:8"
     },
     "116-loom:9": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "comprehension-prechecker",
       "session": "116-loom",
       "target": "116-loom:9"
     },
     "117-prism:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "prism-oracle",
       "session": "117-prism",
       "target": "117-prism:0"
     },
     "18-holmes:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "holmes-oracle",
       "session": "18-holmes",
       "target": "18-holmes:0"
     },
     "40-ajfon:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "ajfon",
       "session": "40-ajfon",
       "target": "40-ajfon:0"
     },
     "84-lucifer:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "lucifer",
       "session": "84-lucifer",
       "target": "84-lucifer:0"
     },
     "84-lucifer:1": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "lucifer-oracle",
       "session": "84-lucifer",
       "target": "84-lucifer:1"
@@ -156,19 +156,19 @@
       "target": "giprobe:0"
     },
     "lucifer-dev-v1:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "frontend-engineer-oracle",
       "session": "lucifer-dev-v1",
       "target": "lucifer-dev-v1:0"
     },
     "lucifer-dev-v1:1": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "exploratory-tester-oracle",
       "session": "lucifer-dev-v1",
       "target": "lucifer-dev-v1:1"
     },
     "lucifer-dev-v1:2": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "independent-verifier-oracle",
       "session": "lucifer-dev-v1",
       "target": "lucifer-dev-v1:2"
@@ -288,25 +288,25 @@
       "target": "skilltest:1"
     },
     "ws-parity-port:0": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "coder-a-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:0"
     },
     "ws-parity-port:1": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "verifier-rs-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:1"
     },
     "ws-parity-port:2": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "coder-b-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:2"
     },
     "ws-parity-port:3": {
-      "lastBusy": 1786074987343,
+      "lastBusy": 1786075251300,
       "name": "verifier-ui-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:3"
