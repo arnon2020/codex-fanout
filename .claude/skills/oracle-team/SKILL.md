@@ -89,6 +89,34 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 > where**. A test's authorship is part of its evidence value. Green is not a verdict when the
 > author of the test is the author of the claim.
 
+> ## 🔤 `maw` and `maw team` disagree about what an unknown command is
+>
+> `[verified 2026-08-07 · c1e8797 · found by inventorying every command this skill tells you to run]`
+>
+> | you type | rc | message | stream |
+> |---|---|---|---|
+> | `maw zzz-not-a-verb` | **2** | `unknown command` | **stderr** |
+> | `maw team zzz-nope` | **0** | the whole usage block | **stdout**, stderr empty |
+>
+> ⇒ **`maw team upp && echo OK` prints OK.** A guard written `maw team up … || fail` **can never
+> fire on a typo** — the team is not created, nothing errors, and the script walks on as though it
+> were. Same shape as the already-documented `maw team status <nonexistent> → rc=0`, but that was
+> one verb; **this is every mistyped verb.**
+>
+> ```bash
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh mawverb up      # OK
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh mawverb upp     # ✗ NOSUCH, rc=1
+> ```
+>
+> ✅ **Inventory result — every command this skill instructs you to run exists on `c1e8797`**:
+> `team up|down|list|plan|preflight|resume|spawn|status` all present; top-level
+> `config hey peek send-enter serve ls wake inbox tmux` all present. **No missing verbs.** The
+> defect is not absence, it is that **absence would not have announced itself.**
+>
+> 🔑 The house rule this is the second instance of: **read rc *and* output for every command, and
+> never carry a convention over from the command you just ran** — the same binary uses opposite
+> conventions one level apart. Selftest case 16 pins both, and warns if `maw` ever changes them.
+
 ## QUICKSTART — never built a team before? Run exactly this.
 
 This is a complete, working sequence, in order, with nothing assumed. It was run end-to-end

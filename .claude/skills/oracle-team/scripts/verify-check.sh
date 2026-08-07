@@ -612,6 +612,45 @@ _vc_argv_basename() {
   return 1
 }
 
+# ── mawverb <subcommand...> ─────────────────────────────────────────────────
+# "คำสั่ง `maw team <x>` ที่ฉันกำลังจะรัน มีอยู่จริงไหม" — ถามก่อนรัน ไม่ใช่หลังพัง
+#
+# 🔴 2026-08-07 · เจอจากการไล่ inventory คำสั่งทุกตัวที่ skill สั่งให้ผู้อ่านรัน
+#    **`maw` กับ `maw team` ใช้ธรรมเนียมตรงข้ามกันสำหรับคำสั่งที่ไม่มีอยู่** `[verified]`
+#
+#      maw zzz-not-a-verb    → rc=2 · "unknown command" · **stderr**
+#      maw team zzz-nope     → **rc=0** · usage ทั้งก้อน · **stdout** · stderr **ว่าง**
+#
+#    ⇒ 🔑 **`maw team <พิมพ์ผิด> && echo OK` พิมพ์ OK** · และ guard ที่เขียนว่า
+#       `maw team up … || fail` **ไม่มีวันยิง** ถ้า verb พิมพ์ผิด — มันจะ "สำเร็จ" เงียบ ๆ
+#       โดยไม่ได้ทำอะไรเลย ⇒ ทีมไม่ถูกสร้าง แต่สคริปต์เดินต่อเหมือนสร้างแล้ว
+#    ⇒ นี่คือรูปเดียวกับ `maw team status <ทีมที่ไม่มี> → rc=0` ที่บันทึกไว้แล้ว
+#       **แต่กว้างกว่า**: อันนั้นคือ verb เดียว อันนี้คือ **ทุก verb ที่พิมพ์ผิด**
+#    ⇒ และเป็นตัวอย่างที่สองของกฎในบ้านนี้: **อ่าน rc *และ* output ทุกคำสั่ง
+#       อย่าเดารูปแบบจากคำสั่งที่เพิ่งเจอ — แม้แต่ binary เดียวกันก็ไม่เหมือนกันข้ามระดับ**
+# valid-if: bash ψ/teams/scripts/verify-check.sh selftest → case 16 ต้องผ่าน
+mawverb() {
+  local sub="${1:?usage: mawverb <team-subcommand>}"
+  local usage
+  usage=$(maw team zz-vc-probe-not-a-verb 2>&1 | grep -m1 '^usage: maw team')
+  if [ -z "$usage" ]; then
+    echo "UNKNOWN   อ่านลิสต์ subcommand จาก maw ไม่ได้ — **ตอบไม่ได้ ไม่ใช่ผ่าน**"
+    return 2
+  fi
+  # ดึงเฉพาะในวงเล็บ <a|b|c> แล้วเทียบแบบตรงตัว
+  local list="${usage#*<}"; list="${list%%>*}"
+  case "|$list|" in
+    *"|$sub|"*) echo "OK        maw team $sub"; return 0 ;;
+  esac
+  echo "✗ NOSUCH  'maw team $sub' ไม่มีอยู่ใน subcommand list ของ binary นี้"
+  # 🩹 บรรทัดนี้เคยเขียน `|| fail` ไว้ใน backtick ในสตริง double-quote ⇒ **shell รันมันเป็นคำสั่ง**
+  #    ⇒ ผู้อ่านเห็น "⇒  ของคุณจะไม่ยิง" (คำหาย) + syntax error แปะหน้า — **scar เดียวกับที่ทำ
+  #    ข้อความหา peer เพี้ยนเมื่อเช้านี้ ครั้งที่ 3 ของวัน และคราวนี้อยู่ใน guard เอง**
+  echo '          ⚠️ maw team จะ **คืน rc=0 และพิมพ์ usage ลง stdout** ⇒ `|| fail` ของคุณจะไม่ยิง'
+  echo "          มีจริง: $list"
+  return 1
+}
+
 bootverify() {
   local sess="${1:?usage: bootverify <session>}"
   binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
@@ -1651,6 +1690,22 @@ Second line with 'quotes' and --flags"
   echo "15) modelprobe: **ไม่รันในเทสต์โดยเจตนา** (เสียโควตาจริง) — ประกาศไว้ ไม่ใช่ลืม"
   declare -F modelprobe >/dev/null 2>&1 || { echo "   ✗ modelprobe ไม่มีฟังก์ชันจริง"; fail=1; }
 
+  echo "16) mawverb: subcommand จริงต้องผ่าน · ที่ไม่มีต้องตก · และต้องพิสูจน์ธรรมเนียม rc ที่ขัดกัน"
+  if binexists maw >/dev/null 2>&1; then
+    mawverb up   >/dev/null 2>&1 || { echo "   ✗ 'up' มีจริง ควรผ่าน"; fail=1; }
+    mawverb down >/dev/null 2>&1 || { echo "   ✗ 'down' มีจริง ควรผ่าน"; fail=1; }
+    mawverb zz-not-a-real-subcommand >/dev/null 2>&1 && { echo "   ✗ subcommand ที่ไม่มี ควรตก"; fail=1; }
+    # 🔑 แขนที่พิสูจน์ **เหตุผลที่ verb นี้ต้องมีอยู่** — ถ้าวันหนึ่ง maw แก้ให้ `team <typo>`
+    #    คืน rc≠0 แขนนี้จะตก แล้วเราจะได้รู้ว่ากฎเปลี่ยน (และลบ verb นี้ได้)
+    maw team zz-not-a-real-subcommand >/dev/null 2>&1
+    local trc=$?
+    [ "$trc" = "0" ] || echo "   🟡 'maw team <typo>' คืน rc=$trc แล้ว (เคยเป็น 0) — ธรรมเนียมเปลี่ยน ทบทวน mawverb"
+    local terr; terr=$(maw team zz-not-a-real-subcommand 2>&1 >/dev/null | grep -c .)
+    [ "$terr" = "0" ] || echo "   🟡 'maw team <typo>' เริ่มพิมพ์ลง stderr แล้ว — ธรรมเนียมเปลี่ยน"
+  else
+    echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
 
@@ -1666,7 +1721,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe selftest"
+VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
@@ -1676,6 +1731,7 @@ verify_check_usage() {
   echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
   echo "  bootverify <session>   ← หลัง spawn: pane boot ตรง engine ไหม + จอเป็นของ agent หรือ installer"
   echo "  unstick <session> [n]  ⚠ ส่ง Enter เข้า pane: เคลียร์คำสั่งที่ค้าง (ต้องมากกว่า 1 ครั้ง)"
+  echo "  mawverb <team-subcommand>  ← `maw team <พิมพ์ผิด>` คืน rc=0 + usage ลง stdout"
   echo "  selftest"
 }
 
