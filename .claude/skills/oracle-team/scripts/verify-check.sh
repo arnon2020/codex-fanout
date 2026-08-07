@@ -220,7 +220,32 @@ relay() {
     local f="ψ/inbox/$(date +%Y-%m-%d_%H-%M)_codex-fanout_${slug}.md"
     { printf -- '---\nfrom: codex-fanout\nto: %s\ntimestamp: %s\nchannel: tmux + durable inbox\n---\n\n' \
         "$sess" "$(date -Iseconds)"; printf '%s\n' "$msg"; } > "$f"
-    echo "DURABLE   $f"
+    echo "DURABLE   $f  (สำเนาของ **ผู้ส่ง** — ยังไม่ถึงเขา)"
+
+    # 🩹 2026-08-07 — **`--durable` เดิมเขียนลง inbox ของผู้ส่งเท่านั้น ⇒ ผู้รับไม่ได้อะไรเลย**
+    #    atlas จับได้ด้วยการเช็คดิสก์ตัวเอง · **loom ยืนยันซ้ำจากฝั่งผู้รับ**: packet ของผม
+    #    ที่เป็นไฟล์ในบ้าน loom มี 11 ใบ · correction 16:35 **ไม่มี** — เขามีแต่ใน context
+    #    ⇒ session เขาตาย ของหายไปด้วย · ผมปิด Next Step ว่า "ส่ง durable ครบ" บนกลไกนี้
+    #    ⇒ 🪜 "ผมเขียนไฟล์แล้ว" = **ชั้น 0** ต่ำกว่า `delivered` เพราะ delivered ยังแตะ pane เขา
+    #    วิธีที่ถูกคือของ **loom**: เขียนลง `ψ/inbox/` ของ *ผู้รับ* ตรง ๆ (เขาทำกับผมแบบนี้มาตลอด)
+    #    ⚠️ `maw locate` fuzzy — ชื่อกำกวมคืน "matches multiple targets" (เช่น `ajfon`)
+    #       ⇒ **ไม่เดา** · ถ้าไม่ชัด ให้ตกลงมาเป็นสำเนาผู้ส่งพร้อมบอกตรง ๆ ว่ายังไม่ถึง
+    local peer="${sess##*-}" peerpath="" pf=""
+    peerpath=$(maw locate "$peer" --path 2>/dev/null | head -1)
+    case "$peerpath" in
+      /*) if [ -d "$peerpath/ψ/inbox" ]; then
+            pf="$peerpath/ψ/inbox/$(date +%Y-%m-%d_%H-%M)_codex-fanout_${slug}.md"
+            if cp -- "$f" "$pf" 2>/dev/null; then
+              echo "DELIVERED $pf  ← เขียนลงดิสก์ **ของผู้รับ**"
+            else
+              echo "WARN      เขียน $pf ไม่ได้ — ผู้รับยังไม่มีไฟล์ อย่านับว่าส่งถึง"
+            fi
+          else
+            echo "WARN      $peerpath ไม่มี ψ/inbox — ผู้รับยังไม่มีไฟล์"
+          fi ;;
+      *)  echo "WARN      maw locate '$peer' ไม่ให้ path ที่ชัดเจน — **ผู้รับยังไม่มีไฟล์**"
+          echo "          (ชื่อกำกวม/ไม่พบ) ⇒ ใส่เนื้อหาเต็มในตัวข้อความ อย่าให้ path แทนเนื้อหา" ;;
+    esac
     # 🩹 2026-08-04: `.gitignore` มี `ψ/*` ⇒ ไฟล์นี้ **ไม่เข้า git** ถ้าไม่ `-f`
     #    วันที่ผมเลิกใช้ `git add -f ψ/` ไฟล์ durable ตัวแรกหลังกฎใหม่ตกทันที **เงียบสนิท**
     #    `git commit` exit 0 · ledger เขียนว่า durable ครบ · ไม่มีอะไรเตือน
