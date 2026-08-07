@@ -243,10 +243,19 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > | the key exists nowhere | **add** it to a numbered layer that is an ancestor of the member's path | `UNREGISTERED` |
 > | the key exists — in a config file maw does not read | **move** that line into a layer maw reads | `UNREGISTERED` |
 >
-> On this machine **9 keys live only in the dead unnumbered file**, including `codex-xhigh`,
-> which **57 of lucifer's charters request**. lucifer read their 64/65 FAIL as cause 1 and was
-> about to add a key to 57 charters; the real job was **moving 9 lines**. atlas quoted this
-> tool's own `UNREGISTERED` into their T4463 reports several times the same day.
+> On this machine **9 keys are invisible from a directory with no repo-local layer** — including
+> `codex-xhigh`, which **57 of lucifer's charters request**. lucifer read their 64/65 FAIL as
+> cause 1 and was about to add a key to 57 charters; the real job was far smaller. atlas quoted
+> this tool's own `UNREGISTERED` into their T4463 reports several times the same day.
+>
+> ⚠️ **That sentence said "9 keys live only in the dead file" until an hour later, and it was
+> wrong for 3 of the 9** — I measured from `/tmp`, where the only live layer is the user-level
+> one, then stated the result as if it held from every vantage. Per-key, checked from 7 vantage
+> points: **6 are (A)**; `claude-opus-headless` is **(B)** with the same command; **`codex-xhigh`
+> and `codex-medium` are (B) carrying a *different command string* than the dead file's.** So
+> "move the 9 lines" is safe only for the six — for those two, moving the dead file's version to
+> user level hands a **different engine** to any house lacking its own layer. ⇒ An absence claim
+> must carry the scope it searched, and **a bulk remedy needs a per-item classification first.**
 >
 > ⇒ 🔑 **A right conclusion reached by the wrong reason is not safe — the fix inherits the
 > reason, not the conclusion.** And it is invisible, because *the verdict is identical either way.*
