@@ -10,11 +10,20 @@ for f in files:
     for k, v in c.items():
         if isinstance(v, str): cmds.setdefault(k, set()).add(v)
 
+# 🩹 2026-08-07 [ajfon] regex เดิม `model_reasoning_effort=(\w+)` **มองไม่เห็นค่าที่ใส่ quote**
+#    (`model_reasoning_effort="high"`) ซึ่ง **ถูกต้องตาม `-c` syntax ของ codex เอง**
+#    (`--help` ยกตัวอย่าง `-c model="o3"`) ⇒ census นับว่า "ไม่ pin" ทั้งที่ pin จริง
+#    ⇒ **blind spot คลาสเดียวกับที่ไล่จับกันทั้งวัน**: สคริปต์อ่านไฟล์ config ตรง ๆ
+#      **ไม่ได้ผ่าน shell tokenization แบบตอน execute จริง** ⇒ เห็นสตริงคนละตัวกับที่ engine เห็น
+#    ⇒ ไม่กระทบความปลอดภัย แต่ **undercount** ⇒ ตัวเลข "effort ถูกตั้งกี่ตัว" ต่ำกว่าจริงได้
+def _unq(s):
+    return s.strip().strip('"').strip("'") if s else s
+
 def tier(cmd):
-    m = re.search(r'--model[= ]([^\s]+)', cmd)
-    model = m.group(1) if m else None
-    eff = re.search(r'model_reasoning_effort=(\w+)', cmd)
-    return model, (eff.group(1) if eff else None)
+    m = re.search(r'--model[= ]("[^"]+"|\'[^\']+\'|[^\s]+)', cmd)
+    model = _unq(m.group(1)) if m else None
+    eff = re.search(r'model_reasoning_effort=("[^"]+"|\'[^\']+\'|[\w-]+)', cmd)
+    return model, (_unq(eff.group(1)) if eff else None)
 
 rows = []
 for k, vs in cmds.items():
