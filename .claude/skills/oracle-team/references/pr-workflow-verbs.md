@@ -71,12 +71,40 @@ ISSUES=$(echo "$ISSUE_ARGS" | tr ',' ' ')
 ```
 
 If no issues given, get all open:
+
+> 🔴 **The one-liner this used to show cannot tell "no issues" from "no such repo", and either
+> way `dispatch` does nothing while looking like it worked.** `[measured 2026-08-07 — the first
+> time this path was ever run]`
+>
+> | case | `ISSUES` | `gh` rc | what the `for` loop does |
+> |---|---|---|---|
+> | repo exists, zero open issues | `''` | 1 | 0 iterations, no output |
+> | repo does not exist / no access | `''` | 1 | 0 iterations, no output |
+>
+> Same variable, same rc, same silence. The caller sees a clean run and concludes work was
+> dispatched. **`for I in $ISSUES` over an empty string is the quietest no-op in this file.**
+> (My own inline prediction here said rc would be 0 for the empty case; measuring said 1 for
+> both. Recorded because a wrong prediction that goes unchecked is how the next reader inherits
+> it.)
+
 ```bash
-ISSUES=$(gh issue list --repo "$PROJECT" --state open --json number -q '.[].number' | head -"${N:-5}")
+: "${PROJECT:?set PROJECT — owner/repo}"
+raw=$(gh issue list --repo "$PROJECT" --state open --json number -q '.[].number' 2>&1); rc=$?
+case "$raw" in
+  *"Could not resolve"*|*"HTTP 404"*|*"not found"*)
+    echo "✗ $PROJECT: repo unreachable — NOT the same as having no issues"; return 1 2>/dev/null || exit 1 ;;
+esac
+[ "$rc" -le 1 ] || { echo "✗ gh failed rc=$rc: $raw"; return 1 2>/dev/null || exit 1; }
+ISSUES=$(printf '%s\n' "$raw" | grep -E '^[0-9]+$' | head -"${N:-5}")
+if [ -z "$ISSUES" ]; then
+  echo "✓ $PROJECT has no open issues — dispatching nothing, on purpose"
+  return 0 2>/dev/null || exit 0
+fi
+echo "dispatching ${N:-5}-max of: $(printf '%s' "$ISSUES" | tr '\n' ' ')"
 ```
 
-`N` here is how many issues to take, and it is **not** set for you — the expression above
-defaults to 5 when unset, silently. Set `N` explicitly if you mean a different number.
+`N` is how many issues to take and is **not** set for you — it defaults to 5 silently. Set it
+explicitly if you mean a different number.
 
 ### Step 2: Create worktrees (if not exist)
 

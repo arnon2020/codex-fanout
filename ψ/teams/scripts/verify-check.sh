@@ -481,7 +481,7 @@ bootverify() {
   binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
   tmux has-session -t "=$sess" 2>/dev/null || { echo "FAIL      ไม่มี session '$sess'"; return 1; }
 
-  local wins w pid child cmd screen model rc=0 n=0
+  local wins w pid child cmd screen model rc=0 n=0 unpinned=0
   wins=$(tmux list-windows -t "=$sess" -F '#{window_name}' 2>/dev/null)
   [ -n "$wins" ] || { echo "FAIL      session '$sess' ไม่มี window"; return 1; }
 
@@ -529,10 +529,18 @@ bootverify() {
     #    แล้วรายงาน `model=-` **ทั้งที่คำตอบอยู่บนจอที่ capture มาแล้ว** (status bar โชว์
     #    `gpt-5.6-sol medium` ชัด ๆ) ⇒ อ่านจาก /proc ก่อน ถ้าไม่มีค่อย fallback ที่ status bar
     #    ซึ่ง doc เองบอกว่าเป็นหลักฐานชั้นที่ครอบเรื่อง model ที่บัญชีเสิร์ฟจริง
-    local msrc="cmdline"
+    # 🔑 lucifer 2026-08-07: แหล่งของ model มีความเสถียร **คนละชั้น** ต้องแยกให้เห็น
+    #    `--model` ใน cmdline = pin จริง เปลี่ยนไม่ได้จากข้างนอก
+    #    status bar อย่างเดียว = engine อ่านมาจาก **config ของตัวเอง** (~/.codex/config.toml)
+    #    ⇒ ทีมรันบน ambient default · ใครแก้ config.toml ทีมเปลี่ยน model เงียบ ๆ ทั้งทีม
+    #    เคสจริง: ws-parity-port 4 pane — cmdline ไม่มี --model เลย แต่ status bar โชว์ gpt-5.6-sol
+    local msrc="flag-pinned"
     if [ -z "$model" ]; then
       model=$(printf '%s' "$screen" | grep -oE '(gpt|claude|o[0-9]|sonnet|opus|haiku|glm|zai)[A-Za-z0-9./_-]*' | tail -1)
-      [ -n "$model" ] && msrc="status-bar"
+      if [ -n "$model" ]; then
+        msrc="AMBIENT-not-pinned"
+        unpinned=$((unpinned+1))
+      fi
     fi
     # 🩹 codex ติดตั้งผ่าน npm ⇒ pane process คือ `node .../codex` ⇒ basename = "node"
     #    ตัวอย่างใน doc เขียน proc=codex ⇒ ใครเขียน gate `grep proc=codex` จะพลาดทั้งเครื่อง
@@ -555,7 +563,12 @@ bootverify() {
   done <<< "$wins"
 
   echo "bootverify.scope: อ่านอย่างเดียว · ยืนยัน process+จอ · **ไม่ยืนยันว่าบัญชีเสิร์ฟ model ได้** (ใช้ modelprobe)"
-  [ "$rc" = "0" ] && echo "overall: READY panes=$n" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY · NOT-READY=รอ/เคลียร์จอ · PROCESS-GONE=spawn ใหม่ (คนละทางแก้)"
+  if [ "$unpinned" -gt 0 ]; then
+    echo "bootverify.unpinned: $unpinned/$n pane อ่าน model จาก **config ของ engine เอง ไม่ใช่ --model**"
+    echo "          ⇒ ทีมรันบน ambient default · แก้ ~/.codex/config.toml เมื่อไหร่ ทีมเปลี่ยน model เงียบ ๆ"
+    echo "          ⇒ ถ้าต้องการให้เสถียร: pin --model ใน alias ของ engine"
+  fi
+  [ "$rc" = "0" ] && echo "overall: READY panes=$n${unpinned:+ unpinned=$unpinned}" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY · NOT-READY=รอ/เคลียร์จอ · PROCESS-GONE=spawn ใหม่ (คนละทางแก้)"
   return $rc
 }
 
