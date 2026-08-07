@@ -99,13 +99,26 @@ done
 [ "$found" -gt 0 ] || echo "⚠ no engine-layer files found under $ROOT/.maw/ — if you expected some, you are in the wrong \$ROOT"
 
 cp ~/.maw/fleet/"${SESSION}".json "$SNAP/" 2>/dev/null || true   # absent is normal — see Step 3
-tmux list-windows -t "=$SESSION" -F '#{window_name}' > "$SNAP/windows.txt" 2>/dev/null
-git -C "$ROOT" worktree list > "$SNAP/worktrees.txt" 2>/dev/null
-git -C "$ROOT" branch -vv     > "$SNAP/branches.txt"  2>/dev/null
-if [ "$got_charter" = yes ] && [ "$found" -gt 0 ]; then
-  echo "snapshot: $SNAP  (charter + $found layer file(s))"
+
+# 🔴 A redirect creates the file even when the command fails, so a failed capture leaves a
+#    ZERO-BYTE file that is indistinguishable from "captured, nothing to record".
+#    Keep only what actually has content, and count it.
+cap() {   # cap <outfile> <cmd...>
+  local out="$1"; shift
+  "$@" > "$SNAP/$out" 2>/dev/null
+  if [ -s "$SNAP/$out" ]; then return 0; fi
+  rm -f "$SNAP/$out"; return 1
+}
+gitcap=0
+cap windows.txt    tmux list-windows -t "=$SESSION" -F '#{window_name}'
+cap worktrees.txt  git -C "$ROOT" worktree list && gitcap=$((gitcap+1))
+cap branches.txt   git -C "$ROOT" branch -vv     && gitcap=$((gitcap+1))
+
+if [ "$got_charter" = yes ] && [ "$found" -gt 0 ] && [ "$gitcap" -eq 2 ]; then
+  echo "snapshot: $SNAP  (charter + $found layer file(s) + git state)"
 else
-  echo "🔴 PARTIAL snapshot: $SNAP  (charter=$got_charter, layers=$found) — teardown from here is NOT fully reversible"
+  echo "🔴 PARTIAL snapshot: $SNAP  (charter=$got_charter, layers=$found, git-state=$gitcap/2) — teardown from here is NOT fully reversible"
+  [ "$gitcap" -eq 2 ] || echo "   ⚠ git state not captured — is \$ROOT ($ROOT) actually a git repo?"
 fi
 ```
 
@@ -137,6 +150,43 @@ Cheap, and it is the only thing that makes any later step reversible.
 > This one matters beyond the bug: holmes read this block carefully enough to find two real
 > defects in it, and *this* survived, because it is not visible in the source — **you have to see
 > the two lines printed together.** Review and execution do not find the same class of thing.
+>
+> 🔴 **Fourteenth defect, found the second time it was run — three arms, real files, 2026-08-07.**
+> The step ended with **zero-byte `worktrees.txt` and `branches.txt`** whenever `$ROOT` was not a
+> git repo. `>` creates the file *before* the command fails, so a failed capture is
+> indistinguishable from *"captured, there was nothing to record"* — and the summary line said
+> nothing about git state at all, only charter and layers.
+>
+> ```
+> ARM C (ROOT=/tmp)   before:  branches.txt 0B   worktrees.txt 0B   ← look captured
+>                     after :  (absent)          git-state=0/2 reported
+> ```
+>
+> Anyone restoring would have seen `worktrees.txt` sitting there and believed the worktree list
+> was recorded. ⇒ `cap()` now keeps a file **only if it has content**, deletes it otherwise, and
+> the summary carries `git-state=N/2` plus an explicit *"is `$ROOT` actually a git repo?"*.
+>
+> 🔑 **Same shape as the thirteenth, one layer down**: the thirteenth was a *summary line* that
+> contradicted a warning; this is a *file on disk* that contradicts what was captured. Both are
+> **an artifact that reads as success**. The verified arms are now A (full), B (no charter),
+> C (no charter, no layers, no git) — and **zero-byte files remaining: 0**.
+
+## Verified arms — what has actually been executed, and what has not
+
+`[2026-08-07]` Honesty about this file's own evidence level, since it spent two days being
+reviewed by people who could not run it:
+
+| step | executed against real state? |
+|---|---|
+| **Step 0** | ✅ **yes** — 3 arms, real charter + real layer + real git root, 2026-08-07 |
+| Step 1 | partially — `tmux kill-window` paths exercised on throwaway sessions |
+| Step 2 / 2b | ❌ **read-only review only** (ajfon, lucifer, holmes) — never run on a real team's git state |
+| Step 3 | ❌ **never run** — touches `~/.maw/fleet/`, shared; atlas declined to be first and was right |
+| Step 4 | ❌ **never run** — external state (systemd timers) is prism's category, in prism's house |
+| Step 5 | ❌ **never run** |
+
+**Do not read the density of commentary in this file as evidence that it works.** Steps 2–5 are
+carefully reviewed and unexecuted; that is a different claim from Step 0's.
 
 ## Step 1: Kill the session's windows
 
