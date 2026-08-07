@@ -222,6 +222,50 @@ carefully reviewed and unexecuted; that is a different claim from the rows above
 
 ## Step 1: Kill the session's windows
 
+> ## 🔴🔴 `maw team down` cannot do this step. Do not call it.
+>
+> `[verified 2026-08-07 by codex-fanout · real team realtest-verbs-v1, 2 opencode workers,
+> spawned and torn down for real — not a dry run · report: codex-fanout ψ/teams/2026-08-07_REALTEST-down-lead-dispatch.md `dbc3dcf`]`
+>
+> **D1 — `up` and `down` disagree about window names inside the same tool.**
+> A charter with `role: worker-a` makes `maw team up` create the window **`worker-a-oracle`**.
+> `maw team down` then looks for **`worker-a`** and refuses:
+> ```
+> rc=1  team down refuse missing target before teardown: realtest-verbs-v1:worker-a
+> ```
+> ⇒ **A team created by `up` cannot be torn down by `down`** without renaming windows by hand.
+> This is the fleet's `role name ≠ window name` rule showing up as a defect *inside maw*, not as
+> an operator trap.
+>
+> **D2 — after renaming to match, `down` returns `rc=0` with a clean table and tears down NOTHING.**
+> ```
+> rc=0
+> role      state    action
+> worker-a  dead     skip dead
+> worker-b  dead     skip dead
+> ```
+> Measured in the same breath, `[verified: tmux list-windows -F '#{pane_current_command} #{pane_dead}']`:
+> ```
+> worker-a  cmd=opencode  dead=0      ← alive
+> worker-b  cmd=opencode  dead=0      ← alive
+> session: still up, 2 windows · 2 worktrees · 2 branches — nothing removed
+> ```
+> ⇒ **It reads live panes as `dead`, then "skips dead."** Its success is built on a wrong liveness
+> read. 🔑 **`rc=0` + a clean table here is more dangerous than the error in D1** — an error stops
+> the reader; a tidy success invites them to move on.
+>
+> **D3 — the cross-check that caught it.** Immediately after `down` reported success,
+> `verify-check.sh teamclosed <session>` reported **`LIVE ... 2 windows`**, correctly.
+> ⇒ The standing rule *"never answer 'is the team down' from `maw team list` / `maw team status`"*
+> **now extends to `maw team down`'s own exit code.**
+>
+> ⇒ **This is the structural reason the manual per-window kill below is not merely preferred —
+> it is the only thing that works.** Closing windows one at a time ends the session by itself;
+> `kill-session` is never needed. `[verified: same run — after the last window closed,
+> `tmux has-session` → can't find session]`
+>
+> ---
+>
 > ## 🔴🔴 Before anything: `$TARGETS` and `$CODERS` are used here and **never assigned in this file**
 >
 > `[found 2026-08-07 by the third clean-room tester · confirmed: grep -c 'TARGETS=' → 0, 'CODERS=' → 0]`
