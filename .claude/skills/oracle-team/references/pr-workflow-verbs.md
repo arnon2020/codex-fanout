@@ -227,6 +227,22 @@ for b in blocks:
     #    repo's own golden rule "Never commit secrets (.env, credentials, API keys)".
     #    A teardown must never decide, unasked, that a worker's untracked files should
     #    become permanent.
+    # 🔴 Is this member dir its OWN git root, or just a folder inside one?
+    #    [lucifer raised it as a hypothesis; measured here 2026-08-07]
+    #    `cwd:` may point at a PLAIN FOLDER inside the repo. Then every `git -C "$wt" …`
+    #    below silently answers about the PARENT REPO instead:
+    #      git -C plainmember rev-parse --show-toplevel  -> the main checkout
+    #      git -C plainmember status --porcelain         -> "?? ./"  "?? ../ψ/"
+    #    i.e. the dirty check reports the whole repo's dirt, and a "clean" verdict would
+    #    likewise be a verdict about the repo. Any `git add -A` here would stage the repo.
+    wt_root=$(git -C "$wt" rev-parse --show-toplevel 2>/dev/null)
+    wt_abs=$(cd "$wt" 2>/dev/null && pwd -P)
+    if [ -n "$wt_root" ] && [ "$wt_root" != "$wt_abs" ]; then
+      echo "SKIP $wt — not its own git root; it is a plain folder inside $wt_root"
+      echo "      every git check here would answer about that repo, not this member."
+      echo "      → remove it by hand if you mean to, or declare a worktree: instead of cwd:"
+      continue
+    fi
     if [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
       echo "KEPT $wt — uncommitted work present, NOT auto-committing:"
       git -C "$wt" status --short | sed 's/^/      /'
