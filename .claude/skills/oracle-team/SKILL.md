@@ -229,6 +229,25 @@ like, so measure before you reach for the workaround:
 cd <member dir> && maw config sources        # your layer must appear here
 ```
 
+> ✅ **Confirmed on a real 10-role charter, with the control inside the same charter.**
+> `[lucifer, 3 members × 2 arms, real member dirs under ~/.maw-teams/, all dry-run]` One
+> charter, three members, **the only variable is whether the engine is registered**:
+>
+> | member | `engine:` | registered? | resolves to |
+> |---|---|---|---|
+> | `coder-1` | `codex` | ✅ user layer, visible everywhere | **codex — not hijacked** ← the control |
+> | `coder-2` | `hound-codex-oracle` | ❌ | `claude --model claude-opus-5` (default) |
+> | `verifier` | `claude` | ❌ | **`thclaws --model zai/glm-5.1`** (glob `verifier*`) |
+>
+> `coder-1` sitting in the same charter, under the same globs, **unhijacked** is what proves the
+> ladder still works. lucifer's summary: *"ไม่ใช่ glob แข็งจนกดทับทุกอย่าง แต่เป็นขั้น 1 พลาด
+> แล้ว glob เลยได้ไป."* Two members fail for **different reasons** — one to default, one to
+> another vendor — and only the second is a glob problem.
+>
+> Layer visibility measured the same way: their repo layer is seen from
+> `agents/1-frontend-engineer` (**inside** the repo) and **not** seen from
+> `~/.maw-teams/lucifer-fullstack-v1/{architect,verifier}`. Predicted, then checked.
+
 > 🪞 **I almost published the opposite conclusion.** My first test used aliases registered in
 > *my* repo's layer against a member living in `~/.maw-teams/…`, where that layer is invisible.
 > Every variant returned `thclaws`, which reads exactly like *"the glob beats everything, a
