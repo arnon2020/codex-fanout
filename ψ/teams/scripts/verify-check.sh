@@ -1085,9 +1085,12 @@ PY
       #     ยังอันตรายเพราะขึ้นกับชื่อ window: `wake hermes -e claude` → `hermes --yolo`
       #     `[verified 2026-08-06]` ⇒ WARN ไม่ใช่ FAIL แต่ต้องพิมพ์ให้เห็น
       #   · probe ชี้ไปที่อย่างอื่น หรือ probe ตอบไม่ได้ → FAIL (ตอบไม่ได้ ≠ ผ่าน)
+      # 🩹 2026-08-07 [atlas อ่านเจอตอนตรวจแพตช์ `_vc_argv_basename`] จุดนี้ **ไม่ติดกับดัก
+      #    extra-operand** เพราะมี `head -1` คั่นอยู่ — แต่ยังผ่าน `xargs` ซึ่ง **แกะเครื่องหมาย
+      #    คำพูดเอง** ⇒ token ที่มี `'` เดี่ยวยังทำให้มันตายเงียบได้ ⇒ ใช้ตัวเดียวกับ bootverify
+      #    ⇒ **แหล่งเดียว ไม่ใช่สองท่าที่พังคนละแบบ** (บทเรียน "แก้ที่เดียว ≠ แก้ claim")
       local probe_bin=""
-      [ -n "$probe" ] && probe_bin=$(printf '%s' "$probe" \
-        | tr ' ' '\n' | grep -v '=' | grep -v '^-' | head -1 | xargs -r basename 2>/dev/null)
+      [ -n "$probe" ] && probe_bin=$(_vc_argv_basename "$probe" 1)
       # 🩹 2026-08-07: WARN ("ได้ของถูกโดยบังเอิญ") ใช้ได้เฉพาะตอน **ไม่มี model ที่ถูกขอ**
       #    ถ้า charter ขอ model ไว้ แล้วคำสั่งที่จะรันจริง **ไม่มี model นั้น** ⇒ ของที่ได้ผิด
       #    ไม่ใช่ "ถูกโดยบังเอิญ" ⇒ FAIL · เจอตอนที่ probe เริ่ม resolve ได้หลังเติม --repo-path
@@ -1571,6 +1574,51 @@ Second line with 'quotes' and --flags"
   else
     echo "   (ไม่มี tmux — ข้าม ไม่นับผ่าน/ตก)"
   fi
+
+  # 🏷️ 2026-08-07 · ปิดช่องว่างสุดท้ายของ audit: verb ที่ dispatcher รับแต่ selftest ไม่เคยเรียก
+  #    `alive` เป็น verb ที่ **ให้ verdict** (RUNNING/NONE) ⇒ ต้องตกได้ทั้งสองทิศ
+  echo "13) alive: ต้องตอบ RUNNING กับของที่รันจริง และ NONE กับชื่อที่ไม่มี (ตกได้สองทิศ)"
+  local a13
+  a13=$(alive "zz-vc-no-such-binary-$$" 2>&1)
+  case "$a13" in
+    NONE*) ;;
+    *) echo "   ✗ ชื่อที่ไม่มีอยู่ ควรได้ NONE"; fail=1 ;;
+  esac
+  case "$a13" in
+    *RUNNING*) echo "   ✗ ชื่อที่ไม่มีอยู่ ตอบ RUNNING — false-RUNNING"; fail=1 ;;
+  esac
+  sleep 25 & local sp=$!
+  a13=$(alive sleep 2>&1)
+  case "$a13" in
+    RUNNING*) ;;
+    *) echo "   ✗ process ที่รันอยู่จริง (sleep) ควรได้ RUNNING"; fail=1 ;;
+  esac
+  kill "$sp" 2>/dev/null; wait "$sp" 2>/dev/null
+
+  # `unstick` เป็น **verb เดียวที่ส่งคีย์** ⇒ เทสต์บน session ที่สร้างเองเท่านั้น ห้ามแตะของจริง
+  #    สิ่งที่ต้องพิสูจน์: มันต้อง **ไม่แตะ pane ที่ไม่มีข้อความค้าง** (ไม่มี Pasted Content)
+  echo "14) unstick: ต้องไม่ส่งคีย์เข้า pane ที่ไม่มีอะไรค้าง (ผลข้างเคียงคือความเสียหาย)"
+  if binexists tmux >/dev/null 2>&1; then
+    local us="zz-vc-unstick-$$"
+    tmux new-session -d -s "$us" 'cat > /dev/null' 2>/dev/null
+    if tmux has-session -t "=$us" 2>/dev/null; then
+      local before after
+      before=$(tmux capture-pane -p -t "=$us" 2>/dev/null | wc -l)
+      unstick "$us" 1 >/dev/null 2>&1
+      after=$(tmux capture-pane -p -t "=$us" 2>/dev/null | wc -l)
+      [ "$before" = "$after" ] || { echo "   ✗ unstick เปลี่ยนจอของ pane ที่ไม่มีอะไรค้าง ($before → $after)"; fail=1; }
+      tmux kill-session -t "=$us" 2>/dev/null
+    else
+      echo "   (สร้าง session ไม่ได้ — ข้าม ไม่นับผ่าน/ตก)"
+    fi
+  else
+    echo "   (ไม่มี tmux — ข้าม)"
+  fi
+
+  # ⚠️ `modelprobe` **ไม่มีเทสต์โดยเจตนา** — มันเปิด turn จริงกับบัญชีจริง ⇒ **เสียโควตาของทั้ง fleet**
+  #    ⇒ นี่คือ **ขอบเขตที่ประกาศ ไม่ใช่ช่องที่ลืม** · ใครแก้ modelprobe ต้องรันมือเองและแนบ output
+  echo "15) modelprobe: **ไม่รันในเทสต์โดยเจตนา** (เสียโควตาจริง) — ประกาศไว้ ไม่ใช่ลืม"
+  declare -F modelprobe >/dev/null 2>&1 || { echo "   ✗ modelprobe ไม่มีฟังก์ชันจริง"; fail=1; }
 
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }

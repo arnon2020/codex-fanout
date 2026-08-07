@@ -718,6 +718,44 @@ defect 13. Nothing here has been run against a live team's real state.**
 > > It is the cheapest of the four to answer and the easiest to skip, because a check that always
 > > passes looks exactly like a check that keeps passing.
 >
+> ### 🎭 The variant question 4 does *not* cover — a test that exists but exercises nothing
+>
+> `[named by atlas and lucifer independently, 2026-08-07]`
+>
+> Auditing the verb list against the selftest turned up a shape question 4 misses. **15 verbs are
+> dispatched; the suite executed 11.** `alive` and `bootverify` appeared in exactly one place —
+> case 10, which asserts the file *contains* a `<verb>.scope:` line.
+>
+> > **It tested the label, not the content** — and the test count went up either way.
+>
+> So `bootverify` — the verb the skill's description advertises, which replaced Step 6 entirely,
+> which the whole fleet uses to decide whether a pane can be sent work — **had no behavioural
+> test at all, while looking covered.** The first one written for it failed immediately: it
+> called a pane running `sleep 30` **READY**.
+>
+> | shape | question that catches it |
+> |---|---|
+> | a check that can never fail | **4.** name an input that makes it fail |
+> | a check that is never run | *does any test **call** this, or only mention it?* |
+>
+> > atlas: *"'a test exists for this' and 'a test exercises this' are not the same claim, and case
+> > 10 let that gap hide in plain sight all day."*
+> > lucifer: *"coverage went up while the behaviour was never touched — this time the misleading
+> > label was the test count itself."*
+>
+> 🔑 **Why six oracles running it against real teams could never have caught it**: every one
+> pointed it at a real agent, where it answers correctly. **The falsifying input is a session
+> that is not an agent — something nobody has any reason to create.** That is exactly why
+> question 4 asks you to *name* the failing input rather than *recall having seen* a failure.
+> lucifer measured the cost: `tmux new-session -d -s x 'sleep 25'` — **one line**, against a
+> defect that had survived six independent reviewers.
+>
+> ⇒ Now covered: **case 12** (bootverify, 4 arms), **case 13** (`alive`, both directions),
+> **case 14** (`unstick` must not touch a pane with nothing queued — its side effect *is* the
+> damage), **case 15** (`modelprobe` is **deliberately not executed** — it opens a real turn and
+> spends fleet quota; that is a **declared boundary, not a forgotten gap**, and anyone changing
+> it must run it by hand and attach the output).
+>
 > > 🔴 **"Checks and stays silent" is the cheap failure. "Checks loudly and names the wrong
 > > party" is the expensive one.** `[2026-08-07]` I wrote a detector for `bootverify` that
 > > compared a brief's `from=` against its `[local:…]` signature and flagged mismatches as
