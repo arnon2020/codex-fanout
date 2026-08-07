@@ -500,7 +500,7 @@ bootverify() {
   binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
   tmux has-session -t "=$sess" 2>/dev/null || { echo "FAIL      ไม่มี session '$sess'"; return 1; }
 
-  local wins w pid child cmd screen model rc=0 n=0 unpinned=0 queued=0
+  local wins w pid child cmd screen model rc=0 n=0 unpinned=0 queued=0 stale=0
   wins=$(tmux list-windows -t "=$sess" -F '#{window_name}' 2>/dev/null)
   [ -n "$wins" ] || { echo "FAIL      session '$sess' ไม่มี window"; return 1; }
 
@@ -589,6 +589,35 @@ bootverify() {
     #    `cut -c1-90` ตัดท้ายคำสั่งทิ้งเงียบ ๆ ⇒ `--model gpt-5.5` ที่อยู่ท้ายหายไปจากจอ
     #    ⇒ คนอ่านเข้าใจผิดได้ว่า model หาย ทั้งที่มันอยู่ตรงนั้น
     #    ⇒ ใส่ `…` ให้เห็นว่าโดนตัด · และ `model=` อ่านจากคำสั่ง**เต็ม** เสมอ ไม่ใช่จากตัวที่ตัดแล้ว
+    # 🔴 2026-08-07 [prism] **config resolve ถูก ≠ pane ที่รันอยู่สะท้อน config นั้น**
+    #    เคสจริง: charter ถูกแก้ให้ pin --model gpt-5.5 เมื่อ 14:46 แต่ pane ที่ยังรันอยู่
+    #    เริ่มตั้งแต่ 12:05 — **ก่อน fix 2 ชม. 40 นาที** ⇒ ยังรัน ambient model เดิมอยู่
+    #    และ dry-resolve ตอบ PASS ทุกครั้ง เพราะมันอ่าน config **ไม่เคยอ่าน pane**
+    #    ⇒ prism ตั้งชื่อให้: **proof-of-resolve ไม่ใช่ proof-of-applied**
+    #    ⇒ ตรวจได้: เวลาเกิดของ pane เทียบ mtime ของ layer ที่ resolve มาให้มัน
+    local pstart lay newest=0 lname=""
+    # ⚠️ ห้าม `| xargs date -d` — `ps -o lstart=` คืน "Thu Aug  6 12:05:54 2026" ซึ่ง xargs
+    #    จะตัดเป็นหลายอาร์กิวเมนต์ ⇒ date ได้แค่ "Thu" ⇒ pstart ว่าง ⇒ **เช็คทั้งอันเงียบ**
+    #    (จับได้เพราะมันไม่ยิงกับเคสของ prism ที่ **รู้อยู่แล้วว่าต้องยิง**)
+    local plstart; plstart=$(ps -o lstart= -p "${pid:-0}" 2>/dev/null)
+    pstart=$(date +%s -d "$plstart" 2>/dev/null)
+    if [ -n "$pstart" ]; then
+      # 🩹 ต้องอ่าน layer จาก **cwd ของ pane** ไม่ใช่ของผู้เรียก — ไม่งั้นเป็นบั๊ก cwd-anchoring
+      #    ตัวเดียวกับที่เพิ่งแก้ใน enginecheck (ผมเผลอใส่กลับเข้ามาในเช็คใหม่ · จับได้ตอนมันไม่ยิง
+      #    กับเคสจริงของ prism ที่รู้อยู่แล้วว่าต้องยิง — **negative result ที่ไม่ตรงกับความจริงที่รู้**)
+      local pcwd; pcwd=$(readlink -f "/proc/${pid:-0}/cwd" 2>/dev/null)
+      for lay in $(cd "${pcwd:-/}" 2>/dev/null && maw config sources 2>/dev/null | awk '{print $3}' | grep -E '\.json$'); do
+        [ -r "$lay" ] || continue
+        local m; m=$(stat -c %Y "$lay" 2>/dev/null || echo 0)
+        [ "$m" -gt "$newest" ] && { newest=$m; lname="$lay"; }
+      done
+      if [ "$newest" -gt "$pstart" ]; then
+        echo "bootverify.stale: $w ⚠ pane เกิด $(date -d "@$pstart" '+%H:%M') แต่ config แก้ล่าสุด $(date -d "@$newest" '+%H:%M')"
+        echo "          ⇒ pane นี้ **เกิดก่อนการแก้ config** ⇒ ยังรันของเดิม แม้ dry-resolve จะ PASS"
+        echo "          ⇒ layer: $lname · แก้: respawn member นี้ (ตรวจก่อนว่ามันไม่ได้ทำงานค้างอยู่)"
+        stale=$((stale+1))
+      fi
+    fi
     local shown="$cmd" mark=""
     if [ "${#cmd}" -gt 90 ]; then shown=$(printf '%s' "$cmd" | cut -c1-90); mark="…(ตัด ${#cmd} อักษร)"; fi
     echo "bootverify.pane: $w READY proc=${pbin:-?} model=${model:--}${model:+ (${msrc})} cmd=${shown}${mark}"
@@ -600,6 +629,10 @@ bootverify() {
     echo "          ⇒ ทีมรันบน ambient default · แก้ ~/.codex/config.toml เมื่อไหร่ ทีมเปลี่ยน model เงียบ ๆ"
     echo "          ⇒ ถ้าต้องการให้เสถียร: pin --model ใน alias ของ engine"
   fi
+  [ "${stale:-0}" -gt 0 ] && {
+    echo "bootverify.stale: $stale pane เกิดก่อน config ที่แก้ล่าสุด — **resolve ถูกไม่ได้แปลว่า pane ใช้ของนั้น**"
+    echo "          proof-of-resolve ≠ proof-of-applied [prism 2026-08-07]"
+  }
   [ "${queued:-0}" -gt 0 ] && echo "bootverify.queued: $queued pane มีคำสั่งค้างที่ไม่เคยถูก submit — ทีมดูเหมือนว่างแต่ยังไม่ได้เริ่ม"
   [ "$rc" = "0" ] && echo "overall: READY panes=$n${unpinned:+ unpinned=$unpinned}" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY · NOT-READY=รอ/เคลียร์จอ · PROCESS-GONE=spawn ใหม่ (คนละทางแก้)"
   return $rc
