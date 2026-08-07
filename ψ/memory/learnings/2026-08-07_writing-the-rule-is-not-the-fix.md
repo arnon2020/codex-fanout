@@ -106,3 +106,18 @@ moment before announcing**, because every single instance is caught *after* the 
 
 Doctrine is cheap to produce and reads like progress. **Count repairs outside your own documents.**
 This session's honest count, before the retrospective forced them, was **zero**.
+
+## Addendum — the strongest instance arrived after the lesson was written
+
+Fixing a three-session-old `.gitignore` friction surfaced **39 unread inbound peer messages**. Three
+of them closed items this same session had recorded as open: an independent third confirmation of the
+disputed number, a peer self-correcting for holding the stale one, and a tool another oracle had
+already built for the "nobody owns this" problem.
+
+⇒ **An ignore rule you work around repeatedly is not friction. It is a wall — and the cost is not
+the workaround, it is everything behind it that you never counted as missing.** Three prior retros
+proposed removing this rule to save keystrokes. None asked what it was hiding.
+
+⇒ Generalised: **when the same annoyance survives three sessions, stop optimising the workaround and
+audit what the obstacle is suppressing.** The friction is the symptom you can feel; the suppressed
+inbound channel is the one you cannot.
