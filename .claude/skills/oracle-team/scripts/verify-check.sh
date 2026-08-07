@@ -627,6 +627,45 @@ bootverify() {
   return $rc
 }
 
+# ── unstick <session> [max-attempts] ───────────────────────────────────────
+# เคลียร์ข้อความที่ค้างในช่องพิมพ์ (ที่ `bootverify` รายงานเป็น QUEUED-NOT-SUBMITTED)
+# 🔑 **หนึ่ง send-enter ไม่พอ** [lucifer วัดเอง 2026-08-07: ทั้งสาม pane ต้องใช้ **2 attempt
+#    เท่ากันหมด**] ⇒ ยิง enter ครั้งเดียวแล้วคิดว่าจบ = อาการกลับมา และคนอ่านจะสรุปว่า detector ผิด
+# ⇒ ขั้นตอนที่ถูก: **enter → วัดซ้ำ → วนจนกว่า Pasted Content เหลือศูนย์**
+# ⚠️ ตัวนี้ **ส่ง key เข้า pane** — ต่างจาก verb อื่นในไฟล์นี้ทั้งหมด
+#    ⇒ peek ก่อนทุก pane · ถ้าจอเป็น dialog ของ CLI (update/trust) **ข้าม ไม่กด**
+#    เพราะ Enter ตรงนั้นไปกดเมนู ไม่ใช่ submit (เคส 2026-08-06 อัป codex ทั้งเครื่อง)
+unstick() {
+  local sess="${1:?usage: unstick <session> [max-attempts]}" maxn="${2:-4}"
+  binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
+  tmux has-session -t "=$sess" 2>/dev/null || { echo "FAIL      ไม่มี session '$sess'"; return 1; }
+  local w n try left total_fixed=0 skipped=0
+  while IFS= read -r w; do
+    [ -n "$w" ] || continue
+    local sc; sc=$(tmux capture-pane -p -t "=${sess}:${w}" 2>/dev/null)
+    case "$sc" in
+      *"Update available!"*|*"Press enter to continue"*|*"1. Update now"*|*"trust this folder"*)
+        echo "unstick.pane: $w SKIP — จอเป็น dialog ของ CLI ไม่ใช่ของ agent · Enter จะไปกดเมนู"
+        skipped=$((skipped+1)); continue ;;
+    esac
+    n=$(printf '%s' "$sc" | grep -c 'Pasted Content')
+    [ "${n:-0}" -gt 0 ] || { echo "unstick.pane: $w ok — ไม่มีของค้าง"; continue; }
+    for try in $(seq 1 "$maxn"); do
+      maw send-enter "${sess}:${w}.0" >/dev/null 2>&1
+      sleep 2
+      left=$(tmux capture-pane -p -t "=${sess}:${w}" 2>/dev/null | grep -c 'Pasted Content')
+      if [ "${left:-0}" -eq 0 ]; then
+        echo "unstick.pane: $w cleared after $try attempt(s)  (ค้างตอนแรก $n)"
+        total_fixed=$((total_fixed+1)); break
+      fi
+      [ "$try" = "$maxn" ] && echo "unstick.pane: $w 🔴 ยังเหลือ $left หลัง $maxn ครั้ง — อย่ายิงต่อ ไปดู pane เอง"
+    done
+  done < <(tmux list-windows -t "=$sess" -F '#{window_name}' 2>/dev/null)
+  echo "unstick.scope: ส่ง Enter เท่านั้น · ไม่ส่งเนื้อหา · ข้าม pane ที่จอเป็น dialog"
+  echo "overall: cleared=$total_fixed skipped=$skipped  ⇒ ยืนยันซ้ำด้วย: bootverify $sess"
+  return 0
+}
+
 # ── modelprobe <engine-alias> <dir> ─────────────────────────────────────────
 # ตอบคำถามเดียวที่ `enginecheck` ประกาศมาตลอดว่าตอบไม่ได้: **บัญชีเสิร์ฟ model นี้ได้จริงไหม**
 # 🏷️ 2026-08-06: `gpt-5.6-mini` บูตขึ้นปกติ · banner พิมพ์ `model: gpt-5.6-mini xhigh` ·
@@ -1301,7 +1340,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify relay teamclosed enginereg enginelist engineone enginecheck modelprobe selftest"
+VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
@@ -1310,6 +1349,7 @@ verify_check_usage() {
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
   echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
   echo "  bootverify <session>   ← หลัง spawn: pane boot ตรง engine ไหม + จอเป็นของ agent หรือ installer"
+  echo "  unstick <session> [n]  ⚠ ส่ง Enter เข้า pane: เคลียร์คำสั่งที่ค้าง (ต้องมากกว่า 1 ครั้ง)"
   echo "  selftest"
 }
 
