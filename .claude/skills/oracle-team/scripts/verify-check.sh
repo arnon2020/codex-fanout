@@ -781,7 +781,16 @@ bootverify() {
     #    status bar อย่างเดียว = engine อ่านมาจาก **config ของตัวเอง** (~/.codex/config.toml)
     #    ⇒ ทีมรันบน ambient default · ใครแก้ config.toml ทีมเปลี่ยน model เงียบ ๆ ทั้งทีม
     #    เคสจริง: ws-parity-port 4 pane — cmdline ไม่มี --model เลย แต่ status bar โชว์ gpt-5.6-sol
-    local msrc="flag-pinned"
+    # 🔴 2026-08-07 [lucifer วัดด้วย tmux ล้วน ไม่แตะ maw] **`flag-pinned` เคยอ่านว่า "ดีกว่า"**
+    #    pane ที่ pin `--model zzz-not-a-model` (ชื่อที่ไม่มีอยู่จริง):
+    #      · boot สำเร็จ · banner พิมพ์ "zzz-not-a-model with high effort · Claude Max" **เหมือนของจริง**
+    #      · `bootverify` → **READY · model=zzz-not-a-model (flag-pinned) · unpinned=0**
+    #      · turn แรก → engine **ปฏิเสธชัดเจน** ("may not exist or you may not have access")
+    #    ⇒ 🔑 **ทีมที่ pin ผิด ได้ป้ายที่ดูน่าเชื่อถือกว่าทีมที่ไม่ pin** — ตรงข้ามกับเจตนาของเครื่องมือ
+    #    ⇒ **ความเสียหายอยู่ในช่วงระหว่าง boot กับ turn แรก ซึ่งทุกเครื่องมือของเราอ่านว่าปกติ**
+    #      ตั้งทีม 10 คน เช็คด้วย bootverify อย่างเดียว → READY ครบ → พังตอนสั่งงานจริงทีละคน
+    #    ⇒ `flag-pinned` แปลว่า **"ขอไว้"** ไม่ใช่ **"ใช้ได้"** — ป้ายต้องพูดแบบนั้น
+    local msrc="flag-pinned-UNVALIDATED"
     if [ -z "$model" ]; then
       model=$(printf '%s' "$screen" | grep -oE '(gpt|claude|o[0-9]|sonnet|opus|haiku|glm|zai)[A-Za-z0-9./_-]*' | tail -1)
       if [ -n "$model" ]; then
@@ -829,6 +838,16 @@ bootverify() {
     echo "bootverify.unpinned: $unpinned/$n pane อ่าน model จาก **config ของ engine เอง ไม่ใช่ --model**"
     echo "          ⇒ ทีมรันบน ambient default · แก้ ~/.codex/config.toml เมื่อไหร่ ทีมเปลี่ยน model เงียบ ๆ"
     echo "          ⇒ ถ้าต้องการให้เสถียร: pin --model ใน alias ของ engine"
+    echo "          💸 ambient default บนเครื่องนี้คือ **tier บนสุด** ⇒ unpinned = จ่ายเรตท็อปโดยอุบัติเหตุ"
+  fi
+  # 🔴 2026-08-07 [lucifer] `unpinned=0` เคยอ่านว่า "ครบถ้วน ไม่มีอะไรต้องห่วง"
+  #    **แต่ pane ที่ pin ชื่อ model ที่ไม่มีอยู่จริง ก็ให้ unpinned=0 เหมือนกัน** และได้ READY
+  #    ⇒ ต้องพูดออกมาว่า **pinned = ขอไว้ ไม่ใช่ ใช้ได้** ทุกครั้งที่มี pane ที่ pin
+  if [ "$unpinned" -lt "$n" ]; then
+    echo "bootverify.pinned-unvalidated: $((n-unpinned))/$n pane pin --model ไว้ — **นั่นคือสิ่งที่ *ขอ* ไม่ใช่สิ่งที่ *ใช้ได้*"
+    echo "          🔴 [verified 2026-08-07] pane ที่ pin ชื่อ model ที่ **ไม่มีอยู่จริง** ก็ boot ผ่าน · banner"
+    echo "             พิมพ์ชื่อมั่วนั้นเหมือนของจริง · verb นี้ตอบ READY · และปฏิเสธจริงตอน **turn แรก** เท่านั้น"
+    echo "          ⇒ ยืนยันว่าใช้ได้จริงได้ทางเดียว: codex → 'modelprobe <alias> <dir>' · claude/opencode → **ส่ง turn จริง**"
   fi
   [ "${queued:-0}" -gt 0 ] && echo "bootverify.queued: $queued pane มีคำสั่งค้างที่ไม่เคยถูก submit — ทีมดูเหมือนว่างแต่ยังไม่ได้เริ่ม"
   [ "$rc" = "0" ] && echo "overall: READY panes=$n${unpinned:+ unpinned=$unpinned}" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY · NOT-READY=รอ/เคลียร์จอ · PROCESS-GONE=spawn ใหม่ (คนละทางแก้)"
