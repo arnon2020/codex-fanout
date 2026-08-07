@@ -142,12 +142,19 @@ relay() {
          echo "          เปลี่ยนหัวเป็น 'codex-fanout → <ใคร> · ...' (ไม่มีวงเล็บนำ)"; return 2 ;;
   esac
 
-  # 🔴 2026-08-07 [lucifer] `maw hey` เซ็นชื่อผู้ส่งจาก **env `MAW_SENDER`** ⇒ agent ที่รัน
-  #    นอก pane ตัวเอง (หรือสืบ env มาจาก session อื่น) จะส่งข้อความที่ **เซ็นชื่อ oracle อื่น**
-  #    เคสจริง: lucifer ส่งรีวิวมาหาผม แต่ทุกข้อความเซ็นว่า `[local:codex-fanout]` เพราะ session
-  #    เขาติด `MAW_SENDER=local:codex-fanout` มา — **maw ทำถูก env ผิด**
-  #    ⇒ อันตรายเป็นพิเศษในฟลีตนี้ เพราะเราตัดสิน "ใครอนุญาต" จากชื่อผู้ส่ง
-  #    ⇒ override ตอนส่ง: `MAW_SENDER=local:<ตัวเอง> maw hey ...`
+  # 🔴 2026-08-07 `maw hey` เซ็นชื่อผู้ส่งจาก env `MAW_SENDER` ⇒ ถ้ามันผิด ข้อความจะเซ็นชื่อคนอื่น
+  #    เช็คข้างล่างเป็น **self-check เท่านั้น** — ตรวจว่า *ของเราเอง* ตรงกับ window ของเราไหม
+  #
+  #    ⛔ **ห้ามใช้ MAW_SENDER ตามรอยว่าข้อความมาจาก pane ไหน — มันตามไม่ได้**
+  #    `[วัดเอง 2026-08-07 หลัง lucifer ล้มสมมติฐานผม]`
+  #      env ที่ process ของผมเห็น : MAW_SENDER=local:codex-fanout
+  #      env ที่ pane ของผมถือ      : MAW_SENDER=local:tars-oracle
+  #      pane ทั้งเครื่อง 36 อัน    : local:tars-oracle **ทุกอันเหมือนกันหมด**
+  #      pane ที่ถือ codex-fanout   : 0
+  #    ⇒ agent ตั้ง env นี้ **ที่ระดับ process ของตัวเอง** ไม่ได้รับจาก pane
+  #    ⇒ ค่าใน pane เท่ากันหมดทั้งเครื่อง จึงไม่ได้บอกอะไรเลยว่าใครส่ง
+  #    ⇒ **`from=` ใน log พิสูจน์ต้นทางไม่ได้** · ผมเคยตั้งสมมติฐานว่าตามรอยได้ **ผิด**
+  #       และ lucifer ล้มมันด้วยการวัดครั้งเดียว ⇒ ถ้าต้องรู้ว่าใครสั่ง **ถามมนุษย์**
   if [ -n "${MAW_SENDER:-}" ]; then
     local mywin="${MAW_SESSION_WINDOW:-}"
     case "${MAW_SENDER}" in
