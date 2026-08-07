@@ -527,7 +527,29 @@ Two failures you will probably hit here, and neither error explains itself:
   fleet-wide. The message names no member; re-run the failing one by hand to see the reason:
   `maw wake "$A" --no-attach --session "$SESSION" -e team-codex-hi`
 
-**Step 6 — peek every member. A spawn that "succeeded" often has not booted.**
+**Step 6 — check every member booted. A spawn that "succeeded" often has not.**
+
+```bash
+bash ~/.claude/skills/oracle-team/scripts/verify-check.sh bootverify "$SESSION"
+```
+
+**That is the whole step for any team size.** It lists every window itself, reads `/proc` for
+what is running and `capture-pane` for whose screen it is, and reports READY / NOT-READY /
+PROCESS-GONE per pane with the remedy for each. Read-only — sends nothing, presses nothing.
+
+> 🔴 **This step used to be two hardcoded `capture-pane` lines and it did not survive contact
+> with a real team.** `[lucifer, after spawning a live 3-member team and reading a 10-role
+> charter, 2026-08-07]` Two members means two lines you can paste; **ten means a loop nobody
+> wrote**, and one fixed `sleep` is wrong because members finish booting at different times.
+> Their verdict: *"ขั้นที่ scale ไม่ขึ้นคือ Step 6 — `bootverify` แก้ข้อนี้ไปแล้วทั้งข้อ
+> ควรยก bootverify ขึ้นมาแทนที่ Step 6 ไปเลย ไม่ใช่วางไว้เป็น 5b."* Done.
+>
+> On their live run `bootverify` returned `overall: READY panes=3`, **and they checked its
+> verdict by eye** rather than trusting it: all three sat at a real agent prompt, `gpt-5.6-sol
+> medium`, no dialog. A tool's verdict confirmed against the thing it claims to measure.
+
+**If you want to read a pane yourself**, the traps below still apply — `bootverify` handles them
+for you, but you will hit them the moment you look manually.
 
 🔴 **The window is named `<role>-oracle`, not `<role>`.** `maw team up` appends the suffix.
 Targeting `$SESSION:$A` makes tmux prefix-match, return one useless line, and **exit 0** —
@@ -535,9 +557,9 @@ which reads as "member is up and quiet". Always list the real names first:
 
 ```bash
 tmux list-windows -t "=$SESSION" -F '#{window_name}'      # the '=' prevents prefix matching
-# no fixed sleep — poll for the banner, see the loading note below
-tmux capture-pane -p -t "$SESSION:${A}-oracle" | grep -n . | head -30
-tmux capture-pane -p -t "$SESSION:${B}-oracle" | grep -n . | head -30
+for W in $(tmux list-windows -t "=$SESSION" -F '#{window_name}'); do
+  echo "=== $W ==="; tmux capture-pane -p -t "=$SESSION:$W" | grep -n . | head -30
+done
 ```
 🔴 **Do not use `| tail -25` here.** The engine banner sits in the *upper* half of the pane and
 the bottom is blank padding, so `tail` prints **nothing at all** — at the exact step where you

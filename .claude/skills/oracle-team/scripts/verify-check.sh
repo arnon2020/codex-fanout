@@ -142,6 +142,20 @@ relay() {
          echo "          เปลี่ยนหัวเป็น 'codex-fanout → <ใคร> · ...' (ไม่มีวงเล็บนำ)"; return 2 ;;
   esac
 
+  # 🔴 2026-08-07 [lucifer] `maw hey` เซ็นชื่อผู้ส่งจาก **env `MAW_SENDER`** ⇒ agent ที่รัน
+  #    นอก pane ตัวเอง (หรือสืบ env มาจาก session อื่น) จะส่งข้อความที่ **เซ็นชื่อ oracle อื่น**
+  #    เคสจริง: lucifer ส่งรีวิวมาหาผม แต่ทุกข้อความเซ็นว่า `[local:codex-fanout]` เพราะ session
+  #    เขาติด `MAW_SENDER=local:codex-fanout` มา — **maw ทำถูก env ผิด**
+  #    ⇒ อันตรายเป็นพิเศษในฟลีตนี้ เพราะเราตัดสิน "ใครอนุญาต" จากชื่อผู้ส่ง
+  #    ⇒ override ตอนส่ง: `MAW_SENDER=local:<ตัวเอง> maw hey ...`
+  if [ -n "${MAW_SENDER:-}" ]; then
+    local mywin="${MAW_SESSION_WINDOW:-}"
+    case "${MAW_SENDER}" in
+      *"${mywin%-oracle}"*) ;;
+      *) echo "⚠ MAW_SENDER='${MAW_SENDER}' ไม่ตรงกับ window '${mywin:-?}' — ข้อความจะถูกเซ็นชื่อคนอื่น"
+         echo "  แก้: MAW_SENDER=local:<ชื่อคุณ> ก่อนคำสั่ง · ผู้รับตรวจไม่ได้ว่าลายเซ็นถูกหรือผิด" ;;
+    esac
+  fi
   local sess="${target%%:*}" win="${target#*:}"; win="${win%%.*}"
   if ! maw ls -v 2>&1 | grep -qF "$sess"; then
     echo "REFUSED   ไม่พบ session '$sess' ใน maw ls -v"; return 2
@@ -432,6 +446,16 @@ usable=[(k,v) for k,v in sorted(c.items())
 globs=[(k,v) for k,v in sorted(c.items())
        if isinstance(v,str) and v.strip() and "*" in k and k!="default"]
 print("enginelist.count: %d usable=%d glob=%d" % (len(usable)+len(globs), len(usable), len(globs)))
+# 🔴 lucifer 2026-08-07: คำเตือน glob เคยอยู่ **ท้ายลิสต์ 27 บรรทัด** — คนที่กำลังตั้งชื่อ role
+#    ต้องเห็นก่อนลิสต์ ไม่ใช่หลัง ⇒ ยกขึ้นมาไว้ใต้ count
+if globs:
+    print("enginelist.HIJACK-RISK: %d glob key ด้านล่างแมตช์ **ชื่อ role/window** ที่ขั้น 4 ของ chain" % len(globs))
+    print("  ⇒ ชิงไปก่อน commands.default **ไม่ว่า charter จะขอ engine อะไร**")
+    print("  ⇒ เคสจริง 2026-08-07: role ชื่อ `verifier` + charter สั่ง claude/sonnet-5")
+    print("     โดน `verifier*` ⇒ บูตเป็น thclaws zai/glm-5.1 — คนละ vendor คนละ CLI")
+    print("  ⇒ ตั้งชื่อ role ให้ **ไม่ขึ้นต้น** ด้วย pattern เหล่านี้ หรือ pin ด้วย alias ที่ลงทะเบียนจริง")
+    for k,_ in globs:
+        print("     ⚠ %s" % k)
 for k,v in usable:
     print("enginelist.engine: %s model=%s cmd=%s" % (k, model_of(v) or "-", v))
 for k,v in globs:
@@ -444,11 +468,6 @@ for k,v in globs:
   #    `forge-oracle` ได้ **thclaws** (glob `verifier*`) · researcher ขอ `codex-full` ได้ codex
   #    ⇒ คนที่บูตผิดแล้วเปิด enginelist หาสาเหตุ จะไม่เห็นสาเหตุ และจะสรุปตามเอกสารว่า
   #      "ตกไปเป็น claude" ซึ่งผิดทั้งสามแถว ⇒ แสดงแยกหัวข้อ ไม่ตัดทิ้ง
-  if maw config 2>/dev/null | grep -q '"[^"]*\*"'; then
-    echo "⚠ enginelist.glob คือคีย์ที่แมตช์ **ชื่อ window** ที่ขั้น 4 ของ resolution chain —"
-    echo "  สมาชิกที่ชื่อขึ้นต้นตรงกับ pattern จะถูกดูดมาที่นี่ **ก่อนถึง commands.default**"
-    echo "  ไม่ว่า charter จะขอ engine อะไรก็ตาม ⇒ ถ้าสมาชิกบูตผิด ให้ดูหัวข้อนี้ก่อน"
-  fi
   echo "[ขอบเขต: การมีชื่ออยู่ในลิสต์ ไม่ได้แปลว่าบัญชีเสิร์ฟ model นั้นได้ — ต้อง boot ถึงจะรู้]"
 }
 
@@ -506,13 +525,33 @@ bootverify() {
         rc=1; continue ;;
     esac
     model=$(printf '%s' "$cmd" | sed -n 's/.*--model \([^ ]*\).*/\1/p')
+    # 🩹 2026-08-07 [lucifer · ทีมจริง 3 pane] alias ที่ **ไม่ pin --model** ทำให้ตรงนี้ว่าง
+    #    แล้วรายงาน `model=-` **ทั้งที่คำตอบอยู่บนจอที่ capture มาแล้ว** (status bar โชว์
+    #    `gpt-5.6-sol medium` ชัด ๆ) ⇒ อ่านจาก /proc ก่อน ถ้าไม่มีค่อย fallback ที่ status bar
+    #    ซึ่ง doc เองบอกว่าเป็นหลักฐานชั้นที่ครอบเรื่อง model ที่บัญชีเสิร์ฟจริง
+    local msrc="cmdline"
+    if [ -z "$model" ]; then
+      model=$(printf '%s' "$screen" | grep -oE '(gpt|claude|o[0-9]|sonnet|opus|haiku|glm|zai)[A-Za-z0-9./_-]*' | tail -1)
+      [ -n "$model" ] && msrc="status-bar"
+    fi
+    # 🩹 codex ติดตั้งผ่าน npm ⇒ pane process คือ `node .../codex` ⇒ basename = "node"
+    #    ตัวอย่างใน doc เขียน proc=codex ⇒ ใครเขียน gate `grep proc=codex` จะพลาดทั้งเครื่อง
+    #    ⇒ ถ้าตัวแรกเป็น interpreter ให้เอา **สคริปต์ที่มันรัน** มาเป็นชื่อแทน
+    local pbin
+    pbin=$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename 2>/dev/null)
+    case "$pbin" in
+      node|python|python3|bun|deno|ruby|perl|sh|env)
+        local real
+        real=$(printf '%s' "$cmd" | tr ' ' '\n' | grep -v '=' | grep -v '^-' | sed -n '2p' | xargs -r basename 2>/dev/null)
+        [ -n "$real" ] && pbin="${real} (via ${pbin})" ;;
+    esac
     # 🩹 2026-08-06 [prism รัน bootverify กับ prism-cell ที่ live อยู่จริง 8 pane]
     #    `cut -c1-90` ตัดท้ายคำสั่งทิ้งเงียบ ๆ ⇒ `--model gpt-5.5` ที่อยู่ท้ายหายไปจากจอ
     #    ⇒ คนอ่านเข้าใจผิดได้ว่า model หาย ทั้งที่มันอยู่ตรงนั้น
     #    ⇒ ใส่ `…` ให้เห็นว่าโดนตัด · และ `model=` อ่านจากคำสั่ง**เต็ม** เสมอ ไม่ใช่จากตัวที่ตัดแล้ว
     local shown="$cmd" mark=""
     if [ "${#cmd}" -gt 90 ]; then shown=$(printf '%s' "$cmd" | cut -c1-90); mark="…(ตัด ${#cmd} อักษร)"; fi
-    echo "bootverify.pane: $w READY proc=$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename) model=${model:--} cmd=${shown}${mark}"
+    echo "bootverify.pane: $w READY proc=${pbin:-?} model=${model:--}${model:+ (${msrc})} cmd=${shown}${mark}"
   done <<< "$wins"
 
   echo "bootverify.scope: อ่านอย่างเดียว · ยืนยัน process+จอ · **ไม่ยืนยันว่าบัญชีเสิร์ฟ model ได้** (ใช้ modelprobe)"
@@ -757,9 +796,44 @@ enginecheck() {
       fail=1
     elif [ -z "$cmd" ]; then
       # ไม่ได้ลงทะเบียน → ข้อ 1 ไม่เจอ → ตกไปตามชื่อ window ยิงหา wake เพื่อดูของจริง
+      # 🩹 2026-08-07 [lucifer · spawn ทีมจริง] เดิมไม่ส่ง `--repo-path` ⇒ สมาชิกที่ path อยู่
+      #    **นอก repo** (เช่น `~/.maw-teams/<team>/<role>`) probe ตอบไม่ได้ → ตกไปพิมพ์บรรทัด
+      #    ทั่วไป "ตกไปตามชื่อ window → glob → default" ซึ่ง **บอก consequence ผิด**
+      #    ของจริงในเคสเขา: member ชื่อ `verifier` ที่ charter สั่ง claude/sonnet-5
+      #    โดน glob `verifier*` → บูตเป็น **thclaws --model zai/glm-5.1 คนละ vendor**
+      #    lucifer ได้คำตอบจริงด้วยการเติม `--repo-path` เอง ⇒ เติมให้ที่นี่
       local probe
-      probe=$(maw wake "$ident" --no-attach --dry-run -e "$engine" 2>&1 \
+      probe=$(maw wake "$ident" --no-attach --dry-run -e "$engine" --repo-path "$mdir" 2>&1 \
               | sed 's/\x1b\[[0-9;]*m//g' | sed -n 's/^ *command: *//p' | head -1)
+      # ถ้ายังว่าง ลองแบบไม่ระบุ path (สมาชิกที่อยู่ใน repo)
+      [ -n "$probe" ] || probe=$(maw wake "$ident" --no-attach --dry-run -e "$engine" 2>&1 \
+              | sed 's/\x1b\[[0-9;]*m//g' | sed -n 's/^ *command: *//p' | head -1)
+      # ชื่อนี้โดน glob ตัวไหน "จับ" ไหม — glob แมตช์ **ชื่อ window** จึง hijack ตาม role name
+      local hijack
+      hijack=$(maw config explain 2>/dev/null | grep -oE '"[A-Za-z0-9_-]+\*"' | tr -d '"' | while read -r g; do
+                 case "${ident}" in "${g%\*}"*) echo "$g" ;; esac
+               done | head -1)
+      [ -n "$hijack" ] || hijack=$(python3 - "$mdir" "$ident" <<'PY' 2>/dev/null
+import json,os,sys,glob as _g
+d,ident=sys.argv[1],sys.argv[2]
+keys=[]
+p=os.path.abspath(d)
+seen=set()
+while True:
+    for f in sorted(_g.glob(os.path.join(p,'.maw','maw.config.*.json'))):
+        if f in seen: continue
+        seen.add(f)
+        try: keys += [k for k in json.load(open(f)).get('commands',{}) if '*' in k]
+        except Exception: pass
+    if p=='/': break
+    p=os.path.dirname(p)
+for f in sorted(_g.glob(os.path.expanduser('~/.config/maw/maw.config.*.json'))):
+    try: keys += [k for k in json.load(open(f)).get('commands',{}) if '*' in k]
+    except Exception: pass
+for k in keys:
+    if ident.startswith(k[:-1]): print(k); break
+PY
+)
       # แยกสองกรณีที่ไม่เท่ากัน:
       #   · probe ชี้ไปที่ binary ชื่อเดียวกับที่ขอ → **ได้ของถูกโดยบังเอิญ** (ผ่าน default)
       #     ยังอันตรายเพราะขึ้นกับชื่อ window: `wake hermes -e claude` → `hermes --yolo`
@@ -768,7 +842,16 @@ enginecheck() {
       local probe_bin=""
       [ -n "$probe" ] && probe_bin=$(printf '%s' "$probe" \
         | tr ' ' '\n' | grep -v '=' | grep -v '^-' | head -1 | xargs -r basename 2>/dev/null)
-      if [ -n "$probe_bin" ] && [ "$probe_bin" = "$engine" ]; then
+      # 🩹 2026-08-07: WARN ("ได้ของถูกโดยบังเอิญ") ใช้ได้เฉพาะตอน **ไม่มี model ที่ถูกขอ**
+      #    ถ้า charter ขอ model ไว้ แล้วคำสั่งที่จะรันจริง **ไม่มี model นั้น** ⇒ ของที่ได้ผิด
+      #    ไม่ใช่ "ถูกโดยบังเอิญ" ⇒ FAIL · เจอตอนที่ probe เริ่ม resolve ได้หลังเติม --repo-path
+      #    (เคส `model:` ที่ไม่มี `engine:` — engine ตกเป็น "claude" แล้วเทียบ claude กับ claude
+      #     ซึ่งเป็นการเทียบ fallback กับตัวมันเอง จึงผ่านเสมอ = false pass)
+      local model_ok=1
+      if [ -n "$model" ]; then
+        case "$probe" in *"$model"*) ;; *) model_ok=0 ;; esac
+      fi
+      if [ -n "$probe_bin" ] && [ "$probe_bin" = "$engine" ] && [ "$model_ok" = "1" ]; then
         printf '    ⚠️ WARN    engine "%s" ไม่ได้ลงทะเบียน — ตอนนี้ได้ของถูกโดยบังเอิญผ่าน default\n' "$engine"
         printf '               จะได้จริง: %s\n' "$probe"
         printf '               ไม่ pin: ผลขึ้นกับ *ชื่อ window* — `wake hermes -e claude` ได้ `hermes --yolo`\n'
@@ -779,11 +862,18 @@ enginecheck() {
 "
       else
         printf '    ❌ FAIL    engine "%s" ไม่ได้ลงทะเบียนใน commands ⇒ ถูกทิ้งเงียบ ๆ\n' "$engine"
+        if [ -n "$hijack" ]; then
+          printf '    🔴 HIJACK  ชื่อ role "%s" ตรงกับ glob "%s" ⇒ **ไม่ได้ตกไป default**\n' "$ident" "$hijack"
+          printf '               glob แมตช์ *ชื่อ window* ⇒ มันชิงไปก่อน default เสมอ\n'
+          printf '               เคสจริง 2026-08-07: charter สั่ง claude/sonnet-5 แต่ member ชื่อ verifier\n'
+          printf '               โดน verifier* ⇒ บูตเป็น thclaws zai/glm-5.1 — **คนละ vendor คนละ CLI**\n'
+        fi
         if [ -n "$probe" ]; then
           printf '               จะได้จริง: %s   ← คนละ engine กับที่ขอ\n' "$probe"
         else
-          printf '               (wake probe ยังตอบไม่ได้ — window ยังไม่มี/ชื่อกำกวม แต่ข้อสรุปยืน:\n'
-          printf '                ข้อ 1 ไม่เจอ ⇒ ตกไปตามชื่อ window → glob → default)\n'
+          printf '               (wake probe ตอบไม่ได้แม้ใส่ --repo-path %s แล้ว — **ตอบไม่ได้ ≠ ตกไป default**\n' "$mdir"
+          printf '                อย่าสรุป consequence จากบรรทัดนี้ ยิงเองเพื่อดูของจริง:\n'
+          printf '                maw wake %s --dry-run -e %s --repo-path %s)\n' "$ident" "$engine" "$mdir"
         fi
         printf '               แก้: เพิ่ม "%s" ใน .maw/maw.config.<N>.json ที่เป็น**บรรพบุรุษของ %s**\n' "$engine" "$mdir"
         case "$mdir" in
