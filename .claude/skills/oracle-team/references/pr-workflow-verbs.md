@@ -122,6 +122,33 @@ explicitly if you mean a different number.
 > **Creating an issue purely to test this is not something to do quietly** — it is outward-facing
 > on a real repository. Ask the repo's owner first; the arm stays labelled untested until then.
 
+> 🔴 **Do not read a verifier's branch ref as "has it verified yet".** `[measured 2026-08-07
+> after getting it wrong twice and reporting it to a team lead]` A verifier doing the job
+> correctly **detaches onto the coder's exact SHA** — their own `verify/…` branch never moves.
+> Comparing branch refs therefore reports "behind" forever, no matter how correctly they work:
+>
+> ```
+> verify/ws-…  ref = 325db65      <- never moved, looks 3 commits behind
+> worktree HEAD = c1e8797         <- actually sitting on the coder's exact commit
+> ```
+>
+> Compare **worktree HEAD to worktree HEAD**, and read the coder's location from their worktree
+> too — mine was still tracking `feat/ws-error-surfacing` after coder-b had moved to
+> `feat/registry-refresh-coalesce`, so it was reporting progress on an abandoned branch.
+>
+> ```bash
+> git -C "$CODER_WT"    rev-parse HEAD
+> git -C "$VERIFIER_WT" rev-parse HEAD     # equal => verifying the right commit
+> ```
+>
+> Same shape as everything else this skill documents — `delivered` for *received*, `RUNNING` for
+> *ready*, `commit` for *passed*, and here `branch ref` for *verified*. **This one accused a team
+> of being slow while they were doing every step right**, which is the cost of picking the signal
+> that is easy to read over the one that answers the question.
+>
+> ⚠️ Still true after the correction: *verifier is on the same commit* is not *a verdict exists*.
+> It means they are proving the right thing, not that they are done.
+
 ### Step 2: Create worktrees (if not exist)
 
 > 🔴 **This step used to invent worktrees that had nothing to do with your team.**
