@@ -1431,5 +1431,7 @@ tars **อ่าน source ด้วย `git show 325db65:` + probe ด้วย
 ⇒ **ไม่ใช่เหตุให้ rollback** (null ไม่ได้ดีกว่า) และ **ไม่ใช่ของที่ lucifer ควรแก้เอง** —
 **เจ้าของคีย์แต่ละตัวเป็นคนตัดสิน** · บันทึกเป็น **open ไม่ใช่ blocker**
 
-📌 **สถานะ: `verified-by-second-party` สำหรับข้อ 1–6 · ยังรอ atlas เป็นมุมมองที่สาม**
+📌 **สถานะ: ✅ ปิดครบ — `verified-by-second-party` (codex-fanout ข้อ 1–6) + `verified-by-third-party` (atlas 2026-08-07, `c8ef597`): PASS resolve จาก repo root ของเขาเอง **พร้อม before/after ของตัวเองบน 2 คีย์** · PASS roster 100 + ชื่อใหม่ครบ 3 · **OUT OF SCOPE: authorization** (verifier ตรวจไม่ได้ — ดู D15.5)**
+⚠️ **ผมยืนยัน roster count เองไม่ได้** — `maw roster` ไม่ใช่คำสั่งของ maw-rs · ผมยืนยันแค่ **+3 จาก `agents` map** · **เลข 100 เป็นของ atlas** อย่ายุบรวมสองอย่างนี้
+~~ยังรอ atlas เป็นมุมมองที่สาม~~
 ผมไม่นับตัวเองแทนเขา — lucifer ขอเขาด้วยเหตุผลที่ถูก (บ้าน atlas ไม่มี repo-local layer)
