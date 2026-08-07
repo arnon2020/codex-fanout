@@ -933,6 +933,28 @@ modelprobe() {
   #    ⇒ เครื่องมือที่เราสร้างมาเพื่อ "ตรวจก่อนทำ" **เป็นตัวที่สกปรกที่สุดในชุด**
   #    ⇒ ลบเฉพาะบล็อกที่ชี้ path ของเราเอง · แมตช์ path เต็ม ห้าม pattern กว้าง
   #      (ไฟล์นี้มี path ของ oracle บ้านอื่นอยู่ด้วย) · กิน `\n` นำหน้าด้วย ไม่งั้นเหลือบรรทัดว่าง
+  # 🔴 2026-08-07 [clean-room tester #3] เก็บ trust entry แล้ว **แต่ยังทิ้ง rollout ไว้**
+  #    `codex exec` เขียน `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` โดยบันทึก
+  #    `"cwd":"/tmp/tmp.XXXX"` และ `"originator":"codex_exec"` ⇒ **ไม่มี token ของทีมอยู่ในไฟล์เลย**
+  #    ⇒ **การตรวจ residue ที่ teardown สอน (`grep -rl "$TEAM" ~/.codex/sessions/`) หาไม่เจอ
+  #      โดยโครงสร้าง** ⇒ สะสมไฟล์ละหนึ่งต่อการ probe หนึ่งครั้ง ทั่วทั้งเครื่อง
+  #    ⇒ *"verb ที่สะอาดที่สุดของ skill คือ verb ที่ตามรอยยากที่สุด"* — เก็บด้วย **cwd ของเราเอง**
+  #      ซึ่งเป็น path ที่ไม่ซ้ำใครและเราสร้างเอง (ไม่ใช่ pattern กว้าง ไม่แตะของบ้านอื่น)
+  if [ -d "$HOME/.codex/sessions" ]; then
+    MP_TMP="$tmp" python3 - <<'PY' 2>/dev/null
+import os, pathlib
+tmp = os.environ["MP_TMP"]
+root = pathlib.Path.home()/".codex/sessions"
+needle = ('"cwd":"%s"' % tmp).encode()
+alt    = ('"cwd": "%s"' % tmp).encode()
+for p in root.rglob("rollout-*.jsonl"):
+    try: blob = p.read_bytes()
+    except Exception: continue
+    if needle in blob or alt in blob:
+        try: p.unlink()
+        except Exception: pass
+PY
+  fi
   if [ -f "$HOME/.codex/config.toml" ]; then
     MP_TMP="$tmp" python3 - <<'PY' 2>/dev/null
 import os, re, pathlib

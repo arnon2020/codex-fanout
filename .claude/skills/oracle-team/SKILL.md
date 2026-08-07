@@ -130,10 +130,27 @@ command -v maw  >/dev/null || { echo "STOP: maw is not on PATH"; exit 1; }
 command -v tmux >/dev/null || { echo "STOP: tmux is not on PATH"; exit 1; }
 git rev-parse --show-toplevel >/dev/null 2>&1 \
   || { echo "STOP: not inside a git repository — see 'no repo?' below"; exit 1; }
+
+# 🔴 …and "inside A repo" is not "inside YOUR repo". Decide deliberately, do not inherit cwd.
+CAND=$(git rev-parse --show-toplevel)
+printf 'about to build the team in: %s\n' "$CAND"
+case "$CAND" in
+  *"/.claude/worktrees/"*) echo "STOP: that is a worktree — pick the real project root or an empty dir"; exit 1 ;;
+esac
+[ "${ROOT:-}" = "$CAND" ] || { echo "STOP: set ROOT yourself to confirm this is the intended repo:  export ROOT=$CAND"; exit 1; }
 ```
 Why this is a real step, not boilerplate: `ROOT=$(git rev-parse --show-toplevel)` outside a
 repo sets `ROOT` to the **empty string**, and every path after it silently becomes
 `/.maw/...`, `/agents/...`. Nothing errors until a confusing failure several steps later.
+
+> 🔴 **The gate only caught *absence* of a repo until 2026-08-07 — never *the wrong repo*.**
+> `[third clean-room tester]` Their cwd was a **worktree of a repository they had been forbidden
+> to write to**. `git rev-parse --show-toplevel` succeeded, so Step 0 passed *loudly*, and
+> `ROOT=$(...)` would have planted the charter, the config layer and every member directory
+> inside it. The escape hatch existed — set `ROOT` yourself — but was reachable **only from the
+> "no repo" branch**, which they never hit.
+> ⇒ The prose asks *"no repo?"*; the failure they actually had was **"not *your* repo"**, and
+> nothing checked it. Now `ROOT` must be stated explicitly, so inheriting a cwd is never enough.
 
 > **No repo? `maw team up` still needs one.** `[verified — an earlier version of this callout
 > said "everything else is identical", which was false]`
@@ -185,11 +202,36 @@ B=${TEAM}-beta                       # member 2
 > |---|---|---|
 > | `/proc` cmdline via `bootverify` (`model=… flag-pinned`) | the flag you passed | ❌ nothing about what the account served — this is one rung above reading your own config back |
 > | claude's own `/status` in the pane → `Model: sonnet (claude-sonnet-5)` | **the engine's own answer for that pane** | the account could still refuse mid-session |
-> | **a real turn in that pane** — send `Reply with exactly: OK-<token>` and read `<token>` back | **that pane, that account, right now** | nothing about the *alias* in isolation |
+> | **a real turn in that pane** — send `Reply with exactly: OK-<token>` and read `<token>` back (**command below — it was missing until 2026-08-07**) | **that pane, that account, right now** | nothing about the *alias* in isolation |
 >
 > ⇒ `modelprobe` proves **alias + account**, not that pane. `/status` + a real turn proves **that
 > pane**, not the alias. Neither subsumes the other; a mixed team needs both halves done
 > differently, and **the claude half is manual today.**
+>
+> ### ✉️ How to actually send that turn — the command this file forgot to include
+>
+> `[the third clean-room tester's #1 finding: "SKILL.md prescribes the evidence and gives no
+> command … the top rung of the skill's own evidence ladder, unimplemented"]`
+>
+> ```bash
+> W="${A}-oracle"                      # the member's window name
+> T="=${SESSION}:${W}"                 # ALWAYS the "=" form — the bare one prefix-matches
+> TOKEN="OK-$$"
+> tmux send-keys -t "$T" -l "Reply with exactly: $TOKEN"   # -l = literal, no key-name parsing
+> tmux send-keys -t "$T" Enter                              # submit as a separate call
+> sleep 6
+> tmux capture-pane -p -t "$T" | grep -F "$TOKEN" \
+>   && echo "✓ that pane, that account, answered right now" \
+>   || echo "✗ no answer yet — peek before concluding; codex may be holding it unsubmitted"
+> ```
+>
+> **`-l` matters**: without it `tmux` interprets words like `Enter`, `Space` or `C-c` inside your
+> text as keys. **Two calls matter**: some engines take the text and the newline separately, and
+> codex in particular can sit on a filled composer showing `[Pasted Content N chars]` — which
+> `bootverify` reports as `QUEUED-NOT-SUBMITTED`. If that appears, `unstick <session>` clears it.
+>
+> ⚠️ **This gap survived three rewrites because everyone testing already knew tmux.** The skill
+> demanded evidence it never taught anyone to produce.
 >
 > 🔑 The tester's own summary is worth keeping: *"I did not count `bootverify`'s `/proc` line —
 > that is the flag I passed, one rung above a config file."* **They refused their own easiest
@@ -630,9 +672,17 @@ charter's `engine:` silently misses and glob or default decides for you.
 >
 > ```bash
 > bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginecheck <charter> \
->   | grep -E 'enginecheck.member|pinned='
-> #   pinned=no  ⇒ that member is on the ambient default — i.e. the top tier, by accident
+>   | grep -E 'enginecheck.member|unpinned-alias'
+> #   a member line ending in  pinned=no   ⇒ on the ambient default — the top tier, by accident
+> #   no pinned= line at all               ⇒ that member IS pinned. This is the good case.
 > ```
+>
+> ⚠️ **`pinned=yes` does not exist.** `enginecheck` only ever emits `pinned=no`
+> (`verify-check.sh:1218`), so a correctly-pinned team produces **zero `pinned=` lines** — which
+> looks identical to *"my grep was wrong."* `[found 2026-08-07 by the third clean-room tester,
+> whose output had no `pinned=` at all and who could not tell whether that was the pass or a typo]`
+> Grep for **`unpinned-alias`** in the `enginecheck.unverified:` line instead — that field is
+> always printed, so its **absence is meaningful** and its presence names the problem.
 >
 > **`pinned=no` is not only a stability problem, it is a bill.** The existing
 > `enginecheck.unverified: unpinned-alias` flag has been reporting this all along; we read it as

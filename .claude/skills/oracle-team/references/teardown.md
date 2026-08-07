@@ -222,6 +222,39 @@ carefully reviewed and unexecuted; that is a different claim from the rows above
 
 ## Step 1: Kill the session's windows
 
+> ## 🔴🔴 Before anything: `$TARGETS` and `$CODERS` are used here and **never assigned in this file**
+>
+> `[found 2026-08-07 by the third clean-room tester · confirmed: grep -c 'TARGETS=' → 0, 'CODERS=' → 0]`
+>
+> Step 1 and Step 2 loop over `$TARGETS`; Step 3 uses `$CODERS`. **Neither is set anywhere in this
+> document.** Step 3 at least has an empty-guard that refuses and says so. **Step 1 has none** —
+> `for ROLE in $TARGETS` with `$TARGETS` unset iterates **zero times, prints nothing, kills
+> nothing**, and the prose around it reads as a completed teardown.
+>
+> ⇒ 🔑 **That is the exact silent-pass shape this file names five separate times, sitting in the
+> step whose entire documented history is *"the kill never killed anything."*** It survived seven
+> review rounds by four oracles because every reader had the variables set from their own earlier
+> commands, and a reader who *runs the file from the top* is the only one who would ever see it.
+>
+> **Derive them from the charter, and refuse if empty:**
+>
+> ```bash
+> : "${CHARTER:?set CHARTER first — Step 0 needs it too}"
+> TARGETS=$(python3 -c "
+> import re,sys
+> src=open('$CHARTER').read()
+> for b in re.split(r'(?=^\s*-\s*role:)', src, flags=re.M):
+>     m=re.search(r'role:\s*(\S+)', b)
+>     if m and not re.search(r'worktree:\s*false', b): print(m.group(1))
+> ")
+> CODERS="$TARGETS"        # Step 3 releases the same set unless you narrow it deliberately
+> [ -n "$TARGETS" ] || { echo "🔴 REFUSING: no roles parsed from $CHARTER — teardown would do nothing and look clean"; return 1 2>/dev/null || exit 1; }
+> printf 'teardown targets (%s): %s\n' "$(printf '%s\n' "$TARGETS" | grep -c .)" "$(printf '%s ' $TARGETS)"
+> ```
+>
+> **Print the list before acting.** A teardown that names its targets out loud cannot silently
+> have none — and this whole file exists because that is not the same as a teardown that ran.
+
 > ## 🔴 First: is the team's session **your own**?
 >
 > `[found by lucifer, using Gate 0 on a real unspawned charter, 2026-08-06]` This file assumed
