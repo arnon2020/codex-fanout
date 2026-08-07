@@ -86,5 +86,31 @@ print("models requested by aliases:")
 for m, n in mc.most_common(): print(f"   {n:3}  {m}")
 print("\nreasoning effort requested:")
 for e, n in ec.most_common(): print(f"   {n:3}  {e}")
+
+# 🔴 2026-08-07 (lucifer) — THREE different counts live here. Print all three, always, labelled.
+#    Anyone quoting a bare number from this script is quoting one of these without saying which,
+#    and two people can then quote different numbers and both be right.
+#      names       = distinct alias names that pin effort
+#      rows        = alias x distinct command string   <- what the counter above reports
+#      definitions = every time such an alias is defined, across all layer files
+#    Today names == rows **by coincidence**: no alias yet has two different command strings.
+#    The day one does, these silently diverge — and that is the alias-name collision problem.
+#    ⚠️ The warning below has NEVER fired. By this repo's own rule, a check that has never
+#    failed is not yet proven to work. Do not read its silence as evidence.
+_names = {k for k in cmds if any(tier(v)[1] for v in cmds[k])}
+_rows  = sum(1 for k, _, e in rows if e)
+_defs  = sum(1 for k in _names for f in where[k]
+             if (lambda c: any(tier(x)[1] for x in [c.get(k)] if isinstance(x, str)))(
+                 json.load(open(f)).get('commands', {}) or {}))
+print(f"\neffort counts — quote the label, never the bare number:")
+print(f"   names       (distinct alias names)              : {len(_names)}")
+print(f"   rows        (alias x distinct command string)   : {_rows}")
+print(f"   definitions (times defined across layer files)  : {_defs}")
+if len(_names) != _rows:
+    print(f"   🔴 names != rows — an alias is defined with MORE THAN ONE command string.")
+    for k in sorted(_names):
+        if len(cmds[k]) > 1: print(f"      {k}: {len(cmds[k])} different commands -> {where[k]}")
+else:
+    print(f"   (names == rows today; no alias has two different command strings yet)")
 nomodel = [k for k, m, e in rows if not m and not e]
 print(f"\naliases pinning NEITHER model nor effort (ambient): {len(nomodel)}")
