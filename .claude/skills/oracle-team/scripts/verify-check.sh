@@ -693,7 +693,17 @@ bootverify() {
     # 🔴 จอเป็นของ installer/dialog ไม่ใช่ของ agent → ยังรับงานไม่ได้ และ Enter จะไปโดนเมนู
     case "$screen" in
       *"Update available!"*|*"Press enter to continue"*|*"1. Update now"*)
-        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog · engine รันอยู่ · แก้: เคลียร์จอด้วยเลขที่เจาะจง (3=Skip) **ห้าม Enter เปล่า** จะกด 'Update now'"
+        # 🔴 2026-08-07 · เดิมบรรทัดนี้เขียน `(3=Skip)` — **ผิด และผิดในบรรทัดที่สอนว่าห้ามกดมั่ว**
+        #    เมนูของ codex **ต่างกันตามเวอร์ชัน**: 0.146.0 = `1 Update now / 2 Skip` ·
+        #    0.146.1 = `1 Update now / 2 Skip / 3 Skip until next version`
+        #    ⇒ บน 0.146.1 เลข **3 ไม่ใช่ Skip** แต่คือ *"Skip until next version"* ซึ่ง
+        #      **เขียน preference ถาวรลง state ของ codex ที่ทุก oracle ใช้ร่วมกัน**
+        #    ⇒ การ hardcode เลขใด ๆ คือตัวบั๊กเอง — เครื่องมือไม่รู้ว่าเครื่องนั้นเป็นเมนูแบบไหน
+        #    [clean-room tester 2026-08-07 อ่านเมนูจริงแล้วส่ง `2` — และเขาถูก ผมผิด]
+        echo "bootverify.pane: $w NOT-READY screen=cli-update-dialog · engine รันอยู่"
+        echo "          ⇒ แก้: **อ่านเลขจากจอ** แล้วส่งเลขที่คู่กับ 'Skip' — **ห้าม Enter เปล่า** (จะโดน 'Update now')"
+        echo "          ⚠️ เลขไม่คงที่ข้ามเวอร์ชัน: 0.146.0 → 2=Skip · 0.146.1 → 2=Skip, **3='Skip until next version' (เขียน state ถาวร)**"
+        echo "          ⇒ เลือกตัวที่ **ไม่ทิ้งร่องรอย** เสมอ: maw peek \"$sess:$w\" แล้วดูเมนูก่อนกด"
         rc=1; continue ;;
       *"trust this folder"*|*"you trust"*)
         echo "bootverify.pane: $w NOT-READY screen=trust-prompt · engine รันอยู่ · แก้: ตอบ '1' เฉพาะเจาะจง ไม่ใช่ Enter เปล่า"

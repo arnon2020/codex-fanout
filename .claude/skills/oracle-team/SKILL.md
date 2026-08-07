@@ -171,6 +171,30 @@ B=${TEAM}-beta                       # member 2
 > #   overall: PASS model-served=yes     ← proceed
 > #   overall: FAIL model-served=no      ← fix the alias now, before you build a team on it
 > ```
+>
+> ⚠️ **`modelprobe` is codex-only** — on any other engine it returns
+> `UNVERIFIED reason=only-codex-supported-by-this-probe`. `[named 2026-08-07 by a clean-room
+> tester]` The gap matters more than it sounds: **this skill tells you to mix engines precisely
+> because that is how you get two different models** — so on a normal 2-member team, **half of it
+> has no scripted model-served check at all**, and the skill never said so.
+>
+> **Proving a claude member's model, until something scripted exists** — two rungs, and they are
+> not equivalent:
+>
+> | evidence | what it proves | what it does not |
+> |---|---|---|
+> | `/proc` cmdline via `bootverify` (`model=… flag-pinned`) | the flag you passed | ❌ nothing about what the account served — this is one rung above reading your own config back |
+> | claude's own `/status` in the pane → `Model: sonnet (claude-sonnet-5)` | **the engine's own answer for that pane** | the account could still refuse mid-session |
+> | **a real turn in that pane** — send `Reply with exactly: OK-<token>` and read `<token>` back | **that pane, that account, right now** | nothing about the *alias* in isolation |
+>
+> ⇒ `modelprobe` proves **alias + account**, not that pane. `/status` + a real turn proves **that
+> pane**, not the alias. Neither subsumes the other; a mixed team needs both halves done
+> differently, and **the claude half is manual today.**
+>
+> 🔑 The tester's own summary is worth keeping: *"I did not count `bootverify`'s `/proc` line —
+> that is the flag I passed, one rung above a config file."* **They refused their own easiest
+> evidence.** That is the discipline this whole file is about, arrived at by someone who had read
+> only this file.
 This is the only place a model can be expressed. Filename must be `maw.config.<digits>.json`
 with a number above 50.
 
@@ -537,7 +561,7 @@ charter's `engine:` silently misses and glob or default decides for you.
 | engine | how to list what your account serves |
 |---|---|
 | codex | `grep '^model' ~/.codex/config.toml` — this gives **one** value, the current default. `codex --help` documents the `-m` flag but **does not enumerate valid values** |
-| claude | `claude --help` lists the aliases it accepts — **read the list on your machine, do not copy one from here; it changes between versions** |
+| claude | ⚠️ **`claude --help` does NOT list them** — see the correction below. Ask the binary by giving it a wrong one: `claude --model zzz -p hi 2>&1 \| grep -o 'aliases\?([^)]*)'` → on 2.1.224 this replies *"Switch to a public model alias (opus, sonnet, fable)"*. Read the list **on your machine** |
 | opencode | `opencode models` prints every `provider/model` it can reach |
 
 🔑 **Getting two DIFFERENT models is the step people get stuck on.** codex exposes only its
@@ -545,6 +569,36 @@ current default by the route above, so there may be **no way to discover a secon
 locally**. The reliable answer is to make the second member a **different engine** — codex for
 one, claude for the other. Mixing engines in one team is normal and is what the per-member
 aliases are for. Do not invent model names to fill the gap.
+
+> ### 🔴 The claude row was false, and it was the one place a newcomer could not proceed
+>
+> `[found 2026-08-07 by a clean-room agent given only this skill · confirmed here on 2.1.224]`
+>
+> This table used to say *"`claude --help` lists the aliases it accepts."* It does not:
+>
+> ```
+> $ claude --help | grep -c -- '--model'
+> 0                      # only --fallback-model exists; no list, no error, silent dead end
+> ```
+>
+> Combined with *"Do not invent model names"* two lines below, the documentation **closed both
+> doors**: no way to obtain a name, and an instruction not to guess one. The tester finished the
+> task only because a usable name had been inherited from an earlier run — **a real newcomer
+> stops here.** Every other defect found this year has been a check that lied; this one was
+> simply an instruction that could not be followed.
+>
+> **The route that works** — ask the binary by handing it a name it cannot have:
+>
+> ```bash
+> claude --model zzz-not-a-model -p hi 2>&1 | grep -o 'alias[^)]*)'
+> #   → Switch to a public model alias (opus, sonnet, fable)
+> ```
+>
+> 🔴 **And note what that command's exit code was: `rc=0`.** A wrong `--model` **warns and keeps
+> going** rather than failing. So `claude --model <typo>` inside an alias produces a member that
+> boots, runs, and answers — on some other model. **This is the same family as `maw team <typo>`
+> returning 0**, at the other end of the same spawn. Never conclude a model was applied because
+> the pane came up; read it back per Step 6.
 
 **Step 2 — create each member's working directory. It must exist before spawn.**
 
@@ -844,7 +898,7 @@ maw team up "$TEAM"               # real
 > ```bash
 > # match the specific screen, then send the specific answer for THAT screen
 > if maw peek "$T" | grep -qF 'Update available!'; then
->   tmux send-keys -t "=$T" '3' Enter        # 3 = "Skip until next version"
+>   tmux send-keys -t "=$T" '3' Enter        # ⚠️ SEE BELOW — do not copy this 3
 > fi
 > if maw peek "$T" | grep -qF 'Is this a project you created or one you trust'; then
 >   tmux send-keys -t "=$T" '1' Enter        # 1 = "Yes, I trust this folder"
@@ -854,6 +908,32 @@ maw team up "$TEAM"               # real
 > **Never send a naked Enter to a screen you have not matched.** A blind Enter takes the
 > *highlighted default*, and on the update screen the default is **"Update now"** — which runs
 > `npm install -g` against the whole machine.
+>
+> ### 🔴 …and the number in that snippet is not portable either
+>
+> `[found 2026-08-07 by a clean-room agent, who read the live menu instead of trusting us]`
+>
+> Three places in this project disagreed about which key means Skip, because **the menu changes
+> between codex versions**:
+>
+> | codex | menu | "Skip" is |
+> |---|---|---|
+> | 0.146.0 | `1. Update now` · `2. Skip` | **2** |
+> | 0.146.1 | `1. Update now` · `2. Skip` · `3. Skip until next version` | **2** — and **3 writes a persistent preference into shared codex state** |
+>
+> Step 6's table said `2`, prism's snippet says `3`, and `verify-check.sh`'s own remedy line said
+> **`(3=Skip)`** — mislabelled, **in the hint attached to the check whose entire lesson is "never
+> press blindly."** On 0.146.1 that hint would have had you write shared state to dismiss a
+> dialog.
+>
+> ⇒ 🔑 **Hardcoding any number is the defect.** The rule is the one prism's structure already
+> implies but the snippet undercuts: **match the banner, then read the number off the pane you
+> just matched, and prefer the option that leaves no trace.** `verify-check.sh` now prints the
+> version-dependent menu instead of a number.
+>
+> 🪞 The tester got this right by doing exactly what the surrounding prose says and **ignoring the
+> literal we shipped** — which is the strongest evidence that an example can contradict its own
+> lesson and still be copied.
 >
 > ⏳ **This was known for five days and happened anyway.** lucifer banked it on **2026-08-01
 > against codex 0.145**: *"dialog-clearing loop ของ `spawn_team_member.sh` ไม่ match →

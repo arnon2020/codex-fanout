@@ -705,6 +705,48 @@ crontab -l 2>/dev/null | grep -iF -- "$SESSION"
 > normal check said "gone" while three timers kept firing at it every 5 minutes. **A team that
 > was never `down`ed is exactly the team whose external state is still running.**
 
+### 🔴 The one piece of external state this skill creates itself — and never removed
+
+`[found 2026-08-07 by a clean-room tester, who had to invent the cleanup]`
+
+`SKILL.md` Step 4 instructs you to append a codex trust entry:
+
+```
+[projects."$ROOT/agents/$A"]
+trust_level="trusted"
+```
+
+…into **`~/.codex/config.toml`, which is shared by every oracle on the machine** — and *no
+teardown list in this file mentioned it*. `teamclosed` explicitly disclaims worktrees, fleet and
+cron; this was in none of those buckets either. **The skill told you to write shared state and
+never told you to take it back**, so every team ever torn down has left one entry behind.
+
+```bash
+# report, then remove ONLY the exact blocks naming paths under this team's $ROOT
+cp ~/.codex/config.toml ~/.codex/config.toml.bak.$(date +%s)     # shared file — back it up first
+grep -n "projects\.\"$ROOT" ~/.codex/config.toml || echo "no trust entries for $ROOT"
+python3 - "$ROOT" <<'PY'
+import re, sys, pathlib
+root = sys.argv[1]
+p = pathlib.Path.home()/".codex/config.toml"
+src = p.read_text()
+# a block runs from its [projects."…"] header to the next [ at column 0
+pat = re.compile(r'(?m)^\[projects\."' + re.escape(root) + r'[^"]*"\]\n(?:(?!^\[).*\n?)*')
+out, n = pat.subn('', src)
+print(f"removed {n} trust block(s) for {root}")
+if n: p.write_text(out)
+PY
+```
+
+⚠️ **Match the exact path prefix, never a bare team-name `grep`** — the same rule as the worktree
+deletions in Step 2, and for the same reason: this file lists **other oracles' project paths**,
+and a loose pattern edits their trust settings. Verify with
+`grep -c "projects.\"$ROOT" ~/.codex/config.toml` → `0`, and keep the backup.
+
+🪞 This is the *"knowledge has a distribution obligation"* rule pointed at cleanup instead of
+messages: **a step that creates shared state owes a step that removes it**, and the absence was
+invisible for as long as nobody ran the whole lifecycle end-to-end as a stranger.
+
 ## Step 5: Verify, then report
 
 ```bash
