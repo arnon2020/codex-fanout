@@ -580,6 +580,30 @@ for k,v in globs:
 # และแยกให้ชัดว่า **process ถูก ≠ agent พร้อมรับงาน** (2026-08-06: /proc บอกว่า codex ถูกตัว
 # แต่จอเป็นหน้า "Update available!" ⇒ Enter เปล่าไปกด "Update now" อัปทั้งเครื่อง)
 # ⚠️ read-only ล้วน — ไม่ส่ง key ไม่กด Enter ไม่แตะอะไรใน pane
+# ── _vc_argv_basename <cmdline> <n> ─────────────────────────────────────────
+# คืน basename ของ **อาร์กิวเมนต์ที่ n ที่ไม่ใช่แฟลกและไม่ใช่ VAR=VAL** จาก cmdline หนึ่งก้อน
+#
+# 🔴 2026-08-07 · แทนที่ท่าเดิม `… | awk '{print $1}' | xargs -r basename` ซึ่ง **พังเงียบ**
+#    กับ pane ของ codex ทุกตัวบนเครื่องนี้ — และพังมาก่อนเทสต์นี้จะมีอยู่:
+#    cmdline ของ codex **มีขึ้นบรรทัดใหม่** (brief ถูกส่งเป็น argv) ⇒ `awk '{print $1}'`
+#    พิมพ์ `$1` ของ **ทุกบรรทัด** ⇒ `xargs` ยัดให้ `basename` หลายตัว ⇒ `extra operand`
+#    ⇒ **stderr ถูก `2>/dev/null` กลืน · ผลลัพธ์ว่าง** ⇒ `proc=?` มาตลอดโดยไม่มีใครสังเกต
+#    ⇒ `xargs` ยัง **แกะเครื่องหมายคำพูด** ด้วย ⇒ brief ที่มี `'` เดี่ยว ๆ ทำให้มันตายอีกทาง
+#    🔑 นี่คือ pipeline-rc trap เวอร์ชันที่เงียบกว่า: **ไม่ใช่ rc ที่โกหก แต่เป็น output ที่หายไป**
+#    ⇒ ใช้ bash ล้วน ไม่มี subprocess ที่ตีความ quote/บรรทัดแทนเรา
+_vc_argv_basename() {
+  local line="${1%%$'\n'*}" n="${2:-1}" tok i=0
+  for tok in $line; do
+    case "$tok" in
+      -*) continue ;;      # แฟลก
+      *=*) continue ;;     # VAR=VAL นำหน้าคำสั่ง
+    esac
+    i=$((i+1))
+    [ "$i" = "$n" ] && { printf '%s' "${tok##*/}"; return 0; }
+  done
+  return 1
+}
+
 bootverify() {
   local sess="${1:?usage: bootverify <session>}"
   binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
@@ -600,7 +624,7 @@ bootverify() {
     if [ -r "/proc/${pid:-0}/cmdline" ]; then
       cmd=$(tr '\0' ' ' < "/proc/${pid}/cmdline")
     fi
-    case "$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename 2>/dev/null)" in
+    case "$(_vc_argv_basename "$cmd" 1)" in
       bash|sh|zsh|-bash|""|login)
         cmd=""   # pane เป็นเชลล์เปล่า → หา engine จากลูกแทน
         for child in $(pgrep -P "${pid:-0}" 2>/dev/null); do
@@ -641,6 +665,43 @@ bootverify() {
         rc=1; queued=$((queued+1)); continue
       fi
     fi
+    # 🔴 2026-08-07 · **false-READY ที่ selftest 12 จับได้ในการรันครั้งแรก**
+    #    เดิม: `cmd` ไม่ว่าง ⇒ ไหลลงไป READY ⇒ **pane ที่รัน `sleep 30` ได้ `overall: READY`**
+    #    ⇒ verb นี้ถามแค่ *"มี process ไหม"* ไม่เคยถาม *"มันเป็น agent ไหม"*
+    #    ⇒ **นี่คือแถว `RUNNING` ในตาราง signal-substitution ของ skill นี้เอง**
+    #       ("a process exists — not that the agent can take a turn") **อยู่ใน verb ที่สร้างมาแก้มัน**
+    #    ⇒ ไม่มีใครใน 6 บ้านจับได้ เพราะทุกคนรันมันกับ **ทีมจริงที่เป็น agent อยู่แล้ว**
+    #       — เคสที่หักล้างมันได้ต้องเป็น session ที่ *ไม่ใช่* agent ซึ่งไม่มีใครมีเหตุให้ลอง
+    # 🚨 ทิศของความระมัดระวัง: lucifer บอกว่า **false PROCESS-GONE แพงกว่า false READY**
+    #    ⇒ ตรงนี้จึง **ไม่** ประกาศ PROCESS-GONE (process มีอยู่จริง) แต่ประกาศว่า
+    #    **ยืนยันไม่ได้ว่าเป็น agent** พร้อมพ่น cmd ที่เห็นออกมาให้คนอ่านตัดสิน
+    #    ⇒ "ยืนยันไม่ได้" ≠ "ไม่มี" — สองสถานะนี้พาไปคนละทางแก้ (ดู scar เรื่อง absence claim)
+    # 🩹 `pbin` เคยถูกคำนวณหลังจุดนี้ ⇒ เช็คลายเซ็นอ้างตัวแปรที่ยังไม่มี ⇒ `unbound variable`
+    #    (`set -u` จับให้ตอนรัน selftest 12 แขน (ข) — เป็นเหตุผลที่แขนนั้นต้องรันของจริง
+    #     ไม่ใช่แค่ grep หาสตริงในไฟล์) ⇒ ย้ายการคำนวณขึ้นมาก่อนผู้ใช้รายแรก ไม่ใช่ทำสำเนาที่สอง
+    local pbin
+    pbin=$(_vc_argv_basename "$cmd" 1)
+    case "$pbin" in
+      node|python|python3|bun|deno|ruby|perl|sh|env)
+        local real
+        real=$(_vc_argv_basename "$cmd" 2)
+        [ -n "$real" ] && pbin="${real} (via ${pbin})" ;;
+    esac
+    local agentsig=""
+    case "$pbin" in
+      claude*|codex*|opencode*|thclaws*|*"(via node)"|*"(via python3)"|*"(via bun)"|*"(via deno)")
+        agentsig="proc" ;;
+    esac
+    if [ -z "$agentsig" ]; then
+      printf '%s' "$screen" | grep -qE 'esc to interrupt|Enter to select|⏵⏵|Claude Code|for shortcuts|\[Pasted Content' \
+        && agentsig="screen"
+    fi
+    if [ -z "$agentsig" ]; then
+      echo "bootverify.pane: $w NOT-READY screen=no-agent-signature proc=${pbin:-?} cmd=${cmd}"
+      echo "          ⇒ process มีอยู่ **แต่ยืนยันไม่ได้ว่าเป็น agent** (ไม่ใช่ PROCESS-GONE — อย่า spawn ทับ)"
+      echo "          ⇒ ถ้านี่คือ engine ที่เครื่องมือยังไม่รู้จัก: peek ดูจอเอง แล้วบอกผมให้เพิ่มลายเซ็น"
+      rc=1; continue
+    fi
     model=$(printf '%s' "$cmd" | sed -n 's/.*--model \([^ ]*\).*/\1/p')
     # 🩹 2026-08-07 [lucifer · ทีมจริง 3 pane] alias ที่ **ไม่ pin --model** ทำให้ตรงนี้ว่าง
     #    แล้วรายงาน `model=-` **ทั้งที่คำตอบอยู่บนจอที่ capture มาแล้ว** (status bar โชว์
@@ -662,14 +723,7 @@ bootverify() {
     # 🩹 codex ติดตั้งผ่าน npm ⇒ pane process คือ `node .../codex` ⇒ basename = "node"
     #    ตัวอย่างใน doc เขียน proc=codex ⇒ ใครเขียน gate `grep proc=codex` จะพลาดทั้งเครื่อง
     #    ⇒ ถ้าตัวแรกเป็น interpreter ให้เอา **สคริปต์ที่มันรัน** มาเป็นชื่อแทน
-    local pbin
-    pbin=$(printf '%s' "$cmd" | awk '{print $1}' | xargs -r basename 2>/dev/null)
-    case "$pbin" in
-      node|python|python3|bun|deno|ruby|perl|sh|env)
-        local real
-        real=$(printf '%s' "$cmd" | tr ' ' '\n' | grep -v '=' | grep -v '^-' | sed -n '2p' | xargs -r basename 2>/dev/null)
-        [ -n "$real" ] && pbin="${real} (via ${pbin})" ;;
-    esac
+    # (pbin คำนวณไปแล้วก่อนเช็คลายเซ็น agent ด้านบน — อย่าคำนวณซ้ำที่นี่)
     # 🩹 2026-08-06 [prism รัน bootverify กับ prism-cell ที่ live อยู่จริง 8 pane]
     #    `cut -c1-90` ตัดท้ายคำสั่งทิ้งเงียบ ๆ ⇒ `--model gpt-5.5` ที่อยู่ท้ายหายไปจากจอ
     #    ⇒ คนอ่านเข้าใจผิดได้ว่า model หาย ทั้งที่มันอยู่ตรงนั้น
@@ -1464,6 +1518,59 @@ YAML
     echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
   fi
   rm -rf "$td11"
+
+  # 🏷️ 2026-08-07 · พบจาก audit ตัวเอง หลัง goal-hook บอกว่ายังไม่ราบลื่น:
+  #    `bootverify` เป็น **verb ที่ description ของ skill โฆษณาไว้เอง** และแทน Step 6 ทั้งขั้น
+  #    **แต่ selftest ไม่เคยเรียกมันสักครั้ง** — มันโผล่ในเทสต์ที่เดียวคือ case 10
+  #    ซึ่งตรวจแค่ว่า *มีบรรทัด `bootverify.scope:` อยู่ในไฟล์ไหม* ⇒ **ตรวจว่าประกาศขอบเขต
+  #    ไม่ได้ตรวจว่าตัดสินถูก** · `alive` เหมือนกัน · `unstick`/`modelprobe` ไม่ถูกเอ่ยถึงเลย
+  #    ⇒ คลาสเดียวกับข้อ 4 ของ guard criterion: **check ที่ไม่มี input ไหนทำให้มันตกได้**
+  #    เพราะไม่มีใครเรียกมันในเทสต์ตั้งแต่แรก
+  # 🏷️ input ที่ทำให้ท่าเดิม (`awk '{print $1}' | xargs -r basename`) ตก — จดไว้ตรงนี้
+  #    เพราะ **guard question 4 ขอ input ที่ทำให้ check ตก** ⇒ นี่คืออันนั้น
+  echo "11b) _vc_argv_basename: cmdline ที่มีขึ้นบรรทัดใหม่ + quote ต้องไม่ทำให้ผลว่าง"
+  local nl_cmd="node /home/user/.npm-global/bin/codex --config effort=medium --model gpt-5.6
+You are 'workflow-controller' on team 'teaching-media-cell'.
+Second line with 'quotes' and --flags"
+  local g1 g2
+  g1=$(_vc_argv_basename "$nl_cmd" 1); g2=$(_vc_argv_basename "$nl_cmd" 2)
+  [ "$g1" = "node" ]  || { echo "   ✗ arg1 ควรเป็น node (ได้ '$g1')"; fail=1; }
+  [ "$g2" = "codex" ] || { echo "   ✗ arg2 ควรเป็น codex (ได้ '$g2')"; fail=1; }
+  # ท่าเดิมต้องตกกับ input เดียวกัน — ถ้ามันไม่ตก แปลว่าเทสต์นี้ไม่ได้ทดสอบอะไร
+  local old; old=$(printf '%s' "$nl_cmd" | awk '{print $1}' | xargs -r basename 2>/dev/null)
+  [ -z "$old" ] || echo "   🟡 ท่าเดิมไม่ตกบนเครื่องนี้ (ได้ '$old') — เทสต์นี้ยังผ่าน แต่ไม่ได้พิสูจน์ regression"
+
+  echo "12) bootverify: ต้องแยก 'ไม่มี session' / 'session จริงแต่ไม่ใช่ agent' ได้ (ตกได้ทั้งสองทิศ)"
+  if binexists tmux >/dev/null 2>&1; then
+    local bs="zz-vc-bootverify-$$" o12
+    # (ก) session ที่ไม่มีจริง ⇒ FAIL rc=1 — ต้องไม่ตอบ READY
+    o12=$(bootverify "$bs-nope" 2>&1); local rc12=$?
+    [ "$rc12" = "1" ] || { echo "   ✗ session ที่ไม่มี ควร rc=1 (ได้ $rc12)"; fail=1; }
+    case "$o12" in
+      *READY*) echo "   ✗ session ที่ไม่มี ตอบ READY — false-READY คือทิศที่แพงที่สุด"; fail=1 ;;
+    esac
+    # (ข) session จริงที่รัน `sleep` ล้วน ⇒ ไม่ใช่ agent ⇒ ห้าม overall READY
+    tmux new-session -d -s "$bs" 'sleep 30' 2>/dev/null
+    if tmux has-session -t "=$bs" 2>/dev/null; then
+      o12=$(bootverify "$bs" 2>&1)
+      case "$o12" in
+        *"overall: READY"*) echo "   ✗ pane ที่รัน sleep ไม่ใช่ agent — ห้ามรายงาน overall READY"; fail=1 ;;
+      esac
+      # ต้องพูดอะไรสักอย่างเกี่ยวกับ pane นั้น ไม่ใช่เงียบแล้วผ่าน
+      case "$o12" in
+        *"bootverify.pane:"*) ;;
+        *) echo "   ✗ bootverify ไม่ได้รายงาน pane ใดเลยบน session ที่มีจริง"; fail=1 ;;
+      esac
+      tmux kill-session -t "=$bs" 2>/dev/null
+      # (ค) พอฆ่าทิ้งแล้ว ต้องกลับไป FAIL — ยืนยันว่า (ข) ไม่ได้ผ่านเพราะบังเอิญ
+      o12=$(bootverify "$bs" 2>&1); rc12=$?
+      [ "$rc12" = "1" ] || { echo "   ✗ หลัง kill session ควร rc=1 (ได้ $rc12)"; fail=1; }
+    else
+      echo "   (สร้าง tmux session ไม่ได้ — ข้ามแขน (ข)/(ค) ไม่นับผ่าน/ตก)"
+    fi
+  else
+    echo "   (ไม่มี tmux — ข้าม ไม่นับผ่าน/ตก)"
+  fi
 
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }

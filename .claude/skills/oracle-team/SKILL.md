@@ -402,6 +402,32 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > the same conflation this section is about. (`enginereg` already walks to the nearest existing
 > ancestor internally, so it needs no such workaround — this applies to raw `maw config sources`.)
 >
+> ✅ **The `find` gate is itself a check that can fail — and it failed on the real case.**
+> lucifer ran it against the three roots they actually use:
+>
+> | root | hits | proxy |
+> |---|---|---|
+> | `lucifer-oracle` | **1** (`.maw/maw.config.60.json`) | ❌ **void** |
+> | `maw-rs` | 0 | ✅ sound |
+> | `~/.maw-teams/lucifer-fullstack-v1` | 0 | ✅ sound |
+>
+> **`lucifer-oracle` is the one root of the three where the proxy is void — and it is the one
+> they measured n=65 from.** The gate would have stopped them *before* measuring rather than
+> catching it a day later. That is what question 4 buys, stated as a passing input.
+>
+> > lucifer: *"I ran more commands from 11 vantage points and felt I had checked — but all 11
+> > were places that **have** a layer. **The number of runs went up; the thing I specified was
+> > still untested.** Selection bias does not go away by running more."*
+>
+> 🧭 **atlas's structural bound on the proxy — it is not symmetric with lucifer's error.**
+> `discover_config_layers` walks **up** from cwd. A repo root is a **strict ancestor** of
+> `coder-1` when `worktree:` is a path-relative child, so the member sees *everything the root
+> sees plus anything between them* — and the tree-wide `find` rules out the "between." A root
+> proxy therefore **cannot overstate** what the member will see. lucifer's error was the other
+> shape: measuring from a point that is **not** an ancestor of the target, which can see layers
+> that never apply to it. ⚠️ **The bound evaporates for out-of-tree member dirs** (e.g.
+> evidence-cell's worktrees outside the repo) — a repo-root proxy gives them no guarantee at all.
+>
 > 🔴 **And lucifer, running the corrected pair, found their own n=65 was measured from a
 > privileged vantage**: `lucifer-oracle` sees `50 + 60`, but the actual member dirs mostly see
 > **`50` only** (`~/.maw-teams/lucifer-fullstack-v1/architect`, `maw-rs/agents/wsparity-coder`).
