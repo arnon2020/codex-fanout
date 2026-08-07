@@ -591,8 +591,16 @@ for k,v in globs:
 #    ⇒ `xargs` ยัง **แกะเครื่องหมายคำพูด** ด้วย ⇒ brief ที่มี `'` เดี่ยว ๆ ทำให้มันตายอีกทาง
 #    🔑 นี่คือ pipeline-rc trap เวอร์ชันที่เงียบกว่า: **ไม่ใช่ rc ที่โกหก แต่เป็น output ที่หายไป**
 #    ⇒ ใช้ bash ล้วน ไม่มี subprocess ที่ตีความ quote/บรรทัดแทนเรา
+# 🩹 2026-08-07 (ที่ปรึกษาจับ · ผมยืนยันแล้ว) — เวอร์ชันแรกตัดเหลือ **บรรทัดแรก** (`${1%%$'\n'*}`)
+#    ⇒ **เปลี่ยนความหมายของ `probe_bin` ใน `enginecheck` เงียบ ๆ** ท่าเดิมสแกน **ทั้งสตริง**
+#    `[verified]` input `"MAW_SESSION_WINDOW=x\nclaude --model y"` → ท่าเดิม `claude` · ของผม **ว่าง**
+#    ⇒ `probe_bin` ว่างไหลเข้าเงื่อนไข WARN-vs-FAIL ที่อยู่ใต้มันพอดี ⇒ **คำตอบของ verb ที่ 5 บ้านใช้**
+#    ⇒ ผมยืนยัน regression ด้วย charter **เดียว** ที่ PASS — ซึ่ง probe ของมัน resolve ที่บรรทัดแรก
+#       **การทดสอบที่ไม่มีเคสที่ทำให้ต่าง ไม่ได้ทดสอบความต่าง** (guard ข้อ 4 กับตัวเอง อีกครั้ง)
+#    ⇒ สแกนทั้งสตริง (IFS ปกติแยกที่ newline อยู่แล้ว) · ปัญหาเดิมของ bootverify คือ
+#       **ส่งหลาย token ให้ `basename`** ไม่ใช่การสแกนหลายบรรทัด ⇒ คืน token เดียวเสมอก็พอ
 _vc_argv_basename() {
-  local line="${1%%$'\n'*}" n="${2:-1}" tok i=0
+  local line="$1" n="${2:-1}" tok i=0
   for tok in $line; do
     case "$tok" in
       -*) continue ;;      # แฟลก
@@ -1542,6 +1550,11 @@ Second line with 'quotes' and --flags"
   # ท่าเดิมต้องตกกับ input เดียวกัน — ถ้ามันไม่ตก แปลว่าเทสต์นี้ไม่ได้ทดสอบอะไร
   local old; old=$(printf '%s' "$nl_cmd" | awk '{print $1}' | xargs -r basename 2>/dev/null)
   [ -z "$old" ] || echo "   🟡 ท่าเดิมไม่ตกบนเครื่องนี้ (ได้ '$old') — เทสต์นี้ยังผ่าน แต่ไม่ได้พิสูจน์ regression"
+  # 🏷️ เคสที่ helper เวอร์ชันแรกของผม **ทำ enginecheck พังเงียบ** — binary อยู่คนละบรรทัดกับ VAR=VAL
+  #    ต้องได้คำตอบเดียวกับท่า `head -1` เดิม ไม่ใช่ค่าว่าง
+  local mv_cmd; mv_cmd=$(printf 'MAW_SESSION_WINDOW=x\nclaude --model y')
+  local g3; g3=$(_vc_argv_basename "$mv_cmd" 1)
+  [ "$g3" = "claude" ] || { echo "   ✗ binary หลัง VAR=VAL คนละบรรทัด ควรได้ claude (ได้ '$g3')"; fail=1; }
 
   echo "12) bootverify: ต้องแยก 'ไม่มี session' / 'session จริงแต่ไม่ใช่ agent' ได้ (ตกได้ทั้งสองทิศ)"
   if binexists tmux >/dev/null 2>&1; then
@@ -1587,13 +1600,31 @@ Second line with 'quotes' and --flags"
   case "$a13" in
     *RUNNING*) echo "   ✗ ชื่อที่ไม่มีอยู่ ตอบ RUNNING — false-RUNNING"; fail=1 ;;
   esac
-  sleep 25 & local sp=$!
-  a13=$(alive sleep 2>&1)
+  # 🩹 แขนบวกเวอร์ชันแรกใช้ `alive sleep` ⇒ **ผ่านได้แม้ไม่มี background job ของเราเลย**
+  #    ถ้าเครื่องมี `sleep` อื่นรันอยู่ ⇒ **self-fulfilling** ⇒ guard ข้อ 4 กับเทสต์ของตัวเอง
+  #    ⇒ ใช้ marker ที่ไม่ซ้ำกับใครบนเครื่อง + ยืนยันว่าก่อนสตาร์ตมันต้องเป็น NONE จริง
+  local mk="zzvcalive$$"
+  local pre; pre=$(alive "$mk" 2>&1)
+  case "$pre" in
+    NONE*) ;;
+    *) echo "   ✗ marker ต้องยังไม่มีอยู่ก่อนเริ่ม — เทสต์นี้พิสูจน์อะไรไม่ได้"; fail=1 ;;
+  esac
+  # 🔑 `procs` เทียบ basename ของ **`/proc/PID/exe`** ⇒ สคริปต์ shell ใช้ไม่ได้
+  #    (exe จะเป็น `bash` ไม่ใช่ชื่อไฟล์) ⇒ ต้อง **สำเนา binary จริง** มาตั้งชื่อไม่ซ้ำ
+  #    [เจอตอนรันเทสต์นี้เอง: เวอร์ชันสคริปต์ตกทันที — เป็นเหตุผลที่แขนบวกต้องรันจริง]
+  local mkdir_t; mkdir_t=$(mktemp -d)
+  cp "$(command -v sleep)" "$mkdir_t/$mk" 2>/dev/null || { echo "   (คัดลอก sleep ไม่ได้ — ข้ามแขนบวก)"; mk=""; }
+  local sp=""
+  if [ -n "$mk" ]; then "$mkdir_t/$mk" 25 & sp=$!; fi
+  sleep 0.3
+  if [ -z "$mk" ]; then a13="RUNNING (skipped)"; fi
+  [ -n "$mk" ] && a13=$(alive "$mk" 2>&1)
   case "$a13" in
     RUNNING*) ;;
-    *) echo "   ✗ process ที่รันอยู่จริง (sleep) ควรได้ RUNNING"; fail=1 ;;
+    *) echo "   ✗ process ที่รันอยู่จริง ($mk) ควรได้ RUNNING"; fail=1 ;;
   esac
-  kill "$sp" 2>/dev/null; wait "$sp" 2>/dev/null
+  [ -n "$sp" ] && { kill "$sp" 2>/dev/null; wait "$sp" 2>/dev/null; }
+  rm -rf "$mkdir_t"
 
   # `unstick` เป็น **verb เดียวที่ส่งคีย์** ⇒ เทสต์บน session ที่สร้างเองเท่านั้น ห้ามแตะของจริง
   #    สิ่งที่ต้องพิสูจน์: มันต้อง **ไม่แตะ pane ที่ไม่มีข้อความค้าง** (ไม่มี Pasted Content)
