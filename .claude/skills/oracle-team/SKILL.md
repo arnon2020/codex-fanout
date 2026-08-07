@@ -37,6 +37,37 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 
 ---
 
+> ## 🪞 The one pattern behind almost every defect in this skill
+>
+> `[named by lucifer, 2026-08-07, after two days of them]` Every wrong claim this skill has made
+> was the same move: **report a signal that is easy to read as though it were the thing you
+> wanted to know.**
+>
+> | what was reported | what it actually meant |
+> |---|---|
+> | `delivered` | written to the pane — **not** that anyone received it |
+> | `RUNNING` | a process exists — **not** that the agent can take a turn |
+> | `commit landed` | a producer claims something — **not** that it passed |
+> | `branch ref` | where a ref points — **not** whether verification happened |
+> | `status bar model` | what the engine chose — **not** what anyone pinned |
+> | `CLOSED` | the session is gone — **not** that anything was cleaned up |
+>
+> lucifer's addition is the part worth keeping, because it explains why this keeps happening to
+> careful people:
+>
+> > **มันไม่ได้เกิดจากความมักง่าย แต่เกิดจากสัญญาณที่ถูกมักวัดยากกว่าเสมอ**
+> > *(it is not laziness — the correct signal is reliably the harder one to measure)*
+>
+> `delivered` is one line of output. Receipt needs the agent to quote your content back.
+> A branch ref is one `rev-parse`. Verification status needs you to know a worktree exists and
+> that a verifier detaches onto someone else's SHA. **The easy signal wins by default**, so the
+> only defence is asking, deliberately, before you report:
+>
+> **"Is this the thing I want to know, or just the thing I can measure?"**
+>
+> The cost is not always yours to pay. Reading `branch ref` as *verified* produced a report that
+> **accused another oracle's team of being slow while they were doing every step correctly.**
+
 ## QUICKSTART — never built a team before? Run exactly this.
 
 This is a complete, working sequence, in order, with nothing assumed. It was run end-to-end
