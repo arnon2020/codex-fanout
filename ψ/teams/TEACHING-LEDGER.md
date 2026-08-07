@@ -2613,3 +2613,54 @@ exe **`maw-rs-c1e8797`** (ตัวที่ deploy ไว้) · `registry-chan
 ไม่ได้ทำให้ผมมีอำนาจเหนือกฎในบ้านคนอื่น** — รูปเดียวกับที่ผม relay อนุญาตผิดเมื่อ 08-03
 ⇒ **(3)** ไม่ละเมิดกฎใคร ไม่ปิดทางเลือกไหน · และ **ตัวเลข "alpha ตามหลัง main 61 commit"
 เป็น finding ของมันเองที่เจ้าของ maw-rs ควรได้รู้ ไม่ว่าเราจะเปิด PR หรือไม่**
+
+---
+
+### 2026-08-07 22:xx — ✅ **ทีม lucifer ส่งของ · ผมรีวิว branch เองไม่ได้เชื่อรายงาน · ตรงทุกข้อ**
+
+**เลขนับ blocking arm: coder-a และ coder-b ได้ 5 เท่ากันโดยไม่ได้คุยกัน**
+(`send` `sleep` `wake` `restart` `stop`) ⇒ **ไม่มีใครต้องยอมใคร ไม่มี file:line ที่อีกฝ่ายไม่ได้นับ**
+⇒ นี่คือสิ่งที่ผมขอ: **หลักฐานคนละชั้นกับเลขที่คนเดียวให้**
+
+**สิ่งที่ผมตรวจเองในรีโป `maw-rs`** `[verified 2026-08-07]`
+
+| ข้ออ้าง | ผลตรวจของผม |
+|---|---|
+| branch แตกจาก `c1e8797` | ✅ `git merge-base --is-ancestor c1e8797 <branch>` = **YES** |
+| **RED commit ไม่แตะ production** | ✅ `bab3727` — **ทุก hunk อยู่ใน `mod tests {`** (hunk header บอกเอง) · เพิ่ม `use` 2 บรรทัด + fixture `SlowWsActionEngine` ⇒ **ไม่มี logic production เปลี่ยนเลย** ⇒ **test แดงกับโค้ดที่ยังไม่แก้จริง ไม่ใช่ test ที่เขียนตามแพตช์** |
+| กลไก fix สองอย่าง | ✅ `26ee8f5` — `let mut action_in_flight = false;` · `action = action_rx.recv(), if action_in_flight` · **`frame = socket.recv(), if !action_in_flight`** · `tokio::task::spawn_blocking` |
+| diff 243 บรรทัด | ✅ **221 insertions / 22 deletions** |
+| ไม่ push ไม่เปิด PR | ✅ ตามคำตัดสินข้อ (3) |
+
+🔑 **คำตอบของ "อะไรจะพัง" ที่ lucifer บังคับให้ตอบก่อน — และมันคือส่วนที่ดีที่สุดของแพตช์**:
+เขา **gate `socket.recv()` ไว้ระหว่างที่ action ยังไม่จบ** ⇒ **รักษา per-connection ordering**
+โดยยอมให้ recv หยุดชั่วคราว **แทนที่จะปล่อยทุกอย่าง concurrent แล้วทำลายลำดับ reply**
+⇒ heartbeat/refresh/capture/previews ยัง selectable ตามปกติ
+⇒ **นี่คือเหตุผลที่ต้องถาม "อะไรจะพัง" ก่อนเขียน ไม่ใช่หลังเขียน** — คำตอบเปลี่ยนรูปของแพตช์
+
+**ผลรัน**: RED `bab3727` → exit **101** (woke reply มาก่อน heartbeat) · หลัง fix → **exit 0** ·
+`cargo test -p maw-cli serve_core:: --lib` → **136 passed** · clippy 0 · fmt 0
+
+🔎 **เบาะแสที่ lucifer *ไม่* เคลม และผมเห็นด้วยที่ไม่เคลม**: `rc101` จาก
+`servecore_ws_pty_attaches_and_bridges_binary_frames` **ที่กวนมาทั้งสัปดาห์ ตอนนี้ exit 0**
+หลัง `b1748a7` (isolate process-global status fixture) ⇒ *"เขาแก้เพื่อ test ของตัวเอง
+ไม่ได้ตั้งใจแก้ PTY"* ⇒ **ติดป้ายเป็นเบาะแส ไม่ใช่ข้อสรุป** · และถ้าจริง
+มันจะ**ยืนยันครึ่งแรกของ verifier-rs แบบวัดได้**: *"test interference ไม่ใช่ product failure
+และไม่ใช่ข้อพิสูจน์ว่าไม่มี"*
+
+**⚠️ lucifer แก้ตัวเองก่อนผมเอาไปใช้ต่อ — เรื่อง `serve stop`**
+source ยืนยัน verifier-rs ทุกตัวอักษร (`paths.rs:73` → `MAW_HOME` ก่อน · ไม่มีก็เช็ค
+`is_maw_xdg_enabled` = `truthy_env(MAW_XDG)` **เท่านั้น** · ไม่ truthy → `$HOME/.maw`
+⇒ **`MAW_CONFIG_DIR` ไม่เกี่ยวกับ pid path เลย · `MAW_STATE_DIR` ถูกเมินถ้าไม่มี `MAW_XDG`**)
+🔴 **แต่การทดลอง runtime ของเขา "ตอบไม่ได้" ไม่ใช่ "ขัดแย้ง"** — เขายิง `serve status` ด้วย env
+3 แบบได้ pid เดียวกันหมด **เกือบสรุปว่า `MAW_HOME` ก็ไม่ isolate** ⇒ ไปอ่าน source ต่อพบว่า
+`serve_daemon.rs:289-294` **`serve status` probe port + หา listener_pid ด้วย** ⇒ มันเจอ pid
+จาก **port** ได้โดยไม่ต้องอ่าน pid file ⇒ **การทดลองตอบคำถามนี้ไม่ได้ตั้งแต่ต้น**
+⇒ **สรุปที่ยืนได้**: source ชัด · empirical ของ verifier-rs ชัด · **แต่ "`MAW_HOME`/`MAW_XDG`
+isolate ได้จริงไหม" ยังไม่มีใครพิสูจน์** ⇒ ⛔ **ห้ามเขียนลงเอกสารว่าเป็นวิธีที่ปลอดภัย**
+จนกว่าจะมีคนพิสูจน์ในที่ที่ฆ่าของจริงไม่ได้
+
+📌 **census: atlas รันแล้วได้ 37 alias / effort 4 ตัว** (ของผมวัดได้ 34 / 2)
+**ไม่ใช่ความขัดแย้ง — ฟลีตเปลี่ยนระหว่างสองการวัด**: prism เพิ่ง commit `codex-cheap`
+(effort=**low**) และ `codex-router` (effort=medium) ⇒ **ตัวเลข census เป็นภาพนิ่ง
+และ `low` ตัวแรกของเครื่องนี้คือหลักฐานว่ากรอบ tier ถูกนำไปใช้จริง**

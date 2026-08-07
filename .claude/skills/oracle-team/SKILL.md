@@ -638,6 +638,35 @@ charter's `engine:` silently misses and glob or default decides for you.
 > `enginecheck.unverified: unpinned-alias` flag has been reporting this all along; we read it as
 > *"the model could change under you"* and never as *"you are paying top rate for a role that
 > may not need it."*
+>
+> ### 🔃 Worse than "wrong model": the fallthrough **inverts** cheap-tier intent
+>
+> `[atlas and ajfon, independently, within minutes of the census — 2026-08-07]`
+>
+> Because every miss lands on `commands.default` = `claude --model claude-opus-5`, **asking for a
+> cheap model and asking for nothing produce the same result — the dearest one.** Two houses
+> measured it on their own charters:
+>
+> | charter | asked for | resolves to |
+> |---|---|---|
+> | atlas `mixed-team-T1506` | **`claude-haiku-4-5-20251001` ×3** — the cheap tier, by name | `null` ⇒ **`commands.default` = opus-5** |
+> | ajfon `ajfon-research-team` | 3 roles incl. **`measure-runner`** (mechanical: run tools, report numbers) | **all 3** → `claude --model claude-opus-5` |
+>
+> 🔑 **The author who bothered to name the cheap model gets the same bill as the author who named
+> nothing — and no signal distinguishes them.** ajfon's `measure-runner` is the cleanest case:
+> by the table above it belongs on the cheapest tier available, and the fallthrough puts it on
+> the most expensive one on the machine.
+>
+> **atlas's wider scan: 9 of 9 charter files in their repo contain at least one engine value that
+> resolves to `null`** — only bare `codex` resolved at all. *(Scoped honestly: measured from the
+> repo root, not from each worker's spawn cwd, and some of those charters look historical. The
+> claim is "these would misfire if used today from this cwd", not "these all misfired.")*
+>
+> ⇒ So the cost question is not a separate concern bolted onto Gate 0 — **it is the same defect,
+> priced.** Every `enginecheck` FAIL you have ever waved through was also a line item.
+>
+> 🔬 Census your own machine: `ψ/teams/scripts/model-tier-census.py` **(repo-local to
+> codex-fanout — copy it, it takes no arguments and only reads)**.
 
 **Then, model names for a NEW alias** — one lookup per engine, they are not interchangeable:
 
