@@ -1,0 +1,41 @@
+# Real-usage test of the verbs arnon says are NOT yet proven: dispatch / lead / down.
+# `up` is already proven by ajfon (bootverify caught codex stuck on an update dialog).
+# Charter deliberately small: 2 workers, throwaway task, teardown is the point.
+name: realtest-verbs-v1
+project: arnon2020/codex-fanout
+session: realtest-verbs-v1
+
+goal: |
+  Exercise dispatch -> lead -> down for real and record what breaks.
+  The work product is the DEFECT LIST, not the code the workers write.
+
+members:
+  - role: worker-a
+    name: worker-a
+    engine: sage-opencode-oracle
+    worktree: agents/realtest-worker-a
+    branch: agents/realtest-worker-a
+    prompt: |
+      Coder. WAIT for a task via maw hey. Do the smallest correct thing in YOUR worktree only.
+      Report back with: maw hey realtest-verbs-v1:lead "done|blocked — <detail>"
+      Never touch the lead checkout or the other worker's worktree.
+
+  - role: worker-b
+    name: worker-b
+    engine: sage-opencode-oracle
+    worktree: agents/realtest-worker-b
+    branch: agents/realtest-worker-b
+    prompt: |
+      Coder. WAIT for a task via maw hey. Do the smallest correct thing in YOUR worktree only.
+      Report back with: maw hey realtest-verbs-v1:lead "done|blocked — <detail>"
+      Never touch the lead checkout or the other worker's worktree.
+
+  - role: lead
+    name: lead
+    engine: claude-opus
+    worktree: false
+    branch: main
+
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false
