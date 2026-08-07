@@ -906,6 +906,26 @@ modelprobe() {
   local served="no"
   [ -f "$tmp/probe.txt" ] && served="yes"
   rm -rf "$tmp"
+  # 🔴 2026-08-07 · **verb นี้ทิ้งขยะลงไฟล์กลางทุกครั้งที่รัน และผมเพิ่งรู้วันนี้**
+  #    `codex exec` เขียน `[projects."<tmp>"] trust_level=...` ลง `~/.codex/config.toml`
+  #    ซึ่ง **ใช้ร่วมกันทั้งเครื่อง** · เราลบ `$tmp` แต่ **ไม่เคยลบ entry**
+  #    `[verified 2026-08-07]` ในบรรดา entry ที่ path ตายแล้ว 146 ตัว **24 ตัวเป็นรูปของ verb นี้**
+  #    (`/tmp/tmp.*` 8 · `*modelprobe/scratchpad*` 16) ⇒ สะสมจากการรัน probe ล้วน ๆ
+  #    ⇒ เครื่องมือที่เราสร้างมาเพื่อ "ตรวจก่อนทำ" **เป็นตัวที่สกปรกที่สุดในชุด**
+  #    ⇒ ลบเฉพาะบล็อกที่ชี้ path ของเราเอง · แมตช์ path เต็ม ห้าม pattern กว้าง
+  #      (ไฟล์นี้มี path ของ oracle บ้านอื่นอยู่ด้วย) · กิน `\n` นำหน้าด้วย ไม่งั้นเหลือบรรทัดว่าง
+  if [ -f "$HOME/.codex/config.toml" ]; then
+    MP_TMP="$tmp" python3 - <<'PY' 2>/dev/null
+import os, re, pathlib
+tmp = os.environ["MP_TMP"]
+p = pathlib.Path.home()/".codex/config.toml"
+try: src = p.read_text()
+except Exception: raise SystemExit(0)
+pat = re.compile(r'(?m)^\n?\[projects\."' + re.escape(tmp) + r'"\]\n(?:(?!^\[).*\n?)*')
+out, n = pat.subn('', src)
+if n: p.write_text(out)
+PY
+  fi
   if [ "$served" = "yes" ]; then
     printf 'modelprobe.engine: %s PASS model=%s served=yes\n' "$e" "$model"
     printf 'overall: PASS model-served=yes\n'; return 0
@@ -1727,6 +1747,26 @@ Second line with 'quotes' and --flags"
   else
     echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
   fi
+
+  # 🏷️ modelprobe เองรันในเทสต์ไม่ได้ (เสียโควตา — case 15) **แต่ตรรกะเก็บกวาดของมันทดสอบได้**
+  #    บน config สังเคราะห์ ⇒ แยก "ส่วนที่แพง" ออกจาก "ส่วนที่ตรวจได้" แทนที่จะปล่อยทั้งก้อน
+  echo "17) modelprobe cleanup: ลบเฉพาะบล็อกของตัวเอง · ไม่ทิ้งบรรทัดว่าง · ไม่แตะของบ้านอื่น"
+  local t17; t17=$(mktemp -d)
+  printf '[projects."/home/other/oracle"]\ntrust_level="trusted"\n\n[projects."%s"]\ntrust_level="trusted"\n\n[projects."/home/other/two"]\ntrust_level="trusted"\n' "$t17" > "$t17/cfg.toml"
+  MP_TMP="$t17" MP_CFG="$t17/cfg.toml" python3 - <<'PY'
+import os, re, pathlib
+tmp = os.environ["MP_TMP"]; p = pathlib.Path(os.environ["MP_CFG"])
+src = p.read_text()
+pat = re.compile(r'(?m)^\n?\[projects\."' + re.escape(tmp) + r'"\]\n(?:(?!^\[).*\n?)*')
+out, n = pat.subn('', src)
+p.write_text(out)
+PY
+  local left; left=$(grep -c 'projects\."' "$t17/cfg.toml")
+  [ "$left" = "2" ] || { echo "   ✗ ควรเหลือ 2 บล็อกของบ้านอื่น (เหลือ $left)"; fail=1; }
+  grep -q "$t17" "$t17/cfg.toml" && { echo "   ✗ บล็อกของตัวเองยังอยู่"; fail=1; }
+  grep -q '^$' "$t17/cfg.toml" && { echo "   ✗ เหลือบรรทัดว่าง — การลบไม่ใช่ inverse ของการเพิ่ม"; fail=1; }
+  grep -q '/home/other/oracle' "$t17/cfg.toml" || { echo "   ✗ ลบของบ้านอื่นไปด้วย"; fail=1; }
+  rm -rf "$t17"
 
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
