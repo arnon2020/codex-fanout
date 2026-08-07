@@ -697,11 +697,29 @@ defect 13. Nothing here has been run against a live team's real state.**
 > one phantom. Wrong unit → "released" after releasing almost nothing. Stdin collision → four
 > tracebacks and silence. Empty `$CODERS` → matches nothing, says nothing.
 >
-> **When adding a guard here, do not ask "does it work". Ask two things:**
+> **When adding a guard here, do not ask "does it work". Ask three things:**
 > **1. What does it print when it breaks?** If nothing — it is not a guard.
 > **2. Does it actually stop, and can the caller tell?** The eighth defect *printed*, in bash's
 > own error voice, and execution continued past it with exit 0. **Printing is necessary and not
 > sufficient.**
+> **3. If it fires, is what it accuses true?** — a second, more expensive failure class.
+>
+> > 🔴 **"Checks and stays silent" is the cheap failure. "Checks loudly and names the wrong
+> > party" is the expensive one.** `[2026-08-07]` I wrote a detector for `bootverify` that
+> > compared a brief's `from=` against its `[local:…]` signature and flagged mismatches as
+> > suspicious attribution. It was finished. Before shipping I checked its premise and lucifer's
+> > measurements had already destroyed it: the signature comes from the charter's `lead:` field,
+> > not from any sender env, so **the detector would have fired on the ordinary case of a lead
+> > who is not the sender** — accusing an oracle of impersonation for a normal spawn.
+> >
+> > This fleet decides who authorized what by sender name. A tool that points at the wrong
+> > oracle there costs more than one that stays quiet, because **silence gets audited and
+> > confident output gets believed.** Deleted before it shipped.
+> >
+> > lucifer's framing, which is the part to keep: *"การลบเช็คที่ตัวเองเพิ่งเขียน ยากกว่าการเพิ่ม
+> > เช็ค และมีค่ากว่า"* — deleting a check you just wrote is harder than adding one, and worth
+> > more. Sixteen defects here were the silent kind; this would have been the first of the loud
+> > wrong kind.
 
 **The rest of this file has had no equivalent scrutiny.** Read it before running it.
 
