@@ -9,3 +9,8 @@
 ψ/memory/*
 !ψ/memory/learnings/
 !ψ/memory/retrospectives/
+# 🩹 2026-08-07 — root-cause fix for a friction at threshold 3 (session-metrics rows 144/172/239).
+#    Every durable relay message had to be `git add -f`'d by hand — ~25 times in one session —
+#    and the fix was written as a Next Step twice (2026-08-04 09:32 #2, 03:07 #5) and never done.
+#    Per CLAUDE.md Self-Evaluation Loop: same friction 3 sessions -> fix the root cause.
+!ψ/inbox/
