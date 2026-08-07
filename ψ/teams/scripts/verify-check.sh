@@ -361,6 +361,68 @@ teamclosed() {
 #    `[verified 2026-08-06]`  wake … -e codex-sol                → codex --model gpt-5.6-sol
 #                             wake … -e codex-sol --repo-path /tmp → claude --model claude-opus-5
 #    ⇒ ถามจาก cwd ของ lead แล้วตอบว่า REGISTERED = **false-PASS** สำหรับสมาชิกที่ worktree อยู่นอก repo
+# ── _vc_dead_key <engine-name> <dir> ────────────────────────────────────────
+# ตอบคำถามที่ `enginereg` เดิม **แยกไม่ออก**: UNREGISTERED เพราะ *ไม่เคยมี* หรือเพราะ
+# *มีแต่ในไฟล์ที่ maw ไม่อ่าน*  — สองอย่างนี้ FAIL หน้าตาเหมือนกัน แต่ทางแก้คนละอัน
+#
+# 🏷️ ที่มา: lucifer 2026-08-07 วัดเองหลัง RETRACT ไฟล์ตาย — **9 คีย์อยู่เฉพาะใน
+#    `~/.config/maw/maw.config.json`** รวม `codex-xhigh` ที่ charter ของเขาขอ **57 ไฟล์**
+#    เขา (และผม) อ่าน 64/65 FAIL ว่า "engine ไม่ได้ลงทะเบียน" ⇒ ทางแก้ที่ได้คือ
+#    "เพิ่มคีย์ให้ 57 charter" ทั้งที่ของจริงคือ "ย้าย 9 บรรทัด"
+#    ⇒ **ข้อสรุปถูก แต่เหตุผลผิด ⇒ ทางแก้ผิด** และเครื่องมือมองไม่เห็นเพราะมันดูแค่ merged config
+#
+# 🔎 วิธีตัดสินว่าไฟล์ไหน "ตาย": **ถาม `maw config sources` ว่ามันลิสต์ไฟล์ไหนบ้าง**
+#    ไม่ใช่ reimplement กฎตั้งชื่อ (`maw.config.<เลข>.json`) เอง — ถ้ากฎเปลี่ยนวันหน้า
+#    การถาม maw จะตามเปลี่ยนเอง ส่วนสำเนากฎจะ drift เงียบ ๆ (บทเรียนจาก atlas T4543)
+#
+# 🚨 เงื่อนไขที่ต้องจริงพร้อมกันถึงจะยิง (ไม่งั้นมันกล่าวหาผิด):
+#    (1) `enginereg` บอก UNREGISTERED อยู่แล้ว = merged config **ไม่มีคีย์นี้จริง**
+#    (2) ไฟล์นั้น **ไม่อยู่ใน `maw config sources`** ⇒ maw ไม่อ่าน
+#    (3) ไฟล์นั้น **มี `commands.<e>` เป็น string ไม่ว่าง** ⇒ คีย์มีอยู่จริงในนั้น
+#    ⇒ ถ้า `maw config sources` อ่านไม่ได้ **คืนค่าว่าง (เงียบ)** ไม่ใช่เดาว่าตาย —
+#      การกล่าวหาผิดแพงกว่าการไม่พูด
+# valid-if: bash ψ/teams/scripts/verify-check.sh selftest   → case 11 ต้องผ่าน
+_vc_dead_key() {
+  local e="$1" dir="${2:-.}"
+  while [ -n "$dir" ] && [ ! -d "$dir" ]; do
+    local up; up=$(dirname -- "$dir"); [ "$up" = "$dir" ] && break; dir="$up"
+  done
+  [ -d "$dir" ] || dir="."
+  local live; live=$( cd "$dir" 2>/dev/null && maw config sources 2>/dev/null ) || return 0
+  [ -n "$live" ] || return 0
+  local abs; abs=$( cd "$dir" 2>/dev/null && pwd -P ) || return 0
+  MAW_LIVE_SOURCES="$live" python3 -c '
+import json,os,sys
+e=sys.argv[1]; start=sys.argv[2]
+live=set()
+for ln in os.environ.get("MAW_LIVE_SOURCES","").splitlines():
+    for tok in ln.split():
+        if tok.startswith("/"): live.add(os.path.realpath(tok))
+cands=[]
+d=start
+while True:
+    cands.append(os.path.join(d,".maw"))
+    nd=os.path.dirname(d)
+    if nd==d: break
+    d=nd
+cands.append(os.path.expanduser("~/.config/maw"))
+seen=set()
+for cd in cands:
+    if not os.path.isdir(cd): continue
+    for fn in sorted(os.listdir(cd)):
+        if not (fn.startswith("maw.config") and fn.endswith(".json")): continue
+        p=os.path.realpath(os.path.join(cd,fn))
+        if p in live or p in seen: continue
+        seen.add(p)
+        try: cmds=json.load(open(p)).get("commands")
+        except Exception: continue
+        if not isinstance(cmds,dict): continue
+        v=cmds.get(e)
+        if isinstance(v,str) and v.strip():
+            print("%s\n  commands.%s = %s" % (p,e,v.strip()))
+' "$e" "$abs" 2>/dev/null
+}
+
 enginereg() {
   local e="${1:?usage: enginereg <engine-name> [dir]}" dir="${2:-.}" cmd
   # ถ้า dir ยังไม่มีจริง (worktree ที่ยังไม่ได้สร้าง) ใช้บรรพบุรุษที่ใกล้ที่สุดที่มีอยู่ —
@@ -382,7 +444,14 @@ print(v.strip())
   case $? in
     0) echo "REGISTERED   $e   [scope: $dir]"; echo "             $cmd"; return 0 ;;
     1) echo "UNREGISTERED $e   [scope: $dir]  ⚠ charter ที่ขอ engine นี้จะได้ engine อื่นเงียบ ๆ (ชื่อ window → glob → default)"
-       echo "             แก้: เพิ่มคีย์ใน .maw/maw.config.<N>.json ที่เป็น **บรรพบุรุษของ path สมาชิกคนนี้**"
+       local _dead; _dead=$(_vc_dead_key "$e" "$dir")
+       if [ -n "$_dead" ]; then
+         echo "             🔴 DEAD-LAYER — คีย์นี้ **มีอยู่จริง** แต่ในไฟล์ที่ maw ไม่อ่าน:"
+         printf '%s\n' "$_dead" | sed 's/^/               /'
+         echo "             ⇒ แก้คือ **ย้าย** บรรทัดนั้นไปไฟล์ที่ maw อ่าน ไม่ใช่ **เพิ่ม** คีย์ใหม่"
+       else
+         echo "             แก้: เพิ่มคีย์ใน .maw/maw.config.<N>.json ที่เป็น **บรรพบุรุษของ path สมาชิกคนนี้**"
+       fi
        return 1 ;;
     *) echo "UNKNOWN      $e  อ่าน merged config ไม่ได้ (maw config / python3) — **ตอบไม่ได้ ไม่ใช่ผ่าน**"
        return 2 ;;
@@ -1324,6 +1393,49 @@ YAML
       *) echo "   ✗ '$vb' ให้ verdict แต่ไม่มีบรรทัด ${vb}.scope:"; fail=1 ;;
     esac
   done
+
+  # 🏷️ lucifer + atlas 2026-08-07: `UNREGISTERED` เดิมยุบสองสาเหตุเป็นคำเดียว
+  #    · *ไม่เคยมีคีย์นี้*            ⇒ แก้ = **เพิ่ม**
+  #    · *มีคีย์ แต่ในไฟล์ที่ maw ไม่อ่าน* ⇒ แก้ = **ย้าย**
+  #    lucifer อ่าน 64/65 FAIL เป็นอย่างแรก แล้วเกือบไปเพิ่มคีย์ให้ 57 charter
+  #    atlas ยก `UNREGISTERED` ของเครื่องมือนี้ไปใส่รายงาน T4463 หลายครั้งในวันเดียว
+  #    ⇒ **ถ้อยคำของเครื่องมือคือพาหะ** — แก้ที่ต้นทาง ไม่ใช่ให้ทุกคนเติม caveat เอง
+  echo "11) DEAD-LAYER: แยก 'ไม่เคยมี' ออกจาก 'มีแต่ในไฟล์ที่ maw ไม่อ่าน'"
+  local td11; td11=$(mktemp -d)
+  mkdir -p "$td11/.maw"
+  # ไฟล์มีเลข = maw อ่าน · ไฟล์ไม่มีเลข = maw ไม่อ่าน (เพราะมีไฟล์เลขอยู่แล้ว)
+  printf '{"commands":{"__vc_live__":"echo LIVE"}}\n'      > "$td11/.maw/maw.config.60.json"
+  printf '{"commands":{"__vc_buried__":"echo BURIED"}}\n'  > "$td11/.maw/maw.config.json"
+  if maw config >/dev/null 2>&1; then
+    local o11
+    # (ก) positive — คีย์ที่ฝังอยู่ในไฟล์ไม่มีเลข ต้องถูกชี้ว่า DEAD-LAYER
+    o11=$(enginereg __vc_buried__ "$td11" 2>&1)
+    case "$o11" in
+      *DEAD-LAYER*) ;;
+      *) echo "   ✗ คีย์ที่อยู่ในไฟล์ไม่มีเลข ควรถูกชี้ว่า DEAD-LAYER"; fail=1 ;;
+    esac
+    case "$o11" in
+      *"ย้าย"*) ;;
+      *) echo "   ✗ DEAD-LAYER ต้องบอกให้ **ย้าย** ไม่ใช่ **เพิ่ม**"; fail=1 ;;
+    esac
+    # (ข) negative — คีย์ที่ไม่มีอยู่ที่ไหนเลย ต้องไม่ถูกกล่าวหาว่า DEAD-LAYER
+    o11=$(enginereg __vc_never_exists__ "$td11" 2>&1)
+    case "$o11" in
+      *DEAD-LAYER*) echo "   ✗ คีย์ที่ไม่มีจริง ถูกกล่าวหาว่า DEAD-LAYER (false accusation)"; fail=1 ;;
+    esac
+    # (ค) negative — คีย์ที่อยู่ในไฟล์ **ที่ maw อ่าน** ต้อง REGISTERED เฉย ๆ ไม่ใช่ DEAD-LAYER
+    o11=$(enginereg __vc_live__ "$td11" 2>&1)
+    case "$o11" in
+      REGISTERED*) ;;
+      *) echo "   ✗ คีย์ในไฟล์ที่มีเลข ควร REGISTERED"; fail=1 ;;
+    esac
+    case "$o11" in
+      *DEAD-LAYER*) echo "   ✗ คีย์ที่ resolve ได้ ไม่ควรมี DEAD-LAYER ติดมา"; fail=1 ;;
+    esac
+  else
+    echo "   (ไม่มี maw — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+  rm -rf "$td11"
 
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }

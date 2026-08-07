@@ -210,6 +210,36 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > ⚠️ **Wording corrected by lucifer**: it is the caller's **cwd** (git root of cwd, else cwd),
 > not "the caller's git root" — from `/tmp`, which is no repo at all, it used `/tmp` directly.
 >
+> ### 🔴 `UNREGISTERED` used to mean two things, and the fix differs
+>
+> `[2026-08-07 · found by loom → measured by lucifer → confirmed both ways by atlas → selftest 11]`
+>
+> An engine name that does not resolve has **two** possible causes, and the old output collapsed
+> them into one word:
+>
+> | cause | what the fix is | how it looked before |
+> |---|---|---|
+> | the key exists nowhere | **add** it to a numbered layer that is an ancestor of the member's path | `UNREGISTERED` |
+> | the key exists — in a config file maw does not read | **move** that line into a layer maw reads | `UNREGISTERED` |
+>
+> On this machine **9 keys live only in the dead unnumbered file**, including `codex-xhigh`,
+> which **57 of lucifer's charters request**. lucifer read their 64/65 FAIL as cause 1 and was
+> about to add a key to 57 charters; the real job was **moving 9 lines**. atlas quoted this
+> tool's own `UNREGISTERED` into their T4463 reports several times the same day.
+>
+> ⇒ 🔑 **A right conclusion reached by the wrong reason is not safe — the fix inherits the
+> reason, not the conclusion.** And it is invisible, because *the verdict is identical either way.*
+>
+> `enginereg` now prints a `🔴 DEAD-LAYER` block naming the file and the line when — and only
+> when — the key is genuinely present in a file absent from `maw config sources`. It decides
+> "dead" by **asking maw which files it loads**, never by re-deriving the `maw.config.<N>.json`
+> naming rule (a second copy of that rule would drift silently). If `maw config sources` cannot
+> be read it prints **nothing** rather than guessing — a false accusation costs more than silence.
+>
+> ⚠️ **The wording of a check is part of the check.** This one travelled into other houses'
+> reports unquestioned. Fixing it downstream would have meant every reader adding the caveat by
+> hand, forever.
+>
 > ### Was *your* earlier result affected? Three reasons a verdict is cwd-invariant
 >
 > Between them the four houses covered every case, and only the last one can flip:
@@ -217,7 +247,7 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > | why it cannot flip | who | check |
 > |---|---|---|
 > | **paths are absolute** — nothing to resolve | prism (0/8 exposed), lucifer (63/65) | `grep -E '(worktree\|cwd):' charter` → all start with `/` |
-> | **failure is global absence** — the engine is registered in no layer anywhere, so no cwd exists from which it resolves | atlas (T4463, FAIL 4/4) | `verify-check.sh enginereg <engine>` from two unrelated dirs → UNREGISTERED both |
+> | **failure is global *unreadability*** — no layer maw reads has the key, so no cwd exists from which it resolves ⚠️ **this row said "registered in no layer anywhere" until 2026-08-07 and that was false** — atlas's engine (`codex-xhigh`) **is** registered, in the unnumbered `~/.config/maw/maw.config.json`, which maw never loads. Same verdict, different root cause, **different fix** (move the line, not invent a key) | atlas (T4463, FAIL 4/4) | `verify-check.sh enginereg <engine>` from two unrelated dirs → UNREGISTERED both **and read the `🔴 DEAD-LAYER` line if it prints one** |
 > | **the only layer is user-level** — `~/.config/maw/maw.config.50.json` is visible from everywhere | lucifer | `maw config sources` from two unrelated dirs → identical |
 > | **no `worktree:` declared at all** — every member falls back to `mdir="$root"`, so there is no relative path to resolve | tars (`research-team.charter.yaml`, same result from 3 dirs) | check (d) in Step 4b fires |
 > | 🔴 **repo-scoped presence + relative paths** — the alias lives in a project layer inside the charter's repo | **ajfon's `ajfon-rag-bench`** | this is the shape that flips |
