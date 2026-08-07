@@ -1,9 +1,19 @@
 import json, re, glob, os, collections
 
 # every alias maw can actually resolve, from every layer that gets loaded anywhere
-files = glob.glob('/home/user/ghq/github.com/*/*/.maw/maw.config.*.json') \
-      + glob.glob('/home/user/.config/maw/maw.config.*.json') \
-      + glob.glob('/home/user/.maw-teams/*/.maw/maw.config.*.json')
+_DEFAULT_ROOTS = [
+    '/home/user/ghq/github.com/*/*/.maw/maw.config.*.json',
+    '/home/user/.config/maw/maw.config.*.json',
+    '/home/user/.maw-teams/*/.maw/maw.config.*.json',
+]
+# 🔧 2026-08-07 (lucifer) — the globs used to be hardcoded, which made the names!=rows warning
+#    below IMPOSSIBLE to test without writing colliding aliases into real shared config. Nobody
+#    would ever do that, so "the warning has never fired" would have stayed true BY CONSTRUCTION
+#    rather than by luck. 🔑 A check you cannot make fail is a check that cannot fail.
+#    MAW_CENSUS_ROOTS (colon-separated globs) overrides for testing. Default is unchanged.
+_roots = os.environ.get('MAW_CENSUS_ROOTS')
+_roots = _roots.split(':') if _roots else _DEFAULT_ROOTS
+files = [f for pat in _roots for f in glob.glob(pat)]
 # 🩹 2026-08-07 (loom): the third glob was missing — team layers under ~/.maw-teams/<team>/.maw/
 #    were invisible. Today impact = 0 (aliases there duplicate repo-layer ones: 37/4/8 either way),
 #    so this is LATENT, not active. It bites when a team layer defines an alias no repo defines —
@@ -63,11 +73,23 @@ def _reach(paths):
     # user layer (~/.config/maw)  = every vantage sees it
     # repo layer (<repo>/.maw)    = only under that repo
     # team layer (~/.maw-teams/..)= only under that team's worktrees
+    # 🩹 2026-08-07 — this used to index path segments by fixed position (f.split('/')[6]).
+    #    It crashed with IndexError the FIRST time the script was run against a fixture root,
+    #    i.e. the first time it was testable at all. The defect had been shipped and unseen
+    #    because the only inputs it ever saw were the three hardcoded globs.
+    #    ⇒ Derive the owner from the layer directory, never from a segment index.
     kinds = set()
     for f in paths:
-        if f.startswith('/home/user/.config/maw/'): kinds.add('user:everyone')
-        elif f.startswith('/home/user/.maw-teams/'): kinds.add('team:' + f.split('/')[4])
-        else: kinds.add('repo:' + f.split('/')[6])
+        if f.startswith('/home/user/.config/maw/'):
+            kinds.add('user:everyone')
+        elif f.startswith('/home/user/.maw-teams/'):
+            kinds.add('team:' + os.path.relpath(f, '/home/user/.maw-teams').split(os.sep)[0])
+        else:
+            # <owner>/.maw/maw.config.NN.json  ->  owner is the dir containing .maw
+            d = os.path.dirname(f)
+            owner = os.path.basename(os.path.dirname(d)) if os.path.basename(d) == '.maw' \
+                    else os.path.basename(d)
+            kinds.add('repo:' + owner)
     return ','.join(sorted(kinds))
 
 print(f"{len(cmds)} distinct aliases across {len(files)} layer files\n")
@@ -95,8 +117,11 @@ for e, n in ec.most_common(): print(f"   {n:3}  {e}")
 #      definitions = every time such an alias is defined, across all layer files
 #    Today names == rows **by coincidence**: no alias yet has two different command strings.
 #    The day one does, these silently diverge — and that is the alias-name collision problem.
-#    ⚠️ The warning below has NEVER fired. By this repo's own rule, a check that has never
-#    failed is not yet proven to work. Do not read its silence as evidence.
+#    ✅ The warning below IS PROVEN TO FIRE. [verified 2026-08-07 by lucifer, then re-run by
+#    codex-fanout, two arms via MAW_CENSUS_ROOTS against fixtures — no shared state touched]
+#      negative control: one alias, two files, IDENTICAL string -> names1 rows1 defs2, silent
+#      positive        : one alias, two files, DIFFERENT strings -> names1 rows2 defs2, fires
+#    So its silence here is now evidence, which it was not an hour ago.
 _names = {k for k in cmds if any(tier(v)[1] for v in cmds[k])}
 _rows  = sum(1 for k, _, e in rows if e)
 _defs  = sum(1 for k in _names for f in where[k]
