@@ -14,3 +14,7 @@
 #    and the fix was written as a Next Step twice (2026-08-04 09:32 #2, 03:07 #5) and never done.
 #    Per CLAUDE.md Self-Evaluation Loop: same friction 3 sessions -> fix the root cause.
 !ψ/inbox/
+# 🩹 2026-08-07 — ψ/archive/ is where "Nothing is Deleted" sends retired work. Excluding it made
+#    the archive durable per-session only, not per-history — the same defect the ψ/inbox/ line above
+#    fixed. Found while closing Next Step #5 (a backup whose only copy lived in /tmp).
+!ψ/archive/

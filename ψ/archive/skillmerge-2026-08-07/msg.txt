@@ -1,0 +1,28 @@
+SKILL.md: real merge, not a copy — global supersedes, two lost notes restored, repo pointer kept
+
+The repo copy (413 lines) was stale by one refactor: on 2026-08-06 dispatch/down/lead were split
+out to references/, so most of its "unique" content lives there in fixed form. Verified per line,
+then per claim.
+
+DROPPED DELIBERATELY — global marks each as a defect; carrying them forward reintroduces bugs:
+  ls .../*.yaml | head -1   picks the wrong charter in houses with many
+  tmux display -p '#S'      reads the OPERATOR's session, not the team's
+  r != 'lead' alone         a conforming lead is <team>-lead, so the literal test puts it in
+                            CODERS and down kills it. Global filters on worktree:false and keeps
+                            the literal test only as an extra guard.
+  merge greens immediately  removed from lead on 08-06; its survival in the rules list is itself
+                            documented as a bug in global
+
+RESTORED — lost in the 08-06 split, landed in neither the new home nor the old, so they were live
+in NO copy at all. Put back in the GLOBAL file so the next sync keeps them:
+  use run_in_background, never a shell ampersand — a shell job is invisible to the harness
+  omx --madmax auto-explores on boot, so its charter prompt must open with WAIT for maw hey
+
+KEPT REPO-LOCAL — global is deliberately path-agnostic: pointers to ENGINE-AND-MODEL.md,
+VERIFY-THE-CHECK.md, TEACHING-LEDGER.md, plus the verb-by-verb real-usage status table.
+
+Repo file = global verbatim (first 2008 lines diff clean) + a delimited appendix, so the next
+re-sync is a plain overwrite plus re-append. Old copy kept at
+/tmp/claude-1000/skillmerge/repo.bak
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
