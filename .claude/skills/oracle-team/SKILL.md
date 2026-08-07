@@ -212,6 +212,36 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > ⇒ `enginelist` remains dir-aware **on purpose** — run it from a path your member will use.
 > `enginecheck` no longer is. **They answer different questions, so they anchor differently.**
 
+### 🔧 A member is booting as the wrong vendor — how to actually fix it
+
+`[measured 2026-08-07, with controls]` lucifer's `verifier` asked for `engine: claude,
+model: sonnet-5` and booted as **`thclaws --model zai/glm-5.1`**. The fix is not what it looks
+like, so measure before you reach for the workaround:
+
+| what you try | result | why |
+|---|---|---|
+| rename the role so it misses the glob (`verifier` → `qa-verifier`) | ✅ no longer hijacked — but lands on **`commands.default`**, still not what the charter asked | dodges step 4, never reaches step 1 |
+| register the alias, layer **not visible** from the member dir | ❌ **still hijacked** | step 1 misses, so the glob catches it at step 4 |
+| register the alias in a layer **visible from the member dir** | ✅ **wins — the glob never applies** | step 1 beats step 4 |
+
+```bash
+# the decisive check, from the MEMBER's directory:
+cd <member dir> && maw config sources        # your layer must appear here
+```
+
+> 🪞 **I almost published the opposite conclusion.** My first test used aliases registered in
+> *my* repo's layer against a member living in `~/.maw-teams/…`, where that layer is invisible.
+> Every variant returned `thclaws`, which reads exactly like *"the glob beats everything, a
+> registered alias cannot save you."* **The control saved it**: a non-glob name with the same
+> aliases returned the plain default too — proving `-e` was not being read *at all*, so the run
+> could not say anything about globs. Re-tested with the alias in an ancestor of the member dir:
+> the glob loses. **A test whose control fails has not produced a negative result — it has
+> produced nothing**, and the difference between those two is a fleet-wide false alarm.
+
+**For teams under `~/.maw-teams/<team>/<role>`, a layer inside your repo cannot be seen.** Put it
+at an ancestor of the member paths — `~/.maw-teams/<team>/.maw/maw.config.60.json` — or the
+charter's `engine:` silently misses and glob or default decides for you.
+
 **Then, model names for a NEW alias** — one lookup per engine, they are not interchangeable:
 
 | engine | how to list what your account serves |
