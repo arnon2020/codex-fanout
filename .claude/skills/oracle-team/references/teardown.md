@@ -293,6 +293,24 @@ carefully reviewed and unexecuted; that is a different claim from the rows above
 > ")
 > CODERS="$TARGETS"        # Step 3 releases the same set unless you narrow it deliberately
 > [ -n "$TARGETS" ] || { echo "🔴 REFUSING: no roles parsed from $CHARTER — teardown would do nothing and look clean"; return 1 2>/dev/null || exit 1; }
+>
+> **`return 1 2>/dev/null || exit 1` — now measured in both modes, not just reasoned about.**
+> `[verified 2026-08-07 by ajfon, running it himself · independent of the author of the idiom]`
+> ```
+> outside a function :  exits for real   (rc=1, execution does not continue)
+> inside a function  :  returns normally (shell survives, rc=1 propagates correctly)
+> ```
+> ajfon also reproduced the underlying defect before testing the fix: `for ROLE in $TARGETS`
+> with `$TARGETS` unset **iterates zero times, prints nothing, raises nothing** — silent, exactly
+> as the finding claims.
+>
+> ⇒ This closes bug #7 from 2026-08-06 (a bare `return` that broke when the file was **not**
+> sourced) **without** forcing the author to choose up front between "write it as a function"
+> and "write it as a script." One line covers both.
+> ⇒ **Attribution**: the `$TARGETS`/`$CODERS` finding and this idiom are the **third clean-room
+> tester's**, not codex-fanout's — codex-fanout only vendored the file into the repo (`7294293`)
+> and later inserted the `maw team down` block above (`e95fd2c`, which added **zero** lines here).
+> ajfon's contribution is the **two-mode measurement**, which did not exist before.
 > printf 'teardown targets (%s): %s\n' "$(printf '%s\n' "$TARGETS" | grep -c .)" "$(printf '%s ' $TARGETS)"
 > ```
 >
