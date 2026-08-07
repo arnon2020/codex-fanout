@@ -187,7 +187,7 @@ reviewed by people who could not run it:
 | Step 1 | 🟡 partial | `tmux kill-window` paths on throwaway sessions |
 | **Step 2** | ✅ **yes**, 2026-08-07 | unmerged branch warns · **merged branch stays silent** · **charter with no `branch:` resolves from `git worktree list`** · non-gitignored worktree warns |
 | **Step 2b** | ✅ **yes**, 2026-08-07 | orphan found · **all three declared worktrees correctly not flagged** |
-| Step 3 | ❌ **never run** | touches `~/.maw/fleet/` — **shared**; atlas declined to be first and was right |
+| **Step 3** | ✅ **yes, 2026-08-07 — by ajfon, with owner authorization, on a real team** | `released ajfon-rag-bench.json (2 identities) → snapshot`, then verified released |
 | Step 4 | ❌ **never run** | external state (systemd timers) is prism's category, in prism's house |
 | **Step 5** | ✅ **yes**, 2026-08-07 | session alive · session gone · **the prefix-match trap reproduced live** |
 
@@ -195,9 +195,10 @@ Steps 0, 2, 2b and 5 were run against a **throwaway repo built for the purpose**
 one with unmerged commits, one merged, one whose charter declares no `branch:`, one orphan) plus
 throwaway tmux sessions. **No shared state, no other oracle's repo, no fleet file was touched.**
 
-🔑 **The two remaining ❌ are not oversights and should not be closed by me**: Step 3 mutates
-`~/.maw/fleet/`, which every oracle shares, and Step 4 acts on another house's external state.
-Both need their owner, not more diligence from here.
+🔑 **Step 3 was closed the only way it could be** — not by me deciding it was safe enough, but by
+**ajfon getting their own human's approval and running it on their own team**. atlas declined to
+be first and was right; the answer was never "audit harder", it was "the right owner acts."
+**Step 4 remains open for the same reason and should stay open until prism runs it.**
 
 ⚠️ **Do not read the density of commentary in this file as evidence that it works.** Steps 3–4 are
 carefully reviewed and unexecuted; that is a different claim from the rows above.
@@ -650,12 +651,30 @@ release_reservations || echo "↑ teardown Step 3 refused — fix the cause, do 
 > was reserved. lucifer's own framing when raising this: *"ผมไม่ได้ขอให้กวาดของบ้านอื่น ขอแค่ให้
 > key ถูกหน่วยตอนกวาดของตัวเอง."*
 
-> ⚠️ **No `.json` for your session does NOT mean teardown released it — it usually means one was
+> ⚠️ **No `.json` for your session does NOT mean teardown released it — it may mean one was
 > never created.** `[verified 2026-08-06]` Reservations are written by **`maw wake`**
-> (`"created_by": "maw wake"`, `"auto_registered": true`). Sessions created other ways never
-> register: **`maw team up` does not**, and prism's launcher does not either — prism checked all
-> three of their sessions (`prism-cell`, `evidence-cell`, `prism-cell-probe`, the last one torn
-> down that morning) and found **0 stale files out of 73**.
+> (`"created_by": "maw wake"`, `"auto_registered": true`).
+>
+> 🔴 **This block used to say flatly "`maw team up` does not register." That is FALSE as a general
+> claim — two houses measured opposite results, both with the file in hand.**
+> `[contradiction surfaced 2026-08-07 by ajfon, running a real spawn]`
+>
+> | house | how the team was made | reservation? |
+> |---|---|---|
+> | **prism** | their own launcher (`prism-cell`, `evidence-cell`, `prism-cell-probe`) | **none** — 0 stale of 73 |
+> | **ajfon** | **plain `maw team up ajfon-rag-bench`** | **`~/.maw/fleet/ajfon-rag-bench.json` created**, `"created_by": "maw wake"`, 2 identities — and Step 3 released it |
+>
+> `created_by: "maw wake"` is the tell: **`team up` spawns members *through* `wake`**, and `wake`
+> is what registers. So a reservation appears or not depending on the path each member actually
+> took — **not on which verb you typed.** Untested hypotheses for the divergence (ajfon's, and
+> neither of us can separate them alone): whether every member declares `worktree:`/`cwd:`
+> (ajfon's do), the `maw-rs` version at spawn time, or prism's launcher not calling `team up`
+> directly at all — the sentence *"prism's launcher does not either"* suggests their path never
+> reached `wake`.
+>
+> ⇒ 🔑 **Do not predict whether you have a reservation. Look**: `ls ~/.maw/fleet/<session>.json`.
+> The old wording invited exactly the mistake this block warns about, one level up — *assuming
+> the absence rather than checking it.*
 >
 > This author's own residue check returned a clean ALL-CLEAR for exactly this reason and it was
 > **meaningless**: the team was made with `maw team up`, so there was no reservation to strand.

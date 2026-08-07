@@ -195,6 +195,29 @@ B=${TEAM}-beta                       # member 2
 > that is the flag I passed, one rung above a config file."* **They refused their own easiest
 > evidence.** That is the discipline this whole file is about, arrived at by someone who had read
 > only this file.
+>
+> #### 🟢 opencode — the third engine, measured at last
+>
+> `[prism, 2026-08-07, from freshly respawned panes, passive read only — no keys sent]`
+>
+> opencode was the engine nobody had ever checked; this skill could not even say how to *ask* it.
+> It turns out to be **the easiest of the three**:
+>
+> | question | answer |
+> |---|---|
+> | does it show its model? | **yes, passively, always** — the status bar reads `Build auto · GLM 5.2 Z.AI (GLM) · high`: **provider + model + effort on one line, no command needed** |
+> | does `bootverify` read it correctly? | **yes** — `proc=opencode model=zai/glm-5.2 (flag-pinned) cmd=opencode --model zai/glm-5.2 --auto`, clean on both panes, **no `proc=?`** |
+> | where does the model come from with no `--model`? | **UNVERIFIED** — prism's `~/.config/opencode/config.json` declares a provider and two models but **no top-level default**; `opencode models` lists `opencode/big-pickle` first, which *might* be a built-in default. **They refused to state it without running opencode bare, which was outside what I asked.** |
+>
+> ⇒ **Model evidence per engine, current state:**
+> **codex** — scripted (`modelprobe`, spends a real turn) · **opencode** — passive status bar,
+> no script needed · **claude** — manual only (`/status` + a real turn); `modelprobe` returns
+> `UNVERIFIED reason=only-codex-supported-by-this-probe`.
+>
+> 🔑 Note the shape of prism's third answer: they had a plausible candidate (`opencode/big-pickle`)
+> and **labelled it unverified rather than reporting it**, because confirming it needed a spawn
+> nobody had authorised. *"ถือเป็น unverified ส่วนนี้ ไม่ใช่คำตอบ."* That is the same refusal atlas
+> made with `CANNOT VERIFY`, in a house that had every incentive to just answer the question.
 This is the only place a model can be expressed. Filename must be `maw.config.<digits>.json`
 with a number above 50.
 
@@ -555,6 +578,66 @@ cd <member dir> && maw config sources        # your layer must appear here
 **For teams under `~/.maw-teams/<team>/<role>`, a layer inside your repo cannot be seen.** Put it
 at an ancestor of the member paths — `~/.maw-teams/<team>/.maw/maw.config.60.json` — or the
 charter's `engine:` silently misses and glob or default decides for you.
+
+> ## 💸 Which model a role *should* get — the question this file never asked
+>
+> `[raised by arnon 2026-08-07; measured here the same hour]`
+>
+> Everything above is about **proving** a member got the model you asked for. **None of it asks
+> whether you should have asked for that model.** Measured across every alias `maw` can resolve
+> on this machine — 34 aliases in 7 layer files:
+>
+> | | count |
+> |---|---|
+> | aliases requesting **`claude-opus-5`** (top tier) | **10** — the single most requested model |
+> | aliases requesting a cheap tier (`haiku`, `mini`) | **2** |
+> | aliases that tune reasoning effort **at all** | **2 of 34** |
+> | aliases pinning **neither** model nor effort → ambient | **8** |
+>
+> And the two ambient defaults everything falls back to:
+>
+> ```
+> commands.default        →  claude --model claude-opus-5
+> ~/.codex/config.toml    →  model = "gpt-5.6-sol",  model_reasoning_effort = "xhigh"
+> ```
+>
+> 🔴 **So the failure this entire skill exists to catch — the silent fallthrough — lands on the
+> most expensive model on the machine, at the highest reasoning effort.** Unregistered alias,
+> dead-file key, typo'd engine name, missing layer: every one of those paths ends at
+> `commands.default`. Two days of documenting *"you silently get the wrong engine"* never once
+> said **"and the wrong one is the dearest one you own."**
+>
+> ⇒ 🔑 **A team that boots correctly can still be built wrong.** Gate 0 passing means each member
+> got what the charter asked for; it says nothing about whether a verifier needed opus to say
+> PASS/FAIL, and **quota exhausted mid-run is a failure mode with no error message** — the team
+> simply stops finishing work.
+>
+> **Pick the tier from what the role actually does**, not from what is available:
+>
+> | role does | tier | why |
+> |---|---|---|
+> | mechanical edits, renames, formatting, running a fixed checklist | **cheapest** (`haiku`, `*-mini`, effort `low`) | the work is transcription; a bigger model buys nothing and costs the whole team's runway |
+> | verify / review against stated criteria | **mid** (`sonnet`, effort `medium`) | judgement, but bounded by criteria someone else wrote |
+> | design, root-cause, cross-cutting tradeoffs, adversarial review | **top** (`opus`, `gpt-5.6-sol`, effort `high`/`xhigh`) | this is where the tier actually changes the answer |
+> | lead / orchestration | **mid**, not top | mostly routing and bookkeeping between short reasoning steps |
+>
+> ⚠️ **Reasoning effort is a second, independent dial and almost nobody turns it** — 2 of 34
+> aliases set it. On codex, `model_reasoning_effort=low` on a cheap model is a different cost
+> class again from the same model at `xhigh`. Set both, per role, in the alias.
+>
+> 🔬 **Check what your charter will actually cost before spawning**, since `enginecheck` already
+> resolves the real command per member:
+>
+> ```bash
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginecheck <charter> \
+>   | grep -E 'enginecheck.member|pinned='
+> #   pinned=no  ⇒ that member is on the ambient default — i.e. the top tier, by accident
+> ```
+>
+> **`pinned=no` is not only a stability problem, it is a bill.** The existing
+> `enginecheck.unverified: unpinned-alias` flag has been reporting this all along; we read it as
+> *"the model could change under you"* and never as *"you are paying top rate for a role that
+> may not need it."*
 
 **Then, model names for a NEW alias** — one lookup per engine, they are not interchangeable:
 

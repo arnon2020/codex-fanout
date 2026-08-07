@@ -2,374 +2,194 @@
   "collapsed": [],
   "fleetGroupMode": "session",
   "grouped": true,
-  "lastView": "overview",
+  "lastView": "fleet",
   "muted": false,
   "recentMap": {
     "112-atlas:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "atlas-oracle",
       "session": "112-atlas",
       "target": "112-atlas:0"
     },
     "113-tars:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "tars-oracle",
       "session": "113-tars",
       "target": "113-tars:0"
     },
     "114-codex-fanout:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "codex-fanout",
       "session": "114-codex-fanout",
       "target": "114-codex-fanout:0"
     },
     "116-loom:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "loom-oracle",
       "session": "116-loom",
       "target": "116-loom:0"
     },
     "116-loom:1": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "workflow-controller",
       "session": "116-loom",
       "target": "116-loom:1"
     },
     "116-loom:2": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "reality-grounder",
       "session": "116-loom",
       "target": "116-loom:2"
     },
     "116-loom:3": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "learning-architect",
       "session": "116-loom",
       "target": "116-loom:3"
     },
     "116-loom:4": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "thai-native-instructional-writer-editor",
       "session": "116-loom",
       "target": "116-loom:4"
     },
     "116-loom:5": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "media-engineer",
       "session": "116-loom",
       "target": "116-loom:5"
     },
     "116-loom:6": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "media-integrator",
       "session": "116-loom",
       "target": "116-loom:6"
     },
     "116-loom:7": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "failure-diagnostician",
       "session": "116-loom",
       "target": "116-loom:7"
     },
     "116-loom:8": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "media-verifier",
       "session": "116-loom",
       "target": "116-loom:8"
     },
     "116-loom:9": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "comprehension-prechecker",
       "session": "116-loom",
       "target": "116-loom:9"
     },
     "117-prism:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "prism-oracle",
       "session": "117-prism",
       "target": "117-prism:0"
     },
     "18-holmes:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "holmes-oracle",
       "session": "18-holmes",
       "target": "18-holmes:0"
     },
     "40-ajfon:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "ajfon",
       "session": "40-ajfon",
       "target": "40-ajfon:0"
     },
     "84-lucifer:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "lucifer-oracle",
       "session": "84-lucifer",
       "target": "84-lucifer:0"
     },
     "84-lucifer:1": {
-      "lastBusy": 1786080495298,
+      "lastBusy": 1786080494681,
       "name": "lucifer-oracle",
       "session": "84-lucifer",
       "target": "84-lucifer:1"
     },
-    "__e2e:0": {
-      "lastBusy": 1785996999366,
-      "name": "coder-1-oracle",
-      "session": "__e2e",
-      "target": "__e2e:0"
-    },
-    "__e2e:1": {
-      "lastBusy": 1785996999366,
-      "name": "verifier-oracle",
-      "session": "__e2e",
-      "target": "__e2e:1"
-    },
     "ajfon-rag-bench:0": {
-      "lastBusy": 1786080751298,
+      "lastBusy": 1786080750679,
       "name": "ajfon-rag-bench-alpha-oracle",
       "session": "ajfon-rag-bench",
       "target": "ajfon-rag-bench:0"
     },
     "ajfon-rag-bench:1": {
-      "lastBusy": 1786080751298,
+      "lastBusy": 1786080750679,
       "name": "ajfon-rag-bench-beta-oracle",
       "session": "ajfon-rag-bench",
       "target": "ajfon-rag-bench:1"
     },
-    "c2team:0": {
-      "lastBusy": 1786011849277,
-      "name": "c2-alpha-oracle",
-      "session": "c2team",
-      "target": "c2team:0"
-    },
-    "c2team:1": {
-      "lastBusy": 1786011849277,
-      "name": "c2-beta-oracle",
-      "session": "c2team",
-      "target": "c2team:1"
-    },
-    "finteam:0": {
-      "lastBusy": 1786010681285,
-      "name": "finteam-alpha-oracle",
-      "session": "finteam",
-      "target": "finteam:0"
-    },
-    "finteam:1": {
-      "lastBusy": 1786010681285,
-      "name": "finteam-beta-oracle",
-      "session": "finteam",
-      "target": "finteam:1"
-    },
     "fresh-probe:0": {
-      "lastBusy": 1786079741298,
+      "lastBusy": 1786079740743,
       "name": "fresh-probe-alpha-oracle",
       "session": "fresh-probe",
       "target": "fresh-probe:0"
     },
     "fresh-probe:1": {
-      "lastBusy": 1786079741298,
+      "lastBusy": 1786079740743,
       "name": "fresh-probe-beta-oracle",
       "session": "fresh-probe",
       "target": "fresh-probe:1"
     },
-    "giprobe:0": {
-      "lastBusy": 1786005891260,
-      "name": "gi-a-oracle",
-      "session": "giprobe",
-      "target": "giprobe:0"
-    },
     "loom-modelpane:0": {
-      "lastBusy": 1786080445298,
+      "lastBusy": 1786080444757,
       "name": "claude",
       "session": "loom-modelpane",
       "target": "loom-modelpane:0"
     },
     "lucifer-dev-v1:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "frontend-engineer-oracle",
       "session": "lucifer-dev-v1",
       "target": "lucifer-dev-v1:0"
     },
     "lucifer-dev-v1:1": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "exploratory-tester-oracle",
       "session": "lucifer-dev-v1",
       "target": "lucifer-dev-v1:1"
     },
     "lucifer-dev-v1:2": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "independent-verifier-oracle",
       "session": "lucifer-dev-v1",
       "target": "lucifer-dev-v1:2"
     },
-    "newbie-probe:0": {
-      "lastBusy": 1786078603344,
-      "name": "newbie-probe-alpha-oracle",
-      "session": "newbie-probe",
-      "target": "newbie-probe:0"
-    },
-    "newbie-probe:1": {
-      "lastBusy": 1786078603344,
-      "name": "newbie-probe-beta-oracle",
-      "session": "newbie-probe",
-      "target": "newbie-probe:1"
-    },
-    "probe-codex:0": {
-      "lastBusy": 1785994039388,
-      "name": "prober-a-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:0"
-    },
-    "probe-codex:1": {
-      "lastBusy": 1785994039388,
-      "name": "prober-b-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:1"
-    },
-    "probe-codex:2": {
-      "lastBusy": 1785994039388,
-      "name": "advisor-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:2"
-    },
-    "probe-codex:3": {
-      "lastBusy": 1785994039388,
-      "name": "builder-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:3"
-    },
-    "probe-codex:4": {
-      "lastBusy": 1785994039388,
-      "name": "imagery-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:4"
-    },
-    "probe-codex:5": {
-      "lastBusy": 1785994039388,
-      "name": "assets-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:5"
-    },
-    "probe-codex:6": {
-      "lastBusy": 1785994039388,
-      "name": "public-oracle",
-      "session": "probe-codex",
-      "target": "probe-codex:6"
-    },
-    "qsprobe:0": {
-      "lastBusy": 1786000107315,
-      "name": "qsprobe-alpha-oracle",
-      "session": "qsprobe",
-      "target": "qsprobe:0"
-    },
-    "qsprobe:1": {
-      "lastBusy": 1786000107315,
-      "name": "qsprobe-beta-oracle",
-      "session": "qsprobe",
-      "target": "qsprobe:1"
-    },
-    "qtest-2390430:0": {
-      "lastBusy": 1786068455073,
-      "name": "stuck-oracle",
-      "session": "qtest-2390430",
-      "target": "qtest-2390430:0"
-    },
-    "qtest-2390430:1": {
-      "lastBusy": 1786068455073,
-      "name": "busy-oracle",
-      "session": "qtest-2390430",
-      "target": "qtest-2390430:1"
-    },
-    "r2probe:0": {
-      "lastBusy": 1786006659304,
-      "name": "r2probe-alpha-oracle",
-      "session": "r2probe",
-      "target": "r2probe:0"
-    },
-    "r2probe:1": {
-      "lastBusy": 1786006659304,
-      "name": "r2probe-beta-oracle",
-      "session": "r2probe",
-      "target": "r2probe:1"
-    },
-    "r2team:0": {
-      "lastBusy": 1786012029254,
-      "name": "r2-a-oracle",
-      "session": "r2team",
-      "target": "r2team:0"
-    },
-    "r2team:1": {
-      "lastBusy": 1786012029254,
-      "name": "r2-b-oracle",
-      "session": "r2team",
-      "target": "r2team:1"
-    },
-    "rtteam:0": {
-      "lastBusy": 1786010907212,
-      "name": "rt-alpha-oracle",
-      "session": "rtteam",
-      "target": "rtteam:0"
-    },
-    "rtteam:1": {
-      "lastBusy": 1786010907212,
-      "name": "rt-beta-oracle",
-      "session": "rtteam",
-      "target": "rtteam:1"
-    },
-    "skilltest:0": {
-      "lastBusy": 1785999235314,
-      "name": "st-alpha-oracle",
-      "session": "skilltest",
-      "target": "skilltest:0"
-    },
-    "skilltest:1": {
-      "lastBusy": 1785999235314,
-      "name": "st-beta-oracle",
-      "session": "skilltest",
-      "target": "skilltest:1"
-    },
     "ws-parity-port:0": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "coder-a-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:0"
     },
     "ws-parity-port:1": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "verifier-rs-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:1"
     },
     "ws-parity-port:2": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "coder-b-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:2"
     },
     "ws-parity-port:3": {
-      "lastBusy": 1786080801299,
+      "lastBusy": 1786081176908,
       "name": "verifier-ui-oracle",
       "session": "ws-parity-port",
       "target": "ws-parity-port:3"
     },
-    "wsparity-heartbeat-restart:0": {
-      "lastBusy": 1786068804954,
-      "name": "wsparity-heartbeat-probe-oracle",
-      "session": "wsparity-heartbeat-restart",
-      "target": "wsparity-heartbeat-restart:0"
-    },
-    "wsparity-live-restart:0": {
-      "lastBusy": 1786067003077,
-      "name": "wsparity-restart-probe-oracle",
-      "session": "wsparity-live-restart",
-      "target": "wsparity-live-restart:0"
-    },
-    "wsparity-live-wake:0": {
-      "lastBusy": 1786067003077,
-      "name": "wsparity-wake-probe-oracle",
-      "session": "wsparity-live-wake",
-      "target": "wsparity-live-wake:0"
+    "zz-badmodel-probe:0": {
+      "lastBusy": 1786081071693,
+      "name": "claude",
+      "session": "zz-badmodel-probe",
+      "target": "zz-badmodel-probe:0"
     }
   },
   "sleptTargets": [],
