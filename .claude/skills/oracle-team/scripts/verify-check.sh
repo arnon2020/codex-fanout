@@ -112,6 +112,18 @@ bootprobe() {
 #    ⇒ `send-enter` ด้านล่าง: **ถูกเสมอ แต่จำเป็นบางเครื่องยนต์** — codex ต้องใช้,
 #      claude เข้า turn เองได้ [ต่างคนต่าง n=1], opencode ยังไม่รู้
 #
+# 🔴 **2026-08-07 [lucifer · วัดสองรอบคนละทิศ] คำตอบของ `maw send` ไม่สัมพันธ์กับความจริง
+#    ทั้งสองทิศ — เตือนก็ผิดได้ ไม่เตือนก็ผิดได้**
+#      รอบ A: maw เตือน "may still have unsubmitted input" **แต่ข้อความเข้าไปแล้วจริง** → false alarm
+#      รอบ B: maw ตอบ "delivered" เฉย ๆ ไม่เตือนอะไร **แต่ข้อความค้างในช่องพิมพ์ ไม่เคย submit**
+#             → false negative · ทีม 4 คน idle อยู่เงียบ ๆ โดยไม่มีสัญญาณอะไรเลย
+#    ⇒ นี่แรงกว่ากฎเดิม "delivered ไม่ใช่ได้รับ" เพราะเดิมเรายังเชื่อ **คำเตือน** อยู่
+#      ตอนนี้รู้แล้วว่า **ความเงียบของ maw ก็ไม่ได้แปลว่าสำเร็จ**
+#    ⇒ **ชั้น 1 ใช้ตัดสินอะไรไม่ได้เลยทั้งทางบวกและทางลบ** — ต้อง `peek` ดู pane เท่านั้น
+#    ⇒ อาการที่ควรจำ: pane ที่ **idle พร้อมกันทั้งทีม** หลังสั่งงาน = สงสัยว่าไม่ได้ submit
+#      ก่อนจะสรุปว่า "ทำเสร็จแล้ว" (lucifer มองไม่เห็นเพราะกำลังอ่านรายงานอยู่ ·
+#      monitor จากข้างนอกเห็นก่อน)
+#
 # 🏷️ **Tier 3 แล้ว [verified 2026-08-04 02:43 · ส่งจริงถึง 40-ajfon:ajfon.0]**
 #    Tier 1–2 (ปฏิเสธของปลอม) ผ่านตั้งแต่แรก — **และมันมองไม่เห็นบั๊กที่มีอยู่จริง**
 #    การใช้จริงครั้งแรกล้มทันที: `exit 2` เงียบ เพราะ dispatcher ท้ายไฟล์ยิงตอนถูก `source`
@@ -488,7 +500,7 @@ bootverify() {
   binexists tmux >/dev/null 2>&1 || { echo "UNKNOWN   ไม่มี tmux"; return 2; }
   tmux has-session -t "=$sess" 2>/dev/null || { echo "FAIL      ไม่มี session '$sess'"; return 1; }
 
-  local wins w pid child cmd screen model rc=0 n=0 unpinned=0
+  local wins w pid child cmd screen model rc=0 n=0 unpinned=0 queued=0
   wins=$(tmux list-windows -t "=$sess" -F '#{window_name}' 2>/dev/null)
   [ -n "$wins" ] || { echo "FAIL      session '$sess' ไม่มี window"; return 1; }
 
@@ -531,6 +543,19 @@ bootverify() {
         echo "bootverify.pane: $w NOT-READY screen=trust-prompt · engine รันอยู่ · แก้: ตอบ '1' เฉพาะเจาะจง ไม่ใช่ Enter เปล่า"
         rc=1; continue ;;
     esac
+    # 🔴 2026-08-07 [lucifer] ข้อความที่ **ค้างในช่องพิมพ์แต่ไม่เคย submit** ไม่มีสัญญาณอะไรเลย:
+    #    maw ตอบ "delivered" เฉย ๆ · ไม่มีคำเตือน · ทีม 4 คน idle เงียบ ๆ เหมือนทำงานเสร็จ
+    #    ⇒ อาการที่มองเห็นได้จริงคือ **composer มีเนื้อหาแต่ pane ไม่ busy**
+    #    (codex ค้างเป็น `[Pasted Content NNN chars]` · จำนวน `#N` = มีหลายฉบับซ้อน)
+    if ! printf '%s' "$screen" | grep -qE 'esc to interrupt'; then
+      q=$(printf '%s' "$screen" | grep -oE '\[Pasted Content [0-9]+ chars\]' | grep -c .)
+      if [ "${q:-0}" -gt 0 ]; then
+        echo "bootverify.pane: $w QUEUED-NOT-SUBMITTED — มี $q ข้อความค้างในช่องพิมพ์ pane ไม่ busy"
+        echo "          ⇒ `maw send` ตอบ delivered ได้ทั้งที่ยังไม่ถูก submit — **ความเงียบไม่ใช่ความสำเร็จ**"
+        echo "          ⇒ แก้: peek ยืนยันว่าจอเป็นของ agent แล้ว `maw send-enter <target>`"
+        rc=1; queued=$((queued+1)); continue
+      fi
+    fi
     model=$(printf '%s' "$cmd" | sed -n 's/.*--model \([^ ]*\).*/\1/p')
     # 🩹 2026-08-07 [lucifer · ทีมจริง 3 pane] alias ที่ **ไม่ pin --model** ทำให้ตรงนี้ว่าง
     #    แล้วรายงาน `model=-` **ทั้งที่คำตอบอยู่บนจอที่ capture มาแล้ว** (status bar โชว์
@@ -575,6 +600,7 @@ bootverify() {
     echo "          ⇒ ทีมรันบน ambient default · แก้ ~/.codex/config.toml เมื่อไหร่ ทีมเปลี่ยน model เงียบ ๆ"
     echo "          ⇒ ถ้าต้องการให้เสถียร: pin --model ใน alias ของ engine"
   fi
+  [ "${queued:-0}" -gt 0 ] && echo "bootverify.queued: $queued pane มีคำสั่งค้างที่ไม่เคยถูก submit — ทีมดูเหมือนว่างแต่ยังไม่ได้เริ่ม"
   [ "$rc" = "0" ] && echo "overall: READY panes=$n${unpinned:+ unpinned=$unpinned}" || echo "overall: NOT-READY — อย่าเพิ่งส่งอะไรเข้า pane ที่ยังไม่ READY · NOT-READY=รอ/เคลียร์จอ · PROCESS-GONE=spawn ใหม่ (คนละทางแก้)"
   return $rc
 }
