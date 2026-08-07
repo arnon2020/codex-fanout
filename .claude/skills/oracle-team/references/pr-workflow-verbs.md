@@ -3,7 +3,16 @@
 > ## 🔴 SPLIT OUT OF THE MAIN SKILL ON 2026-08-06 — READ THIS FIRST
 >
 > These three verbs were moved here, not deleted, because **every one of them was defective
-> the first time it was executed**, and none has ever been used successfully by anyone:
+> the first time it was executed**.
+>
+> 🟢 **SUPERSEDED IN PART, 2026-08-07** — the clause that used to close this sentence,
+> *"and none has ever been used successfully by anyone"*, is **no longer true for two of the three**.
+> `dispatch` and `lead` were run against a live team (`realtest-verbs-v1`, 2 opencode workers) and
+> both PASSED with ground truth matching the workers' own reports (`94df4ae`, `212af3a`).
+> `down` remains broken — two ways, see `teardown.md` Step 1 D1/D2/D3.
+> Evidence: `ψ/teams/2026-08-07_REALTEST-down-lead-dispatch.md` (`dbc3dcf`).
+> ⇒ This correction exists because the claim survived a session that disproved it, in the same
+> file-set that says *"fixing one site is not fixing the claim — `grep` every surface."*
 >
 > | verb | what running it once found |
 > |---|---|

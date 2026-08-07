@@ -1946,8 +1946,12 @@ malformed command under `--dangerously-bypass-approvals-and-sandbox`, `lead` pro
 
 - **[`references/teardown.md`](references/teardown.md)** — `down`, universal. Applies to every
   team, PR or not. Peer-confirmed as needed by atlas, ajfon, prism and lucifer, two of whom
-  have leftovers right now that these steps target. Steps 1–2 and 5 are author-run twice;
-  Steps 0, 3, 4 are built from their measurements and **have not been executed by anyone.**
+  have leftovers right now that these steps target.
+  ⚠️ **The per-step evidence claim that used to sit here was stale against `teardown.md` itself**
+  (this file said Steps 0/3/4 unexecuted; that file's own table says Steps 0, 2, 2b, 5 ran on
+  2026-08-07, Step 3 ran by ajfon, Step 1 only partially, Step 4 never). **Two surfaces, two
+  different claims, shipped in one session** — the shape this file-set warns about. Corrected
+  2026-08-07: **do not restate that table here. Read it in `teardown.md`, which owns it.**
 - **[`references/pr-workflow-verbs.md`](references/pr-workflow-verbs.md)** — the `gh`-dependent
   half of `dispatch` and `lead`: GitHub-issue intake, PR review and merge. Author-run only, and
   the issue-intake path has never been run at all.

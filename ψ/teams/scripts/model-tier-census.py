@@ -1,10 +1,17 @@
 import json, re, glob, os, collections
 
 # every alias maw can actually resolve, from every layer that gets loaded anywhere
+_HOME = os.path.expanduser('~')
+_USER_LAYER = os.path.join(_HOME, '.config', 'maw') + os.sep
+_TEAM_LAYER = os.path.join(_HOME, '.maw-teams') + os.sep
+# 🩹 2026-08-07 — these were hardcoded to /home/user. On any other machine the user: and team:
+#    branches of _reach() would never match and EVERY alias would mislabel as repo: — i.e. the
+#    vantage bug D15.7 exists to prevent, shipped inside the tool that reports vantage.
+#    Found by the retrospective's own file-analysis pass, not by a peer.
 _DEFAULT_ROOTS = [
-    '/home/user/ghq/github.com/*/*/.maw/maw.config.*.json',
-    '/home/user/.config/maw/maw.config.*.json',
-    '/home/user/.maw-teams/*/.maw/maw.config.*.json',
+    os.path.join(_HOME, 'ghq', 'github.com', '*', '*', '.maw', 'maw.config.*.json'),
+    os.path.join(_USER_LAYER, 'maw.config.*.json'),
+    os.path.join(_TEAM_LAYER, '*', '.maw', 'maw.config.*.json'),
 ]
 # 🔧 2026-08-07 (lucifer) — the globs used to be hardcoded, which made the names!=rows warning
 #    below IMPOSSIBLE to test without writing colliding aliases into real shared config. Nobody
@@ -88,10 +95,10 @@ def _reach(paths):
     #    ⇒ Derive the owner from the layer directory, never from a segment index.
     kinds = set()
     for f in paths:
-        if f.startswith('/home/user/.config/maw/'):
+        if f.startswith(_USER_LAYER):
             kinds.add('user:everyone')
-        elif f.startswith('/home/user/.maw-teams/'):
-            kinds.add('team:' + os.path.relpath(f, '/home/user/.maw-teams').split(os.sep)[0])
+        elif f.startswith(_TEAM_LAYER):
+            kinds.add('team:' + os.path.relpath(f, _TEAM_LAYER).split(os.sep)[0])
         else:
             # <owner>/.maw/maw.config.NN.json  ->  owner is the dir containing .maw
             d = os.path.dirname(f)
@@ -102,7 +109,7 @@ def _reach(paths):
 
 print(f"{len(cmds)} distinct aliases across {len(files)} layer files\n")
 print("REACH — who can actually resolve each alias (definitions != availability):")
-_universal = [k for k, ps in where.items() if any(p.startswith('/home/user/.config/maw/') for p in ps)]
+_universal = [k for k, ps in where.items() if any(p.startswith(_USER_LAYER) for p in ps)]
 print(f"   visible fleet-wide (user layer)      : {len(_universal)}")
 print(f"   visible only under one repo or team  : {len(cmds) - len(_universal)}")
 print("   effort-pinned aliases, with reach:")
