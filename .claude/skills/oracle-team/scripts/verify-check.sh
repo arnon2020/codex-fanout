@@ -1866,6 +1866,39 @@ PY
     *) echo "   ✗ ข้อความสะอาดตกด้วยเหตุที่คาดไม่ถึง — อ่าน: $_clean"; fail=1 ;;
   esac
 
+  # 🔌 2026-08-07 — copy-drift-check.sh (holmes) ตอบคำถามที่ผมถามค้างไว้: "อะไรจะเตือนเราครั้งหน้า"
+  #    หลังจาก verify-check.sh สามก๊อป drift กันจน CLAUDE.md ชี้ไปที่ตัวที่อ่อนกว่า 6 verb
+  #    **holmes เตือนเองว่าเครื่องมือของเขา "เขียนเสร็จก็นอนเฉย ๆ ไม่มีอะไรเรียกมัน"**
+  #    — ซึ่งคือ D15.8 เป๊ะ ๆ (เครื่องมือที่สร้างมาแทนของที่เสื่อมเงียบ แล้วเสื่อมเงียบเอง)
+  #    เขาจงใจไม่ wire ให้ เพราะเป็นการแก้ repo ผมตรง ๆ ⇒ **ผมตัดสินใจ wire ตรงนี้**
+  #    ⚠️ ผมเป็นผู้ใช้ ไม่ใช่ผู้เขียน ⇒ selftest-author != claim-author สำหรับข้อนี้
+  echo "20) copy-drift-check: สำเนาที่ deploy ด้วย cp ต้องตรง canonical (ตกได้จริง)"
+  local _cd _root
+  _root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." 2>/dev/null && pwd)
+  _cd="$_root/lab/copy-drift-check.sh"
+  if [ -r "$_cd" ]; then
+    local _tmp; _tmp=$(mktemp -d)
+    printf 'same\n' > "$_tmp/canon"; printf 'same\n' > "$_tmp/mirror-ok"
+    printf 'DIFFERENT\n' > "$_tmp/mirror-bad"
+    # แขน ก: สำเนาตรง ⇒ ต้อง rc=0
+    if bash "$_cd" "$_tmp/canon" "$_tmp/mirror-ok" >/dev/null 2>&1
+      then echo "   ✓ สำเนาตรง → OK"
+      else echo "   ✗ สำเนาตรงแต่รายงาน DRIFT — false positive"; fail=1; fi
+    # แขน ข: สำเนาต่าง ⇒ ต้อง rc!=0  (ถ้าแขนนี้ผ่านไม่ได้ เครื่องมือเป็น echo)
+    if bash "$_cd" "$_tmp/canon" "$_tmp/mirror-bad" >/dev/null 2>&1
+      then echo "   ✗ สำเนาต่างแต่รายงานว่าตรง — เครื่องมือตกไม่ได้ ⇒ เป็น echo"; fail=1
+      else echo "   ✓ สำเนาต่าง → DRIFT (ตกได้จริง)"; fi
+    # ของจริง: สามก๊อปของ verify-check.sh เอง
+    if bash "$_cd" "$_root/teams/scripts/verify-check.sh" \
+         "$_root/../.claude/skills/oracle-team/scripts/verify-check.sh" \
+         "$HOME/.claude/skills/oracle-team/scripts/verify-check.sh" >/dev/null 2>&1
+      then echo "   ✓ verify-check.sh ทั้ง 3 ก๊อปตรงกัน"
+      else echo "   ✗ verify-check.sh drift แล้ว — รัน $_cd เพื่อดูก๊อปไหน"; fail=1; fi
+    rm -rf "$_tmp"
+  else
+    echo "   (ไม่พบ lab/copy-drift-check.sh — ข้าม ไม่นับผ่าน/ตก)"
+  fi
+
   [ $fail -eq 0 ] && echo "SELFTEST OK" || { echo "SELFTEST FAILED"; return 1; }
 }
 
