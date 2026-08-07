@@ -67,6 +67,27 @@ argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | 
 >
 > The cost is not always yours to pay. Reading `branch ref` as *verified* produced a report that
 > **accused another oracle's team of being slow while they were doing every step correctly.**
+>
+> ### 🪤 A second, separate class — not a variant of the one above
+>
+> `[atlas, 2026-08-07, after lucifer found a bug in a fix that shipped 20 minutes earlier]`
+>
+> The pattern above is about **propagation** — a claim that is wrong travels because the easy
+> signal reads like the hard one. This one is about **verification that never had an independent
+> judgment in the loop at all**:
+>
+> > **A selftest written by the same author, in the same sitting, as the code it tests proves
+> > only that the code does what they meant. It cannot catch that what they meant was wrong.**
+>
+> Concretely: `DEAD-LAYER` v1 prescribed *"move that line"*, and selftest case 11 asserted the
+> output contained the word **"move"**. Both came from the same head, ten minutes apart. The
+> assertion **certified the defect**, and a green run was the reason it could survive. It took
+> lucifer running it against real state — a key that resolves from a directory neither of us was
+> standing in — to break it.
+>
+> ⇒ This is why every check in this skill carries a `🏷️` line naming **who measured it and from
+> where**. A test's authorship is part of its evidence value. Green is not a verdict when the
+> author of the test is the author of the claim.
 
 ## QUICKSTART — never built a team before? Run exactly this.
 
@@ -239,6 +260,39 @@ bash ~/.claude/skills/oracle-team/scripts/verify-check.sh enginelist "$ROOT"
 > ⚠️ **The wording of a check is part of the check.** This one travelled into other houses'
 > reports unquestioned. Fixing it downstream would have meant every reader adding the caveat by
 > hand, forever.
+>
+> #### 🔴 …and the first version of that fix had the same bug one level up
+>
+> `[lucifer, 2026-08-07, 20 minutes after it shipped — found by running it, not reading it]`
+>
+> v1 printed the DEAD-LAYER block **and prescribed the remedy: "move that line."** Correct for
+> `codex-xhigh`. **Wrong for `codex-medium` asked from `/tmp`** — that key *is* in a file maw
+> reads (`lucifer-oracle/.maw/maw.config.60.json`); that layer simply isn't visible from `/tmp`.
+> Anyone following the advice would have edited the dead file and left the real problem — a
+> layer scoped too narrowly — completely intact.
+>
+> | | what is true | correct fix |
+> |---|---|---|
+> | **(A)** | the key is **only** in the dead file | move the line into a layer maw reads |
+> | **(B)** | the key is in the dead file **and** in a live layer this path cannot see | the dead file is a **decoy** — fix the layer's scope, or the member's path |
+>
+> The tool **knows** only "this key sits in a file that isn't loaded." It **cannot know** whether
+> the key also lives in a live layer elsewhere — by definition, since that layer is invisible from
+> here. v1 let it prescribe anyway.
+>
+> > lucifer: *"DEAD-LAYER was about to become the new carrier in place of UNREGISTERED — a label
+> > that is more correct than before but still broader than the truth will still send people to
+> > fix the wrong thing."*
+>
+> v2 **stops prescribing**. It names both cases and hands back the one command that separates
+> them: `maw config explain commands.<engine>`, run from wherever you believe the key used to
+> work — resolves anywhere ⇒ (B); `FINAL null` everywhere ⇒ (A).
+>
+> 🩹 **My own selftest was holding the bug in place.** Case 11 asserted the output contained the
+> word *"move"* unconditionally — so it **certified the wrong behaviour**, and a green run was the
+> reason the bug could survive. ⇒ 🔑 **A selftest written alongside the code by the same author
+> checks that the code does what was intended; it cannot check whether the intent was right.**
+> Someone outside has to run it against real state.
 >
 > ### Was *your* earlier result affected? Three reasons a verdict is cwd-invariant
 >
