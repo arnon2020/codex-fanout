@@ -191,6 +191,30 @@ explicitly if you mean a different number.
 > three trigger paths would fire overlapping fetches. *Mergeable* and *coherent to merge alone*
 > are different questions.
 >
+> ### 🔌 Installing a shared binary: split it from the restart, for the right reason
+>
+> `[2026-08-07]` `install` and `restart maw serve` look like one operation and are not:
+>
+> | step | what it costs | reversible |
+> |---|---|---|
+> | install (repoint `~/.local/bin/maw`) | **nothing running changes** — the new binary has no effect until something restarts | `ln -sf` back; 24 prior builds were on disk here |
+> | restart `maw serve` | **every connected websocket drops at once** — 36 panes reconnecting together | the process comes back, the dropped sessions do not un-drop |
+>
+> ⚠️ **I first justified this split with the wrong reason and lucifer corrected it.** I wrote that
+> restarting `maw serve` "walks into" the connection-blocking defect the team had just measured.
+> **It does not.** What was measured is the **ws verb `restart`** —
+> `serveengine_ws_restart` in `serve_core/process_engine.rs:269`, which resolves a *target* and
+> restarts **an agent pane**. Restarting the server process is a different function at a
+> different layer, and the defect makes it no more dangerous. Confirmed by reading the source
+> before accepting the correction.
+>
+> The proposal survived; the reasoning did not. And the distinction matters downstream: a reader
+> who carries *"restarting the server walks into a bug"* guards against the wrong thing, while
+> *"restarting the server cuts every live connection"* is true whether or not any bug exists.
+>
+> lucifer's addition, which is the operational half: **restart when the fleet is idle**, not
+> while other teams are mid-task.
+
 > ### Which approvals may be relayed — lucifer's tier, sharper than "is an action attached"
 >
 > | operation | reversible? | who else does it hit | relay acceptable |
