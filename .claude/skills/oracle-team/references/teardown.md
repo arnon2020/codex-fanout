@@ -103,11 +103,16 @@ cp ~/.maw/fleet/"${SESSION}".json "$SNAP/" 2>/dev/null || true   # absent is nor
 # 🔴 A redirect creates the file even when the command fails, so a failed capture leaves a
 #    ZERO-BYTE file that is indistinguishable from "captured, nothing to record".
 #    Keep only what actually has content, and count it.
+# ⚠️ rc and emptiness are DIFFERENT questions — branching on `-s` alone gets it wrong both ways.
+#    `git branch -vv` in a repo with no commits yet exits 0 and prints nothing; treating that as
+#    a failed capture reports PARTIAL for a snapshot that is actually complete — and that repo is
+#    exactly what QUICKSTART's `git init "$ROOT"` produces.
 cap() {   # cap <outfile> <cmd...>
   local out="$1"; shift
-  "$@" > "$SNAP/$out" 2>/dev/null
-  if [ -s "$SNAP/$out" ]; then return 0; fi
-  rm -f "$SNAP/$out"; return 1
+  "$@" > "$SNAP/$out" 2>/dev/null; local rc=$?
+  if [ "$rc" -ne 0 ]; then rm -f "$SNAP/$out"; return 1; fi        # failed → no artifact at all
+  [ -s "$SNAP/$out" ] || printf '(empty — command succeeded with no output)\n' > "$SNAP/$out"
+  return 0                                                         # succeeded → never zero-byte
 }
 gitcap=0
 cap windows.txt    tmux list-windows -t "=$SESSION" -F '#{window_name}'
@@ -176,17 +181,43 @@ Cheap, and it is the only thing that makes any later step reversible.
 `[2026-08-07]` Honesty about this file's own evidence level, since it spent two days being
 reviewed by people who could not run it:
 
-| step | executed against real state? |
-|---|---|
-| **Step 0** | ✅ **yes** — 3 arms, real charter + real layer + real git root, 2026-08-07 |
-| Step 1 | partially — `tmux kill-window` paths exercised on throwaway sessions |
-| Step 2 / 2b | ❌ **read-only review only** (ajfon, lucifer, holmes) — never run on a real team's git state |
-| Step 3 | ❌ **never run** — touches `~/.maw/fleet/`, shared; atlas declined to be first and was right |
-| Step 4 | ❌ **never run** — external state (systemd timers) is prism's category, in prism's house |
-| Step 5 | ❌ **never run** |
+| step | executed against real state? | arms proven |
+|---|---|---|
+| **Step 0** | ✅ **yes**, 2026-08-07 | full · no charter · **no layers, no git** · **`git init` with zero commits** |
+| Step 1 | 🟡 partial | `tmux kill-window` paths on throwaway sessions |
+| **Step 2** | ✅ **yes**, 2026-08-07 | unmerged branch warns · **merged branch stays silent** · **charter with no `branch:` resolves from `git worktree list`** · non-gitignored worktree warns |
+| **Step 2b** | ✅ **yes**, 2026-08-07 | orphan found · **all three declared worktrees correctly not flagged** |
+| Step 3 | ❌ **never run** | touches `~/.maw/fleet/` — **shared**; atlas declined to be first and was right |
+| Step 4 | ❌ **never run** | external state (systemd timers) is prism's category, in prism's house |
+| **Step 5** | ✅ **yes**, 2026-08-07 | session alive · session gone · **the prefix-match trap reproduced live** |
 
-**Do not read the density of commentary in this file as evidence that it works.** Steps 2–5 are
-carefully reviewed and unexecuted; that is a different claim from Step 0's.
+Steps 0, 2, 2b and 5 were run against a **throwaway repo built for the purpose** (four worktrees:
+one with unmerged commits, one merged, one whose charter declares no `branch:`, one orphan) plus
+throwaway tmux sessions. **No shared state, no other oracle's repo, no fleet file was touched.**
+
+🔑 **The two remaining ❌ are not oversights and should not be closed by me**: Step 3 mutates
+`~/.maw/fleet/`, which every oracle shares, and Step 4 acts on another house's external state.
+Both need their owner, not more diligence from here.
+
+⚠️ **Do not read the density of commentary in this file as evidence that it works.** Steps 3–4 are
+carefully reviewed and unexecuted; that is a different claim from the rows above.
+
+> 🔴 **Step 5's prefix-match warning, proven rather than asserted** `[2026-08-07]` — two sessions,
+> `zz-step5-team` and the decoy `zz-step5-team-r2`; kill only the first:
+>
+> ```
+> exact  -t "=$SESSION" : ✓ session gone
+> bare   -t  "$SESSION" : ⚠ session still alive   ← FALSE — it matched the -r2 decoy
+> ```
+>
+> The bare form reports a torn-down team as alive. Until now this was a warning written from a
+> near-miss; it is now a measurement.
+>
+> 🟢 **And Step 2 closes holmes's finding with execution.** They found the branch-fallback bug by
+> *reading* — a charter with no `branch:` had the teardown guess the role name, when the real
+> branch was `probe-<role>`. The fixed code was never run against that shape until now:
+> `coder-c` (no `branch:` in charter, worktree on `probe-coder-c`) → **resolved `probe-coder-c`
+> from `git worktree list`**, then correctly warned it had 1 unmerged commit.
 
 ## Step 1: Kill the session's windows
 
@@ -705,8 +736,10 @@ against two separate live 2-member teams — dirty worktree kept, `.env.local` c
 > ran twice, `charter_branch` would have failed visibly both times.* A status line that claims
 > more coverage than the runs had is how dead checks stay hidden.
 
-**Not run by anyone**: Steps 0, 3, and 4, and the block added under Step 2. Built from
-measurements four oracles took in their own houses, not from executing this file.
+**Not run by anyone**: ~~Steps 0, 3, and 4, and the block added under Step 2~~ — **stale as of
+2026-08-07; superseded by the "Verified arms" table above.** Steps 0, 2, 2b and 5 have now been
+executed. **Steps 3 and 4 remain unrun, with reasons that are not diligence-shaped**: Step 3
+mutates shared fleet state, Step 4 acts on another house's machine.
 
 **Reviewed without being run** `[2026-08-06]`: ajfon, lucifer and holmes read this file
 statically — none would execute Step 3, because it touches shared fleet state, and all three were
