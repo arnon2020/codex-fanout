@@ -165,6 +165,46 @@ explicitly if you mean a different number.
 > ⚠️ Still true after the correction: *verifier is on the same commit* is not *a verdict exists*.
 > It means they are proving the right thing, not that they are done.
 
+> ## 🔀 Merging when the working tree is on someone else's branch
+>
+> `[lucifer, 2026-08-07 — and my own merge advice would have broken this]` The obvious move is
+> `git checkout main && git merge <feature>`. On a shared oracle repo that is often wrong: the
+> working tree may be sitting on **another agent's branch with uncommitted work**. Here it was —
+> `maw-rs` on `agents/fix-wake-oracle-alias-hijack` with 5 dirty entries, `maw-ui-lite` on
+> `fix/summon-shows-resolved-target` with 3. A checkout would have disturbed both.
+>
+> When the merge is a genuine fast-forward, update the **ref** and never touch the tree:
+>
+> ```bash
+> git merge-base --is-ancestor main "$FEATURE" || { echo "not a fast-forward — stop"; exit 1; }
+> git fetch . "$FEATURE:main"          # moves the ref only; working tree untouched
+> git status --porcelain | wc -l       # confirm the count is what it was before
+> ```
+>
+> Verified afterwards: both trees still on their original branches with **identical dirty
+> counts**, `main` advanced, and `git merge-base --is-ancestor <old-main> main` confirming the
+> already-shipped commit was not lost in the merge.
+>
+> **And check what the merge implies across repos.** lucifer included
+> `feat/registry-refresh-coalesce` deliberately, not just the obvious branch: merging only the
+> server side would have shipped a `registry-changed` emitter to a client with no coalescing, so
+> three trigger paths would fire overlapping fetches. *Mergeable* and *coherent to merge alone*
+> are different questions.
+>
+> ### Which approvals may be relayed — lucifer's tier, sharper than "is an action attached"
+>
+> | operation | reversible? | who else does it hit | relay acceptable |
+> |---|---|---|---|
+> | spawn a team | no — burns shared weekly quota | the whole machine | ❌ human, in your own chat |
+> | install binary / restart `maw serve` | no — swaps what everyone runs | entire fleet, instantly | ❌ never, even repeated |
+> | **merge a local ref** | **yes — `git reset`** | **nobody; no push, nothing running changes** | ✅ |
+> | a statement of fact ("who spawned it") | n/a — no action follows | nobody | ✅ |
+>
+> Their formulation: **"if I am wrong, can it be undone, and does it reach anyone but me?"** —
+> which is why they refused the spawn relay and accepted the merge relay **without the criterion
+> changing**. A rule that gives different answers to different cases is a rule; one that always
+> says no is a reflex.
+
 ### Step 2: Create worktrees (if not exist)
 
 > 🔴 **This step used to invent worktrees that had nothing to do with your team.**
