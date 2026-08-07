@@ -14,6 +14,14 @@ _DEFAULT_ROOTS = [
 _roots = os.environ.get('MAW_CENSUS_ROOTS')
 _roots = _roots.split(':') if _roots else _DEFAULT_ROOTS
 files = [f for pat in _roots for f in glob.glob(pat)]
+_custom = _roots is not _DEFAULT_ROOTS
+# 🩹 2026-08-07 (lucifer) — when roots are overridden, EVERY line below is a statement about the
+#    fixture, not about the fleet. Say so at the top, or someone copies a fixture-scoped sentence
+#    into a fleet-scoped report. Same vantage problem as the REACH column, pointed the other way.
+if _custom:
+    print("⚠️  MAW_CENSUS_ROOTS is set — every number below describes THESE roots, not the fleet:")
+    for r in _roots: print(f"      {r}")
+    print()
 # 🩹 2026-08-07 (loom): the third glob was missing — team layers under ~/.maw-teams/<team>/.maw/
 #    were invisible. Today impact = 0 (aliases there duplicate repo-layer ones: 37/4/8 either way),
 #    so this is LATENT, not active. It bites when a team layer defines an alias no repo defines —
@@ -136,6 +144,7 @@ if len(_names) != _rows:
     for k in sorted(_names):
         if len(cmds[k]) > 1: print(f"      {k}: {len(cmds[k])} different commands -> {where[k]}")
 else:
-    print(f"   (names == rows today; no alias has two different command strings yet)")
+    _scope = "in these roots" if _custom else "fleet-wide today"
+    print(f"   (names == rows {_scope}; no alias has two different command strings)")
 nomodel = [k for k, m, e in rows if not m and not e]
 print(f"\naliases pinning NEITHER model nor effort (ambient): {len(nomodel)}")
