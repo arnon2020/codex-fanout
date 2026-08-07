@@ -93,6 +93,10 @@ raw=$(gh issue list --repo "$PROJECT" --state open --json number -q '.[].number'
 case "$raw" in
   *"Could not resolve"*|*"HTTP 404"*|*"not found"*)
     echo "✗ $PROJECT: repo unreachable — NOT the same as having no issues"; return 1 2>/dev/null || exit 1 ;;
+  *"disabled issues"*)
+    echo "✗ $PROJECT: issues are DISABLED on this repo — there is no queue, not an empty one"
+    echo "  ⇒ your PROJECT is pointing somewhere dispatch can never work. Fix PROJECT, do not wait."
+    return 1 2>/dev/null || exit 1 ;;
 esac
 [ "$rc" -le 1 ] || { echo "✗ gh failed rc=$rc: $raw"; return 1 2>/dev/null || exit 1; }
 ISSUES=$(printf '%s\n' "$raw" | grep -E '^[0-9]+$' | head -"${N:-5}")
@@ -113,7 +117,19 @@ explicitly if you mean a different number.
 > |---|---|
 > | repo exists, zero issues | `✓ no open issues — dispatching nothing, on purpose` |
 > | repo unreachable / no access | `✗ repo unreachable — NOT the same as having no issues` |
-> | repo with real issues | **untested — needs an issue that does not exist yet** |
+> | **repo has issues DISABLED** | `✗ issues are DISABLED — there is no queue, not an empty one` |
+> | repo with real issues | `dispatching …: 12 9` — resolves real numbers |
+>
+> 🔴 **The disabled-issues case was found by trying to create a fixture issue and being told no.**
+> Before that, the guard answered `✓ no open issues — dispatching nothing, on purpose` for a repo
+> where **issues do not exist as a feature**. A reader would conclude the backlog was empty and
+> wait, when the real answer is *your `PROJECT` points somewhere `dispatch` can never work*. Two
+> opposite actions behind one message.
+>
+> 📌 **And the fixture turned out to be unnecessary.** `codex-fanout`, `maw-rs` and `maw-ui-lite`
+> all have issues disabled, but `tars-oracle` (2 open) and `atlas-oracle` (4 open) do not — so
+> the last arm was measured **read-only against an existing queue, creating nothing.** Asking for
+> permission to write surfaced both a real defect and the fact that the write was not needed.
 >
 > Side by side with the old one-liner on the same two inputs: `ISSUES=''` both times, loop ran
 > 0 times both times, no output either time. The guard's whole value is telling those two apart,
