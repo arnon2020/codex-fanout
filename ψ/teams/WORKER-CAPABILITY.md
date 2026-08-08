@@ -267,7 +267,26 @@ would need to look something up, reply exactly `NEED-TO-LOOK`.*
 **No `NEED-TO-LOOK`. No command executed** — the transcript shows no `Ran …` line, and context went
 0% → 2%, the cost of a reply, not of reading a 90-line file.
 
-⇒ **codex injects `AGENTS.md` from the working directory at session start.** A worker knows the
+⇒ **codex injects `AGENTS.md` from the working directory at session start** — and, corrected
+2026-08-08 by prism + a 5-arm re-probe here, **it walks UP to the git root and stops there.**
+
+| cwd | `AGENTS.md` location | answer |
+|---|---|---|
+| subdirectory inside the repo | repo root | ✅ correct — walk-up works |
+| the directory holding the file | there | ✅ correct |
+| **a nested git root** | one level up, outside that git root | 🔴 `NEED-TO-LOOK` — **does not cross** |
+
+⇒ 🔑 **A git worktree is its own git root**, so the main repo's `AGENTS.md` **never reaches a
+worker in a worktree.** That is the mechanism behind ajfon's morning finding — his patch was
+necessary, not precautionary — and it is why loom's and lucifer's render-into-every-worktree
+designs were already right.
+
+⚠️ **Two probe-design lessons from the same run.** My first question ("what do you do when a check
+only goes green after a kept record is destroyed?") was answered correctly **and proves nothing** —
+the model can produce that answer unaided. The usable question had an *arbitrary* answer (which
+branch PRs target). And the control taught something unplanned: with no `AGENTS.md` anywhere, it did
+**not** say `NEED-TO-LOOK` — it guessed `main`. ⇒ **A correct answer may not have come from the file
+at all if the answer matches a common default. Pick a value that differs from the convention.** A worker knows the
 team's rules **before it is told anything**. This is the one claim in this document that reached
 the top of the evidence ladder by a probe designed not to give away its own answer.
 
