@@ -246,6 +246,16 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
   `claude --dangerously-skip-permissions` · `opencode --auto` (⚠️ *"ที่ไม่ได้ถูก deny"* ⇒ อ่อนกว่า) ·
   `thclaws --accept-all` · ⚠️ **`--allowed-tools` ไม่ใช่ bypass — เป็น allowlist คนละกลไก**
   ⇒ ก่อน spawn: `verify-check.sh enginecheck <charter>` พ่น `perm=` ต่อสมาชิก + `permission-not-bypassed`
+  ⚠️ **แต่ alias ไม่ใช่ชั้นเดียวที่ตอบมิตินี้ — และผมเกือบส่ง false alarm ทิศ "กล่าวหา"**
+  `[verified 2026-08-08: boot codex เปล่า ไม่มีแฟลก → สั่ง curl + เขียนไฟล์นอก cwd → **ทำโดยไม่ถาม**]`
+  เพราะ `~/.codex/config.toml` ตั้ง `approval_policy = "never"` **ทั้งเครื่อง**
+  ⇒ ถ้าอ่านแต่สตริงคำสั่ง จะตะโกนใส่ codex alias ที่ไม่มีปัญหา — **false alarm ฆ่าเครื่องมือเตือน
+  ได้พอกับ false green** ⇒ `_vc_permmode` อ่าน `$CODEX_HOME/config.toml` (fallback `~/.codex`) แล้ว
+  ⇒ ⏳ **config ที่ persist ไม่เดินทางไปกับ charter · alias เดินทางไปด้วย** ⇒ ใส่ token ใน alias อยู่ดี
+  **config เป็นเหตุผลที่จะไม่ตกใจ ไม่ใช่คำตอบ** — นี่คือ `valid-if:` โดยธรรมชาติ ย้ายเครื่องแล้วเกราะหาย
+  ⇒ 🕳️ **ธงที่ `permstall` ใช้ grep จอ พิสูจน์กับ claude ตัวเดียว** — codex/opencode/thclaws ยัง
+  `[unverified]` **ประกาศไว้ใน `permstall.scope:` แล้ว** (สร้าง prompt ของ codex เพื่อทดสอบไม่ได้
+  โดยไม่แก้ config ของกลาง ⇒ **ไม่ทำ** · `selftest 21` ทดสอบ *สตริงคำสั่ง* ไม่ได้แตะ regex ตัวนั้น)
 - ⏱️ **ความพร้อมหมดอายุ — บันไดหลักฐานทั้งบันไดวัดที่ t=0 รวมชั้นสูงสุด**
   worker ที่ *"อ้างเนื้อความกลับมา"* แล้ว ยังไปค้างที่ **การเขียนไฟล์แรก** อีก 20 นาทีถัดมาได้
   · `bootverify` ตรวจจอตอน boot (update/trust dialog) ตอนนั้นยังไม่มี permission prompt
