@@ -20,15 +20,29 @@ members:
   # Asking probe-1 "is there a file named AGENTS.md" made it go and read the file, which proves
   # reachable, not auto-injected. probe-2 gets a question that names no file, and must be FRESH —
   # probe-1's context now holds the whole document.
-  - role: probe-2
-    name: probe-2
+  # probe-3: re-probe at 160 lines. PROBE-C4D1 proved injection of the 90-line file; that proof
+  # does not carry across a 78% growth. Questions come from sections added AFTER C4D1, so a
+  # correct answer proves injection at the new size AND that the new prose is legible.
+  - role: probe-3
+    name: probe-3
     engine: codex-sol
-    worktree: agents/probe-2
-    branch: agents/probe-2
+    worktree: agents/probe-3
+    branch: agents/probe-3
     prompt: |
       You are a probe. Do NOT write code, do NOT commit, do NOT change any file.
       WAIT for your question via maw hey, answer it exactly, then stop.
       Report to: 114-codex-fanout:codex-fanout
+
+  # probe-2 retired after PROBE-C4D1 — two codex members share one CODEX_HOME (see section 3).
+  # - role: probe-2  (retired)
+  #   name: probe-2
+  #   engine: codex-sol
+  #   worktree: agents/probe-2
+  #   branch: agents/probe-2
+  #   prompt: |
+  #     You are a probe. Do NOT write code, do NOT commit, do NOT change any file.
+  #     WAIT for your question via maw hey, answer it exactly, then stop.
+  #     Report to: 114-codex-fanout:codex-fanout
 
   # No lead member on purpose: the lead (114-codex-fanout:codex-fanout) is already live.
   # Declaring it here made preflight fail on ".maw-engine: lead has no worktree to inspect"

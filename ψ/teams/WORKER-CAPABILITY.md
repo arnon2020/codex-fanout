@@ -277,6 +277,24 @@ by the worker about whether the rule applies**. A skill must be *selected*; `AGE
 *present*. Reserve skills for what only some roles need, or for procedures too long to keep in a
 file every worker carries on every turn.
 
+## 5d. PROBE-9B7E — injection holds at 160 lines `[verified 2026-08-08]`
+
+PROBE-C4D1 proved injection of a **90-line** file. `AGENTS.md` then grew to **160**. That proof
+does not carry across a 78% change, so this re-probe asks only about sections added **after**
+C4D1 — a correct answer proves injection at the new size *and* that the new prose is legible.
+
+Fresh worker, `Context 0% used`, no file named, `NEED-TO-LOOK` offered. **4/4, no command run,
+finished at 3%:**
+
+- *"A new commit on your branch proves completion. A file appearing, your screen, or 'DONE' in your
+  own message does not."*
+- *"The check is broken because it can match its own command line and falsely report a hit."*
+- *"Your instructions govern; a skill activating does not change the task."*
+- *"No. The sandbox is not a reliable boundary; the worktree rule is the boundary."*
+
+⇒ 📌 **A size claim needs its own probe.** "It worked before" is not evidence about a file that has
+since changed — the same shape as `valid-if:` on a stale dependency. Re-probe on material growth.
+
 ## 6. ⚠️ What is NOT verified
 
 All of the above is disk and binary. **No live worker has been observed loading or invoking a
