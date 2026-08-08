@@ -296,6 +296,22 @@ relay() {
 #    · vault + charter เป็น path **เทียบ CWD** ⇒ ถามถึงทีมของ oracle อื่น ผิวนี้ไม่ถึง
 #    · ตอบเรื่อง "มีอยู่/มีชีวิตไหม" ไม่ได้ตอบว่า worker มีงานทำไหม (ajfon ข้อ 4: `up`
 #      ปลุก pane ได้โดยไม่ส่ง prompt — exit 0, preflight 11/11, และ worker นั่งว่าง)
+# ── _vc_row_verdict <แถวจาก maw team list> ─────────────────────────────────
+# แยก **บันทึก** ออกจาก **ของค้าง** ในแถวเดียวกันของ `maw team list`
+#   `vault N prep-only`     → charter-only : ไม่เคยมี pane · maw สร้างแถวจากไฟล์ charter
+#   `tool  N no live panes` → open         : เคยมี pane แล้วตาย = ของค้างจริง
+# แยกออกมาเป็นฟังก์ชันเพราะ **เทสต์แถวสังเคราะห์ได้** — ผมสร้างแถว vault/prep-only จริง
+# ในเทสต์ไม่ได้ (`maw team list` ไม่ลิสต์ charter ที่วางเปล่า ๆ ใน cwd — ลองแล้ว ทั้งมี/ไม่มี
+# `git init` ก็ไม่โผล่ ⇒ มันมาจาก vault store ที่ `maw team prep` ลงทะเบียน ไม่ใช่จากไฟล์ล้วน)
+# ⇒ เทสต์ตัวนี้ตรวจ **ตรรกะการจัดประเภทของผม** ไม่ได้ตรวจ **พฤติกรรมการลิสต์ของ maw**
+_vc_row_verdict() {
+  local row="${1:?usage: _vc_row_verdict <row>}" store status
+  store=$(printf '%s\n' "$row" | awk '{print $2}')
+  # STATUS มีช่องว่างในตัว ("no live panes") ⇒ ตัด 3 คอลัมน์หน้า + ZOMBIES ท้าย แล้ว trim
+  status=$(printf '%s\n' "$row" | awk '{$1="";$2="";$3="";$NF="";sub(/^ +/,"");sub(/ +$/,"");print}')
+  if [ "$store" = "vault" ] && [ "$status" = "prep-only" ]; then echo "charter-only"; else echo "open"; fi
+}
+
 teamclosed() {
   local t="${1:?usage: teamclosed <team-name>}"
   local unreachable="" found="" rc_open=0
@@ -344,6 +360,32 @@ teamclosed() {
     local row
     row=$(printf '%s\n' "$plain" | awk -v n="$t" '$1=="TEAM" && $2=="STORE"{h=1;next} h && $1==n {print; exit}')
     if [ -n "$row" ]; then
+      # 🩹 2026-08-08 [prism จับ · ผมทำซ้ำจาก cwd ของเขาแล้วได้แถวเดียวกันเป๊ะ] —
+      #    เดิมผมนับ **ทุกแถว** ใน `maw team list` เป็น OPEN โดยไม่อ่านคอลัมน์ STATUS
+      #    แต่แถวสองแบบนี้คนละความหมาย และ **ทางแก้คนละอัน**:
+      #      `tool  N  no live panes`  = เคยมี pane แล้วตาย ⇒ ของค้างจริง ต้อง `maw team delete`
+      #      `vault N  prep-only`      = **ไม่เคยมี pane** · maw ลิสต์ออกมาจาก *ไฟล์ charter*
+      #                                   ที่ยังอยู่ใน `.maw/teams/*.yaml` ของ **cwd ปัจจุบัน**
+      #    ⇒ oracle ที่เก็บ charter ไว้เป็นบันทึกถาวร (Nothing is Deleted) จะได้ OPEN **ตลอดกาล**
+      #      ทางเดียวที่จะพลิกเป็น CLOSED คือ **ลบไฟล์บันทึกทิ้ง** — เครื่องมือที่บังคับให้ละเมิด
+      #      หลักการเพื่อให้ตัวเองเขียว คือเครื่องมือที่ผิด ไม่ใช่หลักการที่ผิด
+      #    `[verified 2026-08-08: cd prism-oracle → teamclosed prism-cell ได้ 'vault 11 prep-only'
+      #      · cwd ผม → CLOSED · แถวเดียวกันปรากฏ/หายตาม cwd เพราะ maw อ่าน charter แบบ dir-aware]`
+      #    ⚠️ **ที่ prism สรุปว่าเป็นผิว 3 (charter ของสคริปต์นี้) — ไม่ใช่** · ผิว 3 คืน `GHOST`
+      #      ไม่ใช่ `OPEN` · แถวที่เขาเห็นมาจาก **maw เอง** ที่ผิว 2 ⇒ ข้อสรุปเขาถูก ที่อยู่ผิด
+      if [ "$(_vc_row_verdict "$row")" = "charter-only" ]; then
+        echo "CHARTER-ONLY $t  ไม่มี tmux session · ไม่เคยมี pane · maw ลิสต์จาก **ไฟล์ charter** ที่ยังอยู่"
+        printf '             %s\n' "$row"
+        echo "             ⇒ ตอบคำถาม 'ปิดยัง' ว่า **ปิดแล้ว** — แถวนี้คือบันทึก ไม่ใช่ของค้าง"
+        echo "             ⇒ ถ้าอยากให้แถวหายด้วย ต้องย้าย/ลบ .maw/teams/$t.yaml ซึ่ง**ไม่จำเป็น**"
+        # 🩹 2026-08-08 [lucifer จับ รอบสอง] — เขาได้ `CLOSED` กับ restart-verify-v1 แล้ว **ท้วงเอง**
+  #    ว่ามันไม่ได้สะอาดกว่า `GHOST`: charter ของทีมนั้นอยู่ที่ `ψ/lab/…/charter.json`
+  #    ซึ่ง **ผิวนี้ไม่เคยมองไปตรงนั้น** ⇒ CLOSED แปลว่า *ผมไม่ได้ดูที่ที่ charter เขาอยู่*
+  #    ไม่ใช่ *ไม่มี charter เหลือ* — scar เดิมของ repo นี้เป๊ะ ๆ (claim ทางลบต้องพกสโคปที่ค้น)
+  echo "          [ผิว charter ดูที่เดียว: .maw/teams/<ชื่อ>.yaml — charter ที่เก็บชื่ออื่น/ที่อื่น (เช่น lab/*/charter.json) **มองไม่เห็น**]"
+  echo "teamclosed.scope: ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron"
+        return 0
+      fi
       echo "OPEN      $t  ยังอยู่ใน maw team list"
       printf '          %s\n' "$row"; return 1
     fi
@@ -356,15 +398,35 @@ teamclosed() {
   #    ไม่งั้นฟังก์ชันนี้จะตอบ UNKNOWN ตลอดกาลจาก repo ที่ไม่มี .maw/teams/ =
   #    **ตัวตรวจที่ไม่มีวันตอบ CLOSED ก็คือตัวตรวจที่ไม่มีใครเรียก** (รูปเดียวกับกฎที่ไม่มีใครอ่าน)
   #    ที่ "ตรวจไม่ได้" จริงมีอย่างเดียวคือ **ไบนารีหาย** — ผิวนั้นเงียบโดยไม่รู้ผล
-  local ghosts=""
+  # 🩹 2026-08-08 [lucifer จับ] — เดิมผมกอง **ไฟล์ charter** ไว้กับ **ไดเรกทอรี store**
+  #    แล้วเรียกทั้งก้อนว่า GHOST rc=1 · lucifer ชี้ว่า *"ยังไม่มีการยุบครั้งไหน archive charter
+  #    เลย · .maw/teams มี charter 65 ใบ"* ⇒ ทุกทีมที่ปิดถูกต้องจะติด GHOST **ถาวร**
+  #    และทางเดียวที่จะพลิกคือ **ปลดนิยามทีมทิ้ง** ซึ่งเขาบอกตรง ๆ ว่านั่นเป็นสิทธิ์ของ arnon
+  #    ไม่ใช่สิ่งที่คำว่า "ยุบทีม" ครอบถึง — **เขาถูก** และเป็น defect เดียวกับที่ prism เจอ
+  #    ที่ผิว 2 พอดี (เครื่องมือบังคับให้ลบบันทึกเพื่อให้ตัวเองเขียว) แค่คนละผิว
+  #  ⇒ แยกตามสิ่งที่ของนั้น *เป็น*:  store dir = **runtime residue** · charter = **นิยาม/บันทึก**
+  local ghosts="" charteronly=""
   [ -d "$HOME/.claude/teams/$t" ]    && ghosts="$ghosts ~/.claude/teams/$t"
   [ -d "ψ/memory/mailbox/teams/$t" ] && ghosts="$ghosts ψ/memory/mailbox/teams/$t"
-  [ -f ".maw/teams/$t.yaml" ]        && ghosts="$ghosts .maw/teams/$t.yaml"
+  [ -f ".maw/teams/$t.yaml" ]        && charteronly=".maw/teams/$t.yaml"
 
   if [ -n "$ghosts" ]; then
-    echo "GHOST     $t  ไม่มี session และไม่อยู่ใน list แต่ยังมีของค้าง:$ghosts"
+    echo "GHOST     $t  ไม่มี session และไม่อยู่ใน list แต่ยังมี **state ของ runtime** ค้าง:$ghosts"
+    [ -n "$charteronly" ] && echo "          (+ ไฟล์ charter $charteronly — อันนั้นเป็นบันทึก ไม่ใช่ของค้าง)"
     echo "          (ย้ายเข้า archive ด้วย mv — ย้อนกลับได้ ต่างจาก delete)"
     return 1
+  fi
+
+  if [ -n "$charteronly" ]; then
+    echo "CHARTER-ONLY $t  ไม่มี session · ไม่อยู่ใน list · ไม่มี state ของ runtime — เหลือแต่ $charteronly"
+    echo "             ⇒ ตอบคำถาม 'ปิดยัง' ว่า **ปิดแล้ว** · charter คือนิยามทีม เก็บไว้ได้ตาม Nothing is Deleted"
+    # 🩹 2026-08-08 [lucifer จับ รอบสอง] — เขาได้ `CLOSED` กับ restart-verify-v1 แล้ว **ท้วงเอง**
+  #    ว่ามันไม่ได้สะอาดกว่า `GHOST`: charter ของทีมนั้นอยู่ที่ `ψ/lab/…/charter.json`
+  #    ซึ่ง **ผิวนี้ไม่เคยมองไปตรงนั้น** ⇒ CLOSED แปลว่า *ผมไม่ได้ดูที่ที่ charter เขาอยู่*
+  #    ไม่ใช่ *ไม่มี charter เหลือ* — scar เดิมของ repo นี้เป๊ะ ๆ (claim ทางลบต้องพกสโคปที่ค้น)
+  echo "          [ผิว charter ดูที่เดียว: .maw/teams/<ชื่อ>.yaml — charter ที่เก็บชื่ออื่น/ที่อื่น (เช่น lab/*/charter.json) **มองไม่เห็น**]"
+  echo "teamclosed.scope: ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron"
+    return 0
   fi
 
   # ── ไม่เจอที่ไหนเลย — แต่ต้องบอกด้วยว่าผิวไหนตรวจไม่ถึง ───────────────────
@@ -381,6 +443,11 @@ teamclosed() {
   #      git worktree/branch ค้าง (lucifer 36 unmerged · ajfon 5 อยู่ 3-4 วัน)
   #      fleet reservation (130 identity ค้างจาก 143 บนเครื่องนี้)
   #      external state (prism: systemd timer 3 ตัวยิงใส่ cell ที่ตายแล้วทุก 5 นาที)
+  # 🩹 2026-08-08 [lucifer จับ รอบสอง] — เขาได้ `CLOSED` กับ restart-verify-v1 แล้ว **ท้วงเอง**
+  #    ว่ามันไม่ได้สะอาดกว่า `GHOST`: charter ของทีมนั้นอยู่ที่ `ψ/lab/…/charter.json`
+  #    ซึ่ง **ผิวนี้ไม่เคยมองไปตรงนั้น** ⇒ CLOSED แปลว่า *ผมไม่ได้ดูที่ที่ charter เขาอยู่*
+  #    ไม่ใช่ *ไม่มี charter เหลือ* — scar เดิมของ repo นี้เป๊ะ ๆ (claim ทางลบต้องพกสโคปที่ค้น)
+  echo "          [ผิว charter ดูที่เดียว: .maw/teams/<ชื่อ>.yaml — charter ที่เก็บชื่ออื่น/ที่อื่น (เช่น lab/*/charter.json) **มองไม่เห็น**]"
   echo "teamclosed.scope: ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron"
   echo "          ⇒ CLOSED = 'session ไม่อยู่แล้ว' **ไม่ใช่** 'เก็บกวาดครบ' — ดู references/teardown.md"
   return 0
@@ -1478,6 +1545,42 @@ selftest() {
   else
     echo "   (ไม่มี tmux — ข้ามเคสนี้ ไม่นับว่าผ่านหรือตก)"
   fi
+  echo "5h) teamclosed: charter ที่เก็บไว้เป็นบันทึก ต้องเป็น CHARTER-ONLY ไม่ใช่ OPEN (ตกได้สองทิศ)"
+  # 🏷️ prism 2026-08-08 — เขายุบ prism-cell ครบทั้ง tmux และ tool-store แล้ว แต่ teamclosed
+  #    ยังตอบ OPEN จาก cwd ของเขา เพราะ `maw team list` **สร้างแถวจากไฟล์ charter** ที่เขาเก็บไว้
+  #    ตามหลัก Nothing is Deleted ⇒ เครื่องมือของผมบังคับให้เขาลบบันทึกเพื่อให้ตัวเองเขียว
+  # ⚠️ เทสต์นี้ต้องล้ม **สองทิศ** ไม่งั้นมันคือใบอนุญาตให้ false-CLOSED:
+  #    ทิศ 1 charter เปล่า ๆ ที่ไม่เคยสปอว์น → ต้อง **ไม่ใช่** OPEN
+  #    ทิศ 2 แถวที่ status ไม่ใช่ prep-only (ของค้างจริง) → ต้อง **ยัง** OPEN เหมือนเดิม
+  # แขน ก) ตรรกะจัดประเภทแถว — แถวจริงที่ผมทำซ้ำได้จาก cwd ของ prism vs แถวของค้างจริง
+  _vc_row_verdict "  prism-cell                    vault  11       prep-only        —" \
+    | grep -qx "charter-only" || { echo "   ✗ แถว vault/prep-only ต้องเป็น charter-only"; fail=1; }
+  _vc_row_verdict "  bug-fix-v1                    tool   2        no live panes    0" \
+    | grep -qx "open" || { echo "   ✗ แถว tool/no-live-panes ต้องยังเป็น open — ผ่อนจนกลืนของค้างจริง"; fail=1; }
+  _vc_row_verdict "  zz-live                       tool   3        2 live           0" \
+    | grep -qx "open" || { echo "   ✗ แถวที่มี pane เป็น ๆ ต้อง open"; fail=1; }
+  # ⚠️ แขนนี้ **ไม่ได้** ตรวจว่า maw ลิสต์ charter ออกมาเป็นแถว vault จริงไหม — สร้างเคสนั้น
+  #    ในเทสต์ไม่ได้ (ลองวาง .maw/teams/*.yaml ใน tmpdir ทั้งมี/ไม่มี git init → ไม่โผล่ทั้งคู่)
+  #    ⇒ ประกาศไว้ตรงนี้ว่าเป็นช่องที่เทสต์ไม่ถึง ไม่ใช่ปล่อยให้คนอ่านคิดว่าครอบแล้ว
+  # แขน ข) ผิว charter บนดิสก์ — CHARTER-ONLY vs GHOST ต้องแยกกันจริง และตกได้สองทิศ
+  local ctd; ctd=$(mktemp -d "${TMPDIR:-/tmp}/vc-charter-XXXXXX")
+  local cn="zz-vc-charter-$$"
+  mkdir -p "$ctd/.maw/teams"; printf 'name: %s\n' "$cn" > "$ctd/.maw/teams/$cn.yaml"
+  local out rc
+  out=$( cd "$ctd" && teamclosed "$cn" 2>&1 ); rc=$?
+  case "$out" in
+    *CHARTER-ONLY*) [ $rc -eq 0 ] || { echo "   ✗ CHARTER-ONLY ควร rc=0 ได้ $rc"; fail=1; } ;;
+    *GHOST*) echo "   ✗ charter ล้วน ๆ ถูกนับเป็น GHOST — บังคับให้ปลดนิยามทีมเพื่อให้เขียว"; fail=1 ;;
+    *) echo "   ✗ charter บนดิสก์ต้องถูกเห็น ได้: $(printf '%s' "$out" | head -1)"; fail=1 ;;
+  esac
+  # ทิศกลับ: มี **store dir** ด้วย ⇒ ต้องกลับไปเป็น GHOST rc=1 (residue ชนะบันทึก)
+  mkdir -p "$ctd/ψ/memory/mailbox/teams/$cn"
+  out=$( cd "$ctd" && teamclosed "$cn" 2>&1 ); rc=$?
+  case "$out" in
+    *GHOST*) [ $rc -eq 1 ] || { echo "   ✗ GHOST ควร rc=1 ได้ $rc"; fail=1; } ;;
+    *) echo "   ✗ มี store dir ค้างแล้วต้องเป็น GHOST ได้: $(printf '%s' "$out" | head -1)"; fail=1 ;;
+  esac
+  rm -rf "$ctd"
   echo "7) enginereg: engine ที่ลงทะเบียนจริง (codex) ต้อง REGISTERED"
   if maw config >/dev/null 2>&1; then
     enginereg codex >/dev/null 2>&1 || { echo "   ✗ codex ควร REGISTERED (มีใน global maw.config.50.json)"; fail=1; }
