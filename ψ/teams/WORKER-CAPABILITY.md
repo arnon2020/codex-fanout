@@ -320,6 +320,24 @@ present. `auth.json` as a symlink meant no re-login.
 it and answered out of it". It also settles §1's leftover: on `gpt-5.6-sol`, with
 `include_skills_usage_instructions: False`, **a newly installed skill is both visible and usable.**
 
+> 🔴 **RETRACTED SAME DAY, and the retraction is the finding.** `[lucifer, 2026-08-08]`
+> "the worker chose it" was written as a general property. **Both runs had a catalogue of exactly
+> one skill.** lucifer holds a contradicting measurement of his own — *"workers inherit
+> `~/.codex/skills` but never invoke a skill by topic match; the name must be called in the role
+> contract"* `[his, 2026-08-05, rechecked against codex 0.146.1 today]`.
+>
+> The two may not conflict at all: **the hypothesis is that catalogue size is the variable** —
+> 35 skills → no selection, 1–2 scoped to the role → selection. Neither of us has measured it.
+> ⇒ If true, the conclusion is **stronger** than what was written: trimming the catalogue is not
+> hygiene, it is the *precondition* for selection working at all — and loading a worker with many
+> skills makes it use fewer, not more. If false, the name must be called in the dispatch every
+> time, and a per-role `CODEX_HOME` buys cleanliness only.
+> ⇒ **A single arm cannot isolate the variable.** lucifer's two-arm design (large catalogue vs
+> role-scoped, same question, same protocol) is the correct test; mine was one arm read as if it
+> were two. Sent to all 7 as `[unconfirmed]`, not only to the one who objected.
+> ⇒ 🪞 This is the repo's own scar — *verify one property → conclude for all* — committed **inside
+> the paragraph that ships the proof**, in a packet that warns other people about that scar.
+
 ### The four traps, every one found by running it
 
 None of these is reachable by reading, and none of them fails loudly.
