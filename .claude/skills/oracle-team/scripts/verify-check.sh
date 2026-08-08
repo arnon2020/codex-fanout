@@ -304,6 +304,10 @@ relay() {
 # ในเทสต์ไม่ได้ (`maw team list` ไม่ลิสต์ charter ที่วางเปล่า ๆ ใน cwd — ลองแล้ว ทั้งมี/ไม่มี
 # `git init` ก็ไม่โผล่ ⇒ มันมาจาก vault store ที่ `maw team prep` ลงทะเบียน ไม่ใช่จากไฟล์ล้วน)
 # ⇒ เทสต์ตัวนี้ตรวจ **ตรรกะการจัดประเภทของผม** ไม่ได้ตรวจ **พฤติกรรมการลิสต์ของ maw**
+# ── _vc_team_list_plain ────────────────────────────────────────────────────
+# seam เดียวที่ selftest แทนได้ — คืนตาราง `maw team list` ดิบ ๆ พร้อม rc ของมัน
+_vc_team_list_plain() { maw team list 2>&1; }
+
 _vc_row_verdict() {
   local row="${1:?usage: _vc_row_verdict <row>}" store status
   store=$(printf '%s\n' "$row" | awk '{print $2}')
@@ -314,7 +318,7 @@ _vc_row_verdict() {
 
 teamclosed() {
   local t="${1:?usage: teamclosed <team-name>}"
-  local unreachable="" found="" rc_open=0
+  local unreachable="" found="" rc_open=0 vaultrow=""
 
   # ── ผิว 1: tmux (ทีมจาก `up` โผล่ที่นี่ที่เดียว) ─────────────────────────
   # 🧭 **ตัดสินใจโดยตั้งใจ**: session ที่ยังอยู่ = ยังไม่ปิด **แม้เหลือแต่ `_anchor`**
@@ -349,7 +353,9 @@ teamclosed() {
   # ── ผิว 2: maw team list (store-registered) ──────────────────────────────
   if binexists maw >/dev/null 2>&1; then
     local lout lrc
-    lout=$(maw team list 2>&1); lrc=$?
+    # แยกการ *เรียก* ออกจากการ *ตีความ* เพื่อให้ selftest แทนตารางสังเคราะห์เข้ามาได้
+    # (จำเป็น: ผมสร้างแถว `vault/prep-only` จริงในเทสต์ไม่ได้ — ดู _vc_row_verdict)
+    lout=$(_vc_team_list_plain 2>&1); lrc=$?
     if [ $lrc -ne 0 ] || [ -z "$lout" ]; then
       echo "UNKNOWN   maw team list exit=$lrc / output ว่าง — ยังตอบไม่ได้ว่าปิด"; return 2
     fi
@@ -373,21 +379,23 @@ teamclosed() {
       #      · cwd ผม → CLOSED · แถวเดียวกันปรากฏ/หายตาม cwd เพราะ maw อ่าน charter แบบ dir-aware]`
       #    ⚠️ **ที่ prism สรุปว่าเป็นผิว 3 (charter ของสคริปต์นี้) — ไม่ใช่** · ผิว 3 คืน `GHOST`
       #      ไม่ใช่ `OPEN` · แถวที่เขาเห็นมาจาก **maw เอง** ที่ผิว 2 ⇒ ข้อสรุปเขาถูก ที่อยู่ผิด
+      # 🔴 2026-08-08 รอบสอง [prism จับ · `bash -x` แล้วชี้บรรทัดมาเลย] — แพตช์แรกของผม
+      #    `return 0` **ตรงนี้** ⇒ ทีมที่มีทั้งแถว vault/prep-only **และ** store dir ค้าง
+      #    จะได้ `CHARTER-ONLY` โดย **ไม่เคยรันเช็ค GHOST เลย** ⇒ residue จริงถูกบัง
+      #    หลักฐานของเขา: `evidence-cell` มี `~/.claude/teams/evidence-cell/` residue **8 ไฟล์**
+      #    (spawn-prompt ทุก role · mtime 2026-08-01) แต่แถว list เป็น `vault 0 prep-only`
+      #    ⇒ **ผมย้าย false-green จากที่หนึ่งไปอีกที่** ซึ่งเป็นสิ่งที่ lucifer เตือนไว้พอดี
+      #    และ fixture ของ lucifer ตอบ GHOST ถูก **เพราะทีมสมมติของเขาไม่มีแถวใน maw list**
+      #    ⇒ เทสต์สองคนไม่ชนกันเลยทั้งที่ทดสอบเรื่องเดียวกัน — ต้องมี**ทั้งสองเงื่อนไขพร้อมกัน**
+      #    ⚠️ ผมเองก็รัน `teamclosed evidence-cell` แล้วได้ GHOST **จาก cwd ผม** แล้วนับว่าผ่าน —
+      #      แถว vault ไม่โผล่จาก cwd ผม ⇒ **ผมตรวจเคสที่ไม่มีบั๊กแล้วสรุปว่าไม่มีบั๊ก**
+      #  ⇒ ห้าม `return` ที่ผิวนี้ · เก็บใส่ตัวแปรแล้ว **ตกลงไปให้ผิว store dir ตัดสินก่อน**
       if [ "$(_vc_row_verdict "$row")" = "charter-only" ]; then
-        echo "CHARTER-ONLY $t  ไม่มี tmux session · ไม่เคยมี pane · maw ลิสต์จาก **ไฟล์ charter** ที่ยังอยู่"
-        printf '             %s\n' "$row"
-        echo "             ⇒ ตอบคำถาม 'ปิดยัง' ว่า **ปิดแล้ว** — แถวนี้คือบันทึก ไม่ใช่ของค้าง"
-        echo "             ⇒ ถ้าอยากให้แถวหายด้วย ต้องย้าย/ลบ .maw/teams/$t.yaml ซึ่ง**ไม่จำเป็น**"
-        # 🩹 2026-08-08 [lucifer จับ รอบสอง] — เขาได้ `CLOSED` กับ restart-verify-v1 แล้ว **ท้วงเอง**
-  #    ว่ามันไม่ได้สะอาดกว่า `GHOST`: charter ของทีมนั้นอยู่ที่ `ψ/lab/…/charter.json`
-  #    ซึ่ง **ผิวนี้ไม่เคยมองไปตรงนั้น** ⇒ CLOSED แปลว่า *ผมไม่ได้ดูที่ที่ charter เขาอยู่*
-  #    ไม่ใช่ *ไม่มี charter เหลือ* — scar เดิมของ repo นี้เป๊ะ ๆ (claim ทางลบต้องพกสโคปที่ค้น)
-  echo "          [ผิว charter ดูที่เดียว: .maw/teams/<ชื่อ>.yaml — charter ที่เก็บชื่ออื่น/ที่อื่น (เช่น lab/*/charter.json) **มองไม่เห็น**]"
-  echo "teamclosed.scope: ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron"
-        return 0
+        vaultrow="$row"
+      else
+        echo "OPEN      $t  ยังอยู่ใน maw team list"
+        printf '          %s\n' "$row"; return 1
       fi
-      echo "OPEN      $t  ยังอยู่ใน maw team list"
-      printf '          %s\n' "$row"; return 1
     fi
   else
     unreachable="$unreachable maw(ไม่มีไบนารี)"
@@ -411,10 +419,21 @@ teamclosed() {
   [ -f ".maw/teams/$t.yaml" ]        && charteronly=".maw/teams/$t.yaml"
 
   if [ -n "$ghosts" ]; then
-    echo "GHOST     $t  ไม่มี session และไม่อยู่ใน list แต่ยังมี **state ของ runtime** ค้าง:$ghosts"
+    echo "GHOST     $t  ไม่มี session แต่ยังมี **state ของ runtime** ค้าง:$ghosts"
     [ -n "$charteronly" ] && echo "          (+ ไฟล์ charter $charteronly — อันนั้นเป็นบันทึก ไม่ใช่ของค้าง)"
+    [ -n "$vaultrow" ] && printf '          (+ แถวใน maw team list ที่มาจาก charter นั้น: %s)\n' "$(printf '%s' "$vaultrow" | sed 's/^ *//')"
     echo "          (ย้ายเข้า archive ด้วย mv — ย้อนกลับได้ ต่างจาก delete)"
     return 1
+  fi
+
+  if [ -n "$vaultrow" ]; then
+    echo "CHARTER-ONLY $t  ไม่มี tmux session · ไม่เคยมี pane · ไม่มี state ของ runtime ค้าง"
+    printf '             %s\n' "$vaultrow"
+    echo "             ⇒ ตอบคำถาม 'ปิดยัง' ว่า **ปิดแล้ว** — แถวนี้คือบันทึกที่ maw อ่านจากไฟล์ charter"
+    echo "             ⇒ ถ้าอยากให้แถวหายด้วย ต้องย้าย/ลบ charter ซึ่ง**ไม่จำเป็น**"
+    echo "          [ผิว charter ดูที่เดียว: .maw/teams/<ชื่อ>.yaml — charter ที่เก็บชื่ออื่น/ที่อื่น (เช่น lab/*/charter.json) **มองไม่เห็น**]"
+    echo "teamclosed.scope: ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron"
+    return 0
   fi
 
   if [ -n "$charteronly" ]; then
@@ -1580,6 +1599,33 @@ selftest() {
     *GHOST*) [ $rc -eq 1 ] || { echo "   ✗ GHOST ควร rc=1 ได้ $rc"; fail=1; } ;;
     *) echo "   ✗ มี store dir ค้างแล้วต้องเป็น GHOST ได้: $(printf '%s' "$out" | head -1)"; fail=1 ;;
   esac
+  # แขน ค) 🔴 **เคสที่แพตช์แรกของผมพลาด** [prism จับด้วย bash -x] — มีทั้งแถว vault/prep-only
+  #    **และ** store dir ค้างพร้อมกัน ⇒ ต้องเป็น GHOST · ห้ามให้บันทึกบัง residue
+  #    ต้องแทน `_vc_team_list_plain` เพราะสร้างแถว vault จริงในเทสต์ไม่ได้ — แต่ที่แทนคือ
+  #    **แหล่งข้อมูล** ไม่ใช่ตรรกะที่กำลังทดสอบ · fixture ของ lucifer ตอบถูกโดยไม่ชนบั๊กนี้
+  #    เพราะทีมสมมติ **ไม่มีแถวใน list เลย** ⇒ สองคนเทสต์เรื่องเดียวกันแล้วไม่ชนกัน
+  local cn2="zz-vc-mask-$$"
+  mkdir -p "$ctd/.maw/teams"; printf 'name: %s\n' "$cn2" > "$ctd/.maw/teams/$cn2.yaml"
+  _vc_team_list_plain() {
+    printf '  TEAM                          STORE  MEMBERS  STATUS          ZOMBIES\n'
+    printf '  %-29s vault  0        prep-only        —\n' "$cn2"
+  }
+  mkdir -p "$ctd/ψ/memory/mailbox/teams/$cn2"
+  out=$( cd "$ctd" && teamclosed "$cn2" 2>&1 ); rc=$?
+  case "$out" in
+    *GHOST*) [ $rc -eq 1 ] || { echo "   ✗ masking case ควร rc=1 ได้ $rc"; fail=1; } ;;
+    *CHARTER-ONLY*) echo "   ✗ แถว charter บัง store-dir residue — false-green ย้ายที่ (บั๊กที่ prism จับ)"; fail=1 ;;
+    *) echo "   ✗ masking case ต้องเป็น GHOST ได้: $(printf '%s' "$out" | head -1)"; fail=1 ;;
+  esac
+  # ทิศกลับ: เอา store dir ออก เหลือแถว vault ล้วน ⇒ ต้องกลับเป็น CHARTER-ONLY rc=0
+  rm -rf "$ctd/ψ/memory/mailbox/teams/$cn2"
+  out=$( cd "$ctd" && teamclosed "$cn2" 2>&1 ); rc=$?
+  case "$out" in
+    *CHARTER-ONLY*) [ $rc -eq 0 ] || { echo "   ✗ vault row ล้วนควร rc=0 ได้ $rc"; fail=1; } ;;
+    *) echo "   ✗ แถว vault ล้วนต้องเป็น CHARTER-ONLY ได้: $(printf '%s' "$out" | head -1)"; fail=1 ;;
+  esac
+  unset -f _vc_team_list_plain
+  _vc_team_list_plain() { maw team list 2>&1; }
   rm -rf "$ctd"
   echo "7) enginereg: engine ที่ลงทะเบียนจริง (codex) ต้อง REGISTERED"
   if maw config >/dev/null 2>&1; then

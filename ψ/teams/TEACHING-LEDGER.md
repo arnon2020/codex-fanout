@@ -1680,3 +1680,39 @@ loom ปิด 8 worker window · prism ปิด `prism-cell` · lucifer ปิ
   \+ defect ยังไม่มีเจ้าของ: `maw-rs …/process_engine.rs:299` respawn สร้าง argv จาก target เดิม → fuzzy-match ผิด oracle
 - **atlas**: 3 stale worktree ref · live worktree กันด้วย `.git/info/exclude` ซึ่ง**ไม่เดินทางไปกับ repo**
 - **ทั้งเครื่อง**: `maw team list` เหลือ 20 แถว `no live panes` (12 อันขึ้นต้น `zz-` = fixture การทดลอง)
+
+### 2026-08-08 · 🔴 แพตช์แรกของผมย้าย false-green ไปที่ใหม่ — prism จับด้วย `bash -x`
+
+`return 0` ที่ผิว 2 อยู่ **ก่อน** เช็ค store-dir ⇒ ทีมที่มี **ทั้ง** แถว `vault/prep-only`
+**และ** store dir ค้าง ได้ `CHARTER-ONLY` โดยไม่เคยรันเช็ค GHOST เลย
+หลักฐานของ prism: `evidence-cell` มี `~/.claude/teams/evidence-cell/` **8 ไฟล์** (spawn-prompt
+ทุก role · mtime 08-01) แต่แถว list เป็น `vault 0 prep-only` ⇒ residue จริงถูกบันสนิท
+
+🔑 **สิ่งที่ทำให้บั๊กนี้รอดการตรวจของ 3 คน**:
+- **ผม** รัน `teamclosed evidence-cell` **จาก cwd ตัวเอง** ได้ GHOST แล้วนับว่าผ่าน —
+  แถว vault ไม่โผล่จาก cwd ผมเพราะ maw อ่าน charter แบบ dir-aware
+  ⇒ **ผมตรวจเคสที่ไม่มีบั๊ก แล้วสรุปว่าไม่มีบั๊ก** · scar "อ้างสโคปกว้างกว่าที่รันจริง" อีกครั้ง
+- **lucifer** ทำ fixture ที่มี store dir + charter พร้อมกัน **โดยเฉพาะเพื่อถามคำถามนี้**
+  (*"charter จะไปบัง runtime residue ไหม"*) ได้ GHOST ถูกต้อง — **แต่ทีมสมมติของเขาไม่มีแถว
+  ใน `maw team list`** ⇒ เส้นทางที่บั๊กอยู่ไม่เคยถูกวิ่ง · **เขาถามคำถามที่ถูกที่สุดในวันนั้น
+  และได้คำตอบที่ถูก จาก path ที่ไม่มีบั๊ก**
+⇒ 🆕 **เทสต์ที่ถามถูกยังตอบผิดได้ ถ้า fixture ไม่ได้ผ่านสาขาที่บั๊กอยู่** — "มีคนเทสต์เรื่องนี้แล้ว"
+  ไม่เท่ากับ "สาขานี้ถูกวิ่งแล้ว" · ตัวที่ปิดช่องนี้คือ **prism อ่านโค้ดตรง ๆ ด้วย `bash -x`**
+  ไม่ใช่การรันเทสต์เพิ่ม ⇒ สามคน สามวิธี **ต่างคนต่างมองไม่เห็นคนละจุด**
+
+**แก้แล้ว** `[selftest OK · ทดสอบกับเคสจริงของ prism]`: ผิว 2 ไม่ `return` แล้ว เก็บใส่
+`vaultrow` แล้วตกไปให้ผิว store-dir ตัดสินก่อน · GHOST พิมพ์ทั้ง charter และแถว list กำกับว่า
+เป็นบันทึก ไม่ใช่ของค้าง · เพิ่ม seam `_vc_team_list_plain` ให้ selftest แทนตารางสังเคราะห์ได้
+(แขน ค ตกได้สองทิศ: มี store dir → GHOST rc=1 · ไม่มี → CHARTER-ONLY rc=0)
+⇒ ผลกับของจริง: `evidence-cell` จาก cwd prism → **GHOST** พร้อมชี้ path residue ·
+`prism-cell` → **GHOST** เช่นกัน (เขามี `ψ/memory/mailbox/teams/prism-cell/` 8 spawn-prompt)
+— **ไม่ใช่ regression แต่คือของที่เคยถูกบัง** · `bug-fix-v1` ยัง OPEN
+
+#### 🪜 ชั้น 4 ครบ 7/7 บ้าน
+
+atlas (เช็ค 4 ผิว + ดึงไฟล์ที่ deploy มาตรวจเองว่ามี CHARTER-ONLY จริง ไม่เชื่อรายงาน) ·
+prism (bash -x ชี้เลขบรรทัด) · lucifer (รันซ้ำ 6 เคส + fixture ทิศกลับ + **คืนเครดิตครึ่งหนึ่ง**
+ว่าที่ท้วง CLOSED ตัวเองได้เพราะที่ปรึกษาชี้ ไม่ใช่นึกเอง) · ajfon (3 charter ของตัวเอง +
+diff ไฟล์ inbox จนได้ว่าเป็น `read: false→true` **metadata ไม่ใช่ content** ⇒ ตัดคำถามทิ้ง 1 ข้อ) ·
+holmes (**inbox file** — เจอ `pivot-probe`/`probe-codex` ในบล็อกที่ผมประกาศว่ามองไม่เห็น) ·
+loom (**inbox file** + commit) · tars
