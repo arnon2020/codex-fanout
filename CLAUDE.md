@@ -313,7 +313,18 @@ tell the **skill** from **`~/.codex-team/`, the credential-pool path** — 8 of 
 (`docs/codex-team-pattern.md`, a filename) were all the *other* thing. Advisor caught it.
 **A name that is both an artifact and a filesystem path needs `| grep -v` before it is a finding.**
 
-🔑 **The collision is at the LEAD layer only — workers load neither.**
+🔑 ~~**The collision is at the LEAD layer only — workers load neither.**~~ ⚠️ **HALF WRONG —
+corrected same day, see `ψ/teams/WORKER-CAPABILITY.md`.** True for **codex** (reads
+`$CODEX_HOME/skills/`, a different disk). **False for opencode**, which *auto-loads*
+`~/.claude/skills/` — its own embedded doc table says so: `| External skills (auto-loaded) |
+~/.claude/skills/<name>/SKILL.md, ~/.agents/skills/<name>/SKILL.md |`. So an opencode member
+silently inherits the whole lead inventory, and **today's move of `codex-team` took it away from
+every opencode member on this machine too** — a consequence not known when the move was made.
+⇒ The original claim came from probing codex at the **binary** and opencode at a **config
+directory**, then comparing the two answers as if they were the same measurement.
+**Probe every engine at the same depth before comparing them.**
+
+Kept below as first written, because the reasoning under it is still the reasoning that was used:
 `[verified 2026-08-08: ls ~/.codex/skills/ (37 skills) · find ~/.config/opencode -iname '*skill*' → 0]`
 Both skills live in `~/.claude/skills/` + `<repo>/.claude/skills/`, which **only Claude Code reads**.
 `~/.codex/skills/` has its own 37-skill set and **contains neither `oracle-team` nor `codex-team`**;
