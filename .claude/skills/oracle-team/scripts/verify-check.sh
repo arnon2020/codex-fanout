@@ -1256,8 +1256,47 @@ engineone() {
 #            ⚠️ `--allowed-tools` **ไม่ใช่ bypass** — มันคือ allowlist คนละกลไก
 #               จะยังค้าง/ปฏิเสธเมื่อโมเดลเรียก tool นอกลิสต์
 #   engine อื่น ⇒ `unknown` **ไม่ใช่ ok** (ตอบไม่ได้ ≠ ผ่าน — กฎเดิมของไฟล์นี้)
+# ── _vc_strip_env_prefix <cmd> ──────────────────────────────────────────────
+# 🩹 2026-08-08 [loom จับ · ยืนยันด้วย output ของเครื่องมือเอง] `_vc_argv_basename`
+#    ข้าม **assignment** (`BASH_ENV=/x codex …`) ได้ แต่ **`env` เป็นไบนารีจริง** ไม่ใช่ assignment
+#      `BASH_ENV=/path codex --ask-for-approval never`  → engine=codex  ✅
+#      `env -u ANTHROPIC_API_KEY claude --dangerously…` → engine=env    ❌ → perm=unknown
+#    ⇒ ทั้งที่ `--dangerously-skip-permissions` **อยู่ในบรรทัดเดียวกับที่มันพิมพ์ออกมาเอง**
+#    ⇒ กิน `env` + แฟลกของมัน (`-u NAME` `-i` `-0` `--unset=NAME` `VAR=v`) แล้วอ่าน token ถัดไป
+#    🟢 loom ชมส่วนที่ถูก และผมเห็นด้วยว่ามันคือส่วนที่ต้องไม่แก้: `unknown` **ไม่เท่ากับ pass**
+#       ถ้ามันเดาว่า pass เขาจะเชื่อแล้วเดินต่อ — การปฏิเสธที่จะตอบคือพฤติกรรมที่ถูก
+#       บั๊กนี้จึงทำให้เครื่องมือ **เงียบเกินจริง ไม่ใช่ปลอดภัยเกินจริง** ซึ่งเป็นทิศที่ยอมรับได้กว่า
+_vc_strip_env_prefix() {
+  local cmd="$1"
+  # ตัด assignment นำหน้าออกก่อน (รูปเดิมที่ _vc_argv_basename รองรับอยู่แล้ว)
+  while [[ "$cmd" =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+(.*)$ ]]; do
+    cmd="${BASH_REMATCH[1]}"
+  done
+  # ถ้าเหลือ `env` หรือ `/usr/bin/env` เป็นตัวแรก ⇒ กินมันและแฟลกของมัน
+  if [[ "$cmd" =~ ^[[:space:]]*(/[^[:space:]]*/)?env[[:space:]]+(.*)$ ]]; then
+    cmd="${BASH_REMATCH[2]}"
+    while :; do
+      case "$cmd" in
+        -u[[:space:]]*)      cmd="${cmd#-u}"; cmd="${cmd#"${cmd%%[![:space:]]*}"}"
+                             cmd="${cmd#* }" ;;                       # กิน NAME ที่ตามมา
+        --unset=*[[:space:]]*|-i[[:space:]]*|-0[[:space:]]*|--ignore-environment[[:space:]]*)
+                             cmd="${cmd#* }" ;;
+        [A-Za-z_]*=*[[:space:]]*) cmd="${cmd#* }" ;;                  # VAR=v หลัง env
+        *) break ;;
+      esac
+    done
+  fi
+  printf '%s' "$cmd"
+}
+
 _vc_permmode() {
-  local cmd="$1" bin
+  # 🩹 2026-08-08 selftest จับ regression ที่ผมเพิ่งสร้างเองตอนแก้เคส `env` ของ loom:
+  #    `_vc_strip_env_prefix` ตัด **assignment นำหน้า** ทิ้ง ⇒ `CODEX_HOME=…` หายไปด้วย
+  #    ⇒ สาย codex อ่าน CODEX_HOME ไม่เจอ ⇒ fallback ไป `~/.codex` ⇒ **ตอบ bypass ผิด**
+  #    ⇒ เก็บสตริงเดิมไว้ต่างหาก: `$cmd` ใช้หา *ไบนารี* · `$orig` ใช้หา *env ที่ผูกมากับ alias*
+  #    🔑 บทเรียน: การ normalize ที่ทำเพื่อคำถามหนึ่ง **ทำลายข้อมูลของอีกคำถามในฟังก์ชันเดียวกัน**
+  local orig="$1" cmd="$1" bin
+  cmd=$(_vc_strip_env_prefix "$cmd")
   bin=$(_vc_argv_basename "$cmd" 1)
   case "$bin" in
     codex)
@@ -1276,7 +1315,7 @@ _vc_permmode() {
           #       ผมพิสูจน์ claude แล้วเขียนกฎให้ 4 engine · ทิศที่ผมพลาดคือทิศ "กล่าวหา"
           #    ⇒ `CODEX_HOME` มาก่อน `~/.codex` เพราะ alias มักตั้งของตัวเอง (worktree-local)
           local ch cfgfile pol
-          ch=$(printf '%s' "$cmd" | sed -n 's/.*CODEX_HOME=\([^ ]*\).*/\1/p')
+          ch=$(printf '%s' "$orig" | sed -n 's/.*CODEX_HOME=\([^ ]*\).*/\1/p')
           ch="${ch/#\$HOME/$HOME}"; ch="${ch/#\~/$HOME}"
           cfgfile="${ch:-$HOME/.codex}/config.toml"
           pol=$(grep -m1 -E '^[[:space:]]*approval_policy[[:space:]]*=' "$cfgfile" 2>/dev/null \
@@ -2477,6 +2516,17 @@ PY
   else
     echo "   – ข้ามแขน config-aware: เครื่องนี้ไม่มี approval_policy=never (ไม่ใช่ผ่าน ไม่ใช่ตก)"
   fi
+  # 🩹 loom 2026-08-08: `env -u VAR cmd` — `env` เป็นไบนารีจริง ตัวข้าม assignment ไม่ครอบ
+  #    ⇒ เคยอ่าน engine เป็น `env` แล้วตอบ unknown ทั้งที่แฟลกอยู่ในบรรทัดเดียวกัน
+  case "$(_vc_permmode 'env -u ANTHROPIC_API_KEY claude --model claude-opus-4-8 --dangerously-skip-permissions')" in
+    bypass\|*) echo "   ✓ env -u NAME นำหน้า → อ่านทะลุถึง engine จริง (เคสของ loom)" ;;
+    *) echo "   ✗ env prefix ยังบังไม่ให้เห็น engine จริง"; fail=1 ;;
+  esac
+  # ...แต่ต้องไม่กลายเป็นการเดา: มี env นำหน้าแล้วยังไม่มี bypass ต้องยังตอบ ask
+  case "$(_vc_permmode 'env -u X claude --model claude-opus-5')" in
+    ask\|*) echo "   ✓ env prefix + ไม่มีแฟลก → ยัง ask (ไม่ใช่ผ่านเพราะอ่านออกแล้ว)" ;;
+    *) echo "   ✗ พออ่าน env ทะลุแล้วกลับตัดสินว่าผ่าน"; fail=1 ;;
+  esac
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
