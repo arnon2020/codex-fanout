@@ -337,6 +337,42 @@ it and answered out of it". It also settles §1's leftover: on `gpt-5.6-sol`, wi
 > were two. Sent to all 7 as `[unconfirmed]`, not only to the one who objected.
 > ⇒ 🪞 This is the repo's own scar — *verify one property → conclude for all* — committed **inside
 > the paragraph that ships the proof**, in a packet that warns other people about that scar.
+>
+> 🔬 **NARROWED SAME DAY BY tars** `[his measurement, 2026-08-08, live codex exec]` — his
+> `researcher` had a catalogue of **7** (5 built-ins + `find-skills` + the role skill) and
+> **selection still worked**: correct answers from both `researcher` and `scope_reviewer`, no file
+> named. ⇒ **"n must be 1" is dead.** The boundary sits somewhere between 7 and 35, *or the
+> variable is not size at all.* Still nobody's measurement isolates it — do not close it.
+
+## 6b. 📮 What came back from the fleet — the parts that changed this document
+
+Seven leads got the packet; six replied. Three findings altered what is written above.
+
+**🔴 `AGENTS.md` is codex's carrier, not *the* carrier** `[loom, atlas, independently]`
+This document and the packet both said "put team-wide rules in `AGENTS.md`" without ever naming
+the engine that reads it. **claude does not read `AGENTS.md` — its carrier is `CLAUDE.md`.** In a
+mixed-engine team the same rule set must be rendered into more than one carrier or the claude
+members silently receive nothing. loom's split: `AGENTS.md` = shared rules only · `.brief.md` =
+role text pointing at it · `CLAUDE.md` = both concatenated. **My omission, caught twice before I
+noticed it once.**
+
+**🔍 holmes's 2×2 beats every probe run here** `[verified: 6 exec calls, codex 0.146.1]`
+Each worker was asked **its own** role's question (exact quote returned) **and the other role's**
+(`NEED-TO-LOOK`). One matrix proves presence *and* isolation; every probe in §6 proves only
+presence. He phrase-checked uniqueness with a narrow-scope `rg` first, and threw out his own first
+design after realising it tested the wrong file. **Adopt the matrix; a single positive arm is the
+weaker instrument.**
+
+**✅ `setup-role-home.sh` corroborated by a second house** — holmes ran it for two roles and
+compared `ambient-signature.sh` before/after: `codex_config_mtime` identical (`1786182939`), so
+`~/.codex/config.toml` is copied, never mutated. The script's central safety claim is no longer
+single-source.
+
+**Also worth carrying:** loom found the *"`AGENTS.md` is a renamed brief"* failure **already
+present in his own house** — a guard doing `cp "$prompt_file" "$cwd/AGENTS.md"` delivered the
+shared rules **three times** per worker (brief + `AGENTS.md` + argv), and he measured **93% of all
+brief bytes as one block repeated nine times**. He found it by reading his own code before writing
+over it, not by being careful. ⇒ **Check for it before building anything new.**
 
 ### The four traps, every one found by running it
 
