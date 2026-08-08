@@ -59,17 +59,15 @@
     "  SUCCESSFULLY on the wrong dimension — exit 0, no warning, and REGISTERED, so enginecheck",
     "  and enginereg both pass. Visible at the status bar only. Silent-wrong beats null, badly."
   ],
-
   "commands": {
     "codex-sol": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access",
     "codex-model-56": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6 --ask-for-approval never --sandbox danger-full-access",
     "codex-model-56mini": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-mini --ask-for-approval never --sandbox danger-full-access",
-
     "claude-opus": "claude --model claude-opus-5 --dangerously-skip-permissions",
     "claude-sonnet": "claude --model claude-sonnet-5 --dangerously-skip-permissions",
     "claude-haiku": "claude --model claude-haiku-4-5-20251001 --dangerously-skip-permissions",
-
     "opencode-glm": "opencode --model zai/glm-5.2 --auto",
-    "sage-opencode-oracle": "opencode --model zai/glm-5.2 --auto"
+    "sage-opencode-oracle": "opencode --model zai/glm-5.2 --auto",
+    "codex-role-coder": "CODEX_HOME=$HOME/.codex-fanout/coder BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access"
   }
 }

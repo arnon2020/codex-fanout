@@ -1,0 +1,30 @@
+# seam-probe — 2026-08-08
+# คำถามเดียว: CODEX_HOME ที่ผูกไว้ใน engine alias เดินทางผ่าน
+#   maw team apply → maw wake → tmux pane → process จริง หรือเปล่า
+# ทั้งฟลีตพิสูจน์ CODEX_HOME ด้วย `codex exec` ตรง ๆ ซึ่งข้ามชั้น engine-resolution ของ maw wake ไปทั้งชั้น
+# วัดที่ /proc/<pid>/environ ของ pane ไม่ใช่ cmdline (คนละไฟล์ คนละคำถาม — ajfon 2026-08-08)
+#
+# engine ประกาศ "ต่อ member" ไม่ใช่ใต้ defaults: — charter ที่ประกาศใต้ defaults maw ไม่อ่านเลย
+# ตกไป hardcoded claude เงียบ ๆ exit 0 [atlas อ่าน source 08-06 · lucifer อ่านซ้ำ 08-08]
+name: seam-probe
+project: arnon2020/codex-fanout
+session: 114-codex-fanout
+
+goal: |
+  One codex worker spawned through the real maw path. No code changes.
+  Answer two questions and stop.
+
+members:
+  - role: seam-1
+    name: seam-1
+    engine: codex-role-coder
+    worktree: agents/seam-1
+    branch: agents/seam-1
+    prompt: |
+      You are a probe. Do NOT write code, do NOT commit, do NOT change any file.
+      WAIT for your question via maw hey, answer it exactly, then stop.
+      Report to: 114-codex-fanout:codex-fanout
+
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false

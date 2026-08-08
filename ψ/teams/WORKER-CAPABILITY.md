@@ -513,3 +513,35 @@ operator did not.**
 ⇒ 📌 Concrete: **before any `maw team` verb, open `oracle-team/SKILL.md` first.** Not "consider
 it" — open it. The check on whether that happened is cheap: did a `Read`/`grep` of the skill appear
 before the first `maw team` call?
+
+## 7. ✅ SEAM CLOSED — `CODEX_HOME` เดินทางผ่าน `maw team apply → wake → pane → process` จริง
+
+`[verified 2026-08-08 · spawn จริงผ่าน maw · วัดที่ `/proc/<pid>/environ` ไม่ใช่ `cmdline`]`
+
+หนี้ที่ทั้งฟลีตประกาศไว้ทั้งวัน: ผม · tars · holmes · lucifer **รัน `codex exec` ตรงกันหมด**
+ซึ่ง **ข้ามชั้น engine-resolution ของ `maw wake` ไปทั้งชั้น** ⇒ recipe ที่แจกไป 7 บ้าน
+**พิสูจน์แล้วที่ปลายทาง แต่ไม่ได้พิสูจน์ที่ท่อ** · ปิดแล้ว:
+
+| pid | อะไร | `CODEX_HOME` |
+|---|---|---|
+| pane pid | `-bash` | **ไม่มี** |
+| ลูกของมัน | `node …/codex --model gpt-5.6-sol` | **`/home/user/.codex-fanout/coder`** ✅ |
+
+⇒ **env prefix ใน alias ผูกกับ `codex` ไม่ใช่กับ shell** — shell ที่ถือ pane ไม่มีค่านี้
+ใครวัดที่ pane pid จะสรุปว่า **ไม่ถึง** ทั้งที่ถึง ⇒ **วัดที่ลูก ไม่ใช่ที่ pane**
+
+### สิ่งที่เส้นทางจริงสอน และ `codex exec` สอนไม่ได้
+
+- **`maw team preflight <path>` จับ 3 blocker ก่อน spawn** — worktree ยังไม่มี · `.maw-engine`
+  อ่านไม่ได้ · **ไม่มี codex trust entry** — และมันเช็ค trust ที่ **`~/.codex-fanout/coder/config.toml`
+  คือ `CODEX_HOME` ของ role เอง ไม่ใช่ `~/.codex`** ⇒ maw อ่าน alias เจอจริง
+  `preflight <ชื่อทีม>` **ล้มด้วย `charter read failed`** — ต้องให้ **path**
+- 🔴 **`maw team down <team>` ล้ม**: `refuse missing target before teardown: …:seam-1`
+  window จริงชื่อ **`seam-1-oracle`** ⇒ **golden rule เดิมอยู่ในตัว `down` เองด้วย**
+- 🔴 **`teamclosed` ตอบ `CLOSED` ทั้งที่ window ยังรันอยู่** — มันหา **session ชื่อทีม**
+  แต่ทีมนี้เกิดเป็น **window ในเซสชันที่มีอยู่แล้ว** ⇒ **มองไม่เห็นเลย**
+  ⇒ ⚠️ **`teamclosed` เชื่อได้เฉพาะทีมที่มี session เป็นของตัวเอง** · ต้องเก็บด้วย `tmux kill-window`
+- ⚠️ **update dialog โผล่ตอน boot จริง** (`0.146.1 → 0.147.0`) โดยมี **`1. Update now (runs
+  npm install -g)` เป็นค่า default** · `bootverify` จับได้และตอบ **NOT-READY** ถูกต้อง
+  **กด `2` และลูกศรไม่ขยับ selection** ⇒ ไม่เสี่ยง Enter · เก็บทีมแทน
+  ⇒ **`codex exec` ไม่มี dialog นี้เลย** — อีกอย่างที่เส้นทางจริงเท่านั้นที่เจอ
