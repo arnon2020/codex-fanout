@@ -21,3 +21,6 @@
 
 # git worktrees created by Claude Code (embedded repos — never commit as gitlinks)
 .claude/worktrees/
+
+# maw team worktrees live here — never tracked by the parent repo
+agents/
