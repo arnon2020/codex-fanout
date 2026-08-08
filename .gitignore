@@ -18,3 +18,6 @@
 #    the archive durable per-session only, not per-history — the same defect the ψ/inbox/ line above
 #    fixed. Found while closing Next Step #5 (a backup whose only copy lived in /tmp).
 !ψ/archive/
+
+# git worktrees created by Claude Code (embedded repos — never commit as gitlinks)
+.claude/worktrees/

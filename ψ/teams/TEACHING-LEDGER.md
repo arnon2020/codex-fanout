@@ -1576,3 +1576,39 @@ claim ที่มันแก้"* ไว้ใน `CLAUDE.md` **แล้ว�
 ตัวเอง 3 ที่ (CLAUDE.md · ledger · memory) แล้วบอกแค่ **atlas คนเดียวเพราะเขาเป็นคนท้วง**
 ⇒ **การรู้ว่าของส่งไม่ถึง ไม่เท่ากับการส่งใหม่** · ระยะห่างระหว่างสองอย่างนี้คือ 20 นาที
    และเต็มไปด้วย commit ที่ดูเหมือนกำลังแก้ปัญหานั้นอยู่
+
+### 2026-08-08 เช้า · 📮 fleet teardown request — census ก่อนสั่ง ส่งหลักฐานเฉพาะบ้าน
+
+arnon สั่ง: *"บอกให้ทุกคนยุบทีมตัวเองหน่อย เปิดค้างไว้นานมากแล้ว"* — ผม relay **คำสั่ง + หลักฐาน**
+ไม่ใช่ **อนุญาต** (แต่ละบ้านตัดสินใจเองว่ามีงานบินอยู่ไหม) ตามกฎ relay-permission ใน CLAUDE.md
+
+**census ก่อนส่ง** (`tmux ls` + `maw ls -v` + `pane_current_path` ของทุก pane · ไม่ได้เดาจากชื่อ):
+
+| session | สภาพ | เจ้าของ | หลักฐานที่ใช้โยง |
+|---|---|---|---|
+| `bv2-3176195` | 3 win bash orphan 1d12h | **ผมเอง** | cwd = worktree ของ repo ผม |
+| `60-a_b` | 1 win bash 10h58m | **ผมเอง** | cwd = scratchpad ของ session ผม |
+| `59-a_b` | 1 win bash 11h1m | tars | cwd = scratchpad ของ tars-oracle |
+| `116-loom` (8 worker win) | node/claude ถึง 1d23h | loom | `~/.maw-teams` + fleet annotation |
+| `prism-cell` | 8 win bash orphan 20h | prism | cwd = `~/.maw-teams/prism-cell/*` |
+| `lucifer-dev-v1` | 3 win node 1d | lucifer | cwd = `lucifer-oracle/agents/*` |
+| `restart-verify-v1` | busy-loop `UI_TICK_<epoch>` ~1d | lucifer | grep `wsparity` → `lucifer-oracle/.maw/teams/ws-parity-port.yaml` |
+
+🔑 **census จับสิ่งที่การ broadcast จับไม่ได้ 3 อย่าง**:
+1. **2 ใน 7 session ที่ค้างเป็นของผมเอง** — ถ้าส่ง broadcast อย่างเดียวผมจะสั่งคนอื่นเก็บของ
+   โดยที่ของผมค้างอยู่ **ปิดของตัวเองก่อนส่ง** `teamclosed` = CLOSED ทั้งคู่ (capture scrollback
+   ลง `ψ/archive/teardown-2026-08-08/` ก่อน — Nothing is Deleted)
+2. **loom kill-session ไม่ได้** — worker ของเขาอยู่ **session เดียวกับ `loom-oracle.0`**
+   ⇒ คำสั่งที่ถูกสำหรับ prism/lucifer (`kill-session`) **ฆ่า loom กลางเทิร์น**
+   ⇒ ใบของ loom ต้องเขียน `kill-window` และผมต้องบอกว่า **2 window อายุ 15m อาจกำลังทำงาน**
+3. **`restart-verify-v1` ไม่มีเจ้าของในชื่อตัวเอง** — advisor เตือนว่า *ถามในใบที่ส่ง 7 คน
+   จะไม่มีใครตอบ* ⇒ `grep` หาเจ้าของ **ก่อน** ส่ง ได้ชื่อ lucifer แบบชี้ไฟล์ได้ · และ
+   `capture-pane` เผยว่ามัน **ยัง spin กินซีพียูอยู่** ไม่ใช่แค่ค้าง — ข้อมูลที่ `maw ls -v` ไม่บอก
+
+**7 ใบ ส่งครบ ทุกใบประกอบด้วย `MSG=$(cat <<'EOF' … EOF)`** ไม่ใช่ `"..."` (scar 08-07 holmes)
+`relay()` ทุกตัว `SENT` · `MAW_SENDER=local:codex-fanout` ตั้ง explicit และ **อ่าน stdout ยืนยัน
+ลายเซ็นในใบแรก** — ทุก pane บนเครื่องนี้ถือ `MAW_SENDER=local:tars-oracle` ถ้าไม่ตั้ง
+**คำสั่งยุบทีมทั้ง fleet จะออกไปเซ็นชื่อ tars**
+
+⚠️ **สถานะหลักฐาน: ชั้น 1 (`delivered`) ทั้ง 7 ใบ** — ยังไม่มีใครตอบอ้างเนื้อความตอนเขียนบรรทัดนี้
+**ห้ามรายงาน arnon ว่า "บอกทุกคนแล้ว" ราวกับว่าทุกคนได้รับ** — census + ส่ง ≠ ได้รับ ≠ ปิด

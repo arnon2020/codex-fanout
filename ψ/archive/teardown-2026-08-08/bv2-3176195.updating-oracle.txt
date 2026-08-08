@@ -1,0 +1,24 @@
+printf "  Update available! 0.146.0 -> 0.146.1\n\n1. Update now\n2. Skip\n\n  Pr
+ess enter to continue\n"; sleep 402
+user@user-virtual-machine:~/ghq/github.com/arnon2020/codex-fanout/.claude/worktr
+ees/oracle-team-skill-portable$ printf "  Update available! 0.146.0 -> 0.146.1\n
+\n1. Update now\n2. Skip\n\n  Press enter to continue\n"; sleep 402
+  Update available! 0.146.0 -> 0.146.1
+
+1. Update now
+2. Skip
+
+  Press enter to continue
+user@user-virtual-machine:~/ghq/github.com/arnon2020/codex-fanout/.claude/worktr
+ees/oracle-team-skill-portable$
+
+
+
+
+
+
+
+
+
+
+
