@@ -1627,6 +1627,34 @@ selftest() {
   unset -f _vc_team_list_plain
   _vc_team_list_plain() { maw team list 2>&1; }
   rm -rf "$ctd"
+  # แขน ง) 🔭 **กวาดของจริงบนเครื่อง** [lucifer เสนอ 2026-08-08 หลังวัด fixture ตัวเองย้อนหลัง]
+  #    เขาชี้ว่า fixture ของเขา *"ไม่ได้ผ่านโดยบังเอิญ — มันบกพร่องจริง"*: ทีมสมมติได้ **0 แถว**
+  #    ใน `maw team list` ⇒ ผิว 2 ไม่เคยรัน · GHOST ที่ได้มาจากผิว 3 ล้วน ๆ ⇒ **ทดสอบ 1 ใน 3 ผิว
+  #    แล้วเคลมทั้งก้อน** · และรูปที่จับได้อยู่ใน repo เขา **มาตลอด** เป็นข้อมูลจริง:
+  #    `software-full-cycle-v62` / `-v64` มีทั้งแถว vault/prep-only และ `~/.claude/teams/<ชื่อ>/`
+  #    ⇒ *"fixture ทดสอบได้แค่สิ่งที่คนเขียนนึกออก และของผมดันไปรับ blind spot อันเดียวกับ
+  #       แพตช์ที่มันกำลังตรวจ"*
+  #  ⚠️ แขนนี้ **ไม่แทน** แขน ค) — คนละคำถาม: ค) ถามว่า *ตรรกะถูกไหม* (deterministic ผ่าน seam) ·
+  #     ง) ถามว่า *เครื่องนี้ตอนนี้มีเคสที่ถูกบังอยู่ไหม* (canary · ขึ้นกับ cwd และสภาพเครื่อง)
+  #  🔑 invariant ที่ assert: **ทีมที่มี store dir ค้าง ต้องไม่มีวันได้ `CHARTER-ONLY`**
+  #     (ไม่ assert ว่าเป็น GHOST เป๊ะ ๆ เพราะถ้าทีมนั้นยัง LIVE ผิว 1 ตอบก่อน — ซึ่งก็ถูก)
+  local swept=0 cand
+  while read -r cand; do
+    [ -n "$cand" ] || continue
+    [ -d "$HOME/.claude/teams/$cand" ] || [ -d "ψ/memory/mailbox/teams/$cand" ] || continue
+    swept=$((swept+1))
+    out=$(teamclosed "$cand" 2>&1); rc=$?
+    case "$out" in
+      *CHARTER-ONLY*) echo "   ✗ '$cand' มี store dir ค้างแต่ได้ CHARTER-ONLY — บันทึกบัง residue"; fail=1 ;;
+      *) [ $rc -eq 0 ] && { echo "   ✗ '$cand' มี store dir ค้างแต่ rc=0"; fail=1; } ;;
+    esac
+  done <<EOF
+$(_vc_team_list_plain 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
+  | awk '$1=="TEAM" && $2=="STORE"{h=1;next} h && NF>=4 {print}' \
+  | while IFS= read -r r; do [ "$(_vc_row_verdict "$r")" = "charter-only" ] && printf '%s\n' "$(printf '%s' "$r" | awk '{print $1}')"; done)
+EOF
+  # **ประกาศเสมอว่ากวาดเจอกี่ตัว** — ถ้าเงียบตอน 0 ตัว แขนนี้จะกลายเป็น echo วันที่ของหาย
+  echo "   (กวาดของจริง: พบ ${swept} ทีมที่มีทั้งแถว charter-only และ store dir ค้าง จาก cwd นี้ — 0 = ไม่มีเคสให้ตรวจ ไม่ใช่ผ่าน)"
   echo "7) enginereg: engine ที่ลงทะเบียนจริง (codex) ต้อง REGISTERED"
   if maw config >/dev/null 2>&1; then
     enginereg codex >/dev/null 2>&1 || { echo "   ✗ codex ควร REGISTERED (มีใน global maw.config.50.json)"; fail=1; }
