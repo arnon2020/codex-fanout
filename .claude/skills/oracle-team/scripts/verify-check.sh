@@ -213,6 +213,40 @@ relay() {
   if [ $rc -ne 0 ]; then echo "FAILED    maw hey exit=$rc — ยังไม่ถึง อย่าอ้างว่าส่งแล้ว"; return 1; fi
   case "$out" in *delivered*) ;; *) echo "SUSPECT   ไม่เห็นคำว่า delivered ใน output — อ่าน output เต็มก่อนสรุป"; return 1 ;; esac
 
+  # 🩹 2026-08-09 [lucifer จับ · เขา audit กว้างกว่าที่ผมสั่งแล้วเจอในไฟล์ของผมเอง]
+  #    เดิมบรรทัดล่างยิง `send-enter` ทันทีหลัง `delivered` **โดยไม่ดูจอก่อน**
+  #    ⚠️ lucifer แยกคลาสให้เอง และผมเห็นด้วย — **นี่ไม่ใช่ `fleet-send.sh:495-505`**:
+  #      · `fleet-send` ส่ง Enter **3 ครั้งทุก send ไม่มีเงื่อนไข** `capture-pane` 0 จุด
+  #      · `relay` ส่ง **ครั้งเดียวหลังยืนยัน delivered** และ Enter นั้น **จำเป็นจริง** —
+  #        codex ค้างเป็น `[Pasted Content NNN chars]` จนกว่าจะมี Enter มา submit (:109-112)
+  #    ⇒ ช่องจริง**แคบกว่า** และ lucifer ระบุได้ตรง: **`delivered` ไม่ได้พิสูจน์ว่า pane
+  #      บริโภคข้อความ** — ถ้า pane นั่งบน trust/update dialog อยู่ก่อน `delivered` ก็ยังขึ้นได้
+  #      แล้ว **Enter ของเราไปลงที่ dialog นั้นแทน**
+  #    ⇒ ทางแก้ที่เขาเสนอและผมทำตาม: **เช็คจอก่อน ไม่ใช่ถอด send-enter ออก**
+  #    ⇒ บน codex 0.147.0 ตัวไฮไลต์คือ `1. Yes, continue` (trust) · บน 0.146.1 คือ `Update now`
+  #      ⇒ **Enter เปล่าตรงนั้นตอบคำถามเรื่องของกลางโดยไม่ได้อ่าน**
+  #    ⚠️ **ด่านนี้เกือบทำลายช่องทางที่ผมใช้อยู่** — ผมส่งข้อความที่*อธิบาย*ไดอะล็อกพวกนี้
+  #       ไปทุกบ้านคืนนี้ ⇒ scrollback ของเขามีคำเหล่านั้นเต็มไปหมด ⇒ ถ้าจับแค่ "มีคำ"
+  #       relay จะปฏิเสธการส่งหา oracle ทุกตัวที่ผมเพิ่งคุยด้วย
+  #       🔑 **เครื่องมือที่จับ "การพูดถึงปัญหา" ว่าเป็น "ปัญหา" คือ false positive ที่
+  #          ฆ่าตัวเอง** — และผมเจอมันเพราะ *ทดสอบ* ไม่ใช่เพราะคิดออก
+  #    ⇒ รัดสองชั้น: ดูเฉพาะ **ท้ายจอ** (บริเวณที่ยัง live) + ต้องมี **แถวตัวเลือกเลข**
+  #       ติดกับ banner ไม่ใช่แค่ประโยคคำถามลอย ๆ
+  local pre; pre=$(maw peek "$target" 2>/dev/null | tail -12)
+  local banner="" opt=""
+  banner=$(printf '%s' "$pre" | grep -m1 -E \
+    'Update available!|Do you trust the contents of this directory|Is this a project you created or one you trust|Do you want to (proceed|create|make|edit|run)|requires approval' 2>/dev/null)
+  opt=$(printf '%s' "$pre" | grep -m1 -E '^[[:space:]]*[›>❯[:space:]]*[0-9]\.[[:space:]]' 2>/dev/null)
+  [ -n "$opt" ] || banner=""      # มีคำถามแต่ไม่มีเมนู = กำลังพูดถึง ไม่ใช่กำลังถาม
+  if [ -n "$banner" ]; then
+    echo "REFUSED   ไม่กด Enter — pane กำลังแสดง dialog ของ CLI ไม่ใช่ช่องพิมพ์ของ agent"
+    echo "          เห็น: $(printf '%s' "$banner" | sed 's/^[[:space:]]*//' | cut -c1-72)"
+    echo "          ⇒ ข้อความ **ส่งถึง pane แล้ว** แต่ยังไม่ถูก submit และจะไม่ถูก submit"
+    echo "             จนกว่าจะเคลียร์ dialog — **อ่านเลขจากจอจริง อย่ากด Enter เปล่า**"
+    echo "             (0.147.0 ไฮไลต์ '1. Yes, continue' · 0.146.1 ไฮไลต์ 'Update now')"
+    echo "          ⇒ เคลียร์เองแล้วค่อยส่งซ้ำ · หรือถ้าเป็น pane ของบ้านอื่น ให้เจ้าของเคลียร์"
+    return 3
+  fi
   local eout; eout=$(maw send-enter "$target" 2>&1); local erc=$?
   [ $erc -ne 0 ] && { echo "FAILED    send-enter exit=$erc"; return 1; }
 
@@ -1034,7 +1068,19 @@ unstick() {
     [ -n "$w" ] || continue
     local sc; sc=$(tmux capture-pane -p -t "=${sess}:${w}" 2>/dev/null)
     case "$sc" in
-      *"Update available!"*|*"Press enter to continue"*|*"1. Update now"*|*"trust this folder"*)
+      # 🩹 2026-08-09 [lucifer เทียบ list ทีละแถวกับจอ 0.147.0 ที่เขาจับเอง — และเขาถูก]
+      #    list เดิม 4 แถว: 2 แถวเจาะจง codex (`Update available!` · `1. Update now`)
+      #    **เป็นของ dialog ที่ 0.147.0 เอาออกไปแล้ว** · `trust this folder` เป็น
+      #    **ถ้อยคำของ claude ไม่ใช่ codex** ⇒ trust dialog จริงของ codex 0.147.0
+      #    (`Do you trust the contents of this directory?` / `1. Yes, continue`)
+      #    **ไม่มีแถวไหนตรงเลย** — รอดมาได้ด้วย footer ทั่วไป `Press enter to continue` เท่านั้น
+      #    ⇒ 🔑 **guard ที่กันได้เฉพาะไดอะล็อกรุ่นก่อน แล้วบังเอิญกันรุ่นปัจจุบันด้วย footer
+      #      ที่ไม่เกี่ยวกับเรื่อง** — footer เปลี่ยนเมื่อไหร่ ด่านหายเงียบ
+      #    ⇒ ต่อยอดกฎคืนนี้: **ไดอะล็อกเป็นคุณสมบัติของ (เวอร์ชัน × เครื่องยนต์)**
+      #      pattern list จึงต้องมี `valid-if:` เหมือน claim อื่น — ทบทวนเมื่อ engine อัป
+      *"Update available!"*|*"Press enter to continue"*|*"1. Update now"*|*"trust this folder"*\
+      |*"Do you trust the contents of this directory"*|*"1. Yes, continue"*\
+      |*"Is this a project you created or one you trust"*)
         echo "unstick.pane: $w SKIP — จอเป็น dialog ของ CLI ไม่ใช่ของ agent · Enter จะไปกดเมนู"
         skipped=$((skipped+1)); continue ;;
     esac
