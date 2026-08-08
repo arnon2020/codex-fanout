@@ -343,13 +343,21 @@ worker a Claude Code skill. To give a codex worker a reusable capability it must
 
 **Global** (`~/.claude/skills/`) — `[verified 2026-08-05: ls]`
 
-- `codex-team` — 🗄️ **ARCHIVED FOR THIS REPO — DO NOT USE.** `[arnon direct order, 2026-08-08:
-  "เอา codex-team ไปเก็บเข้ากรุเลย นี่เป็นคำสั่ง"]` Do not invoke it, do not cite its gates, do
-  not treat its evidence as covering this machine — it is **maw-js**-bound and `maw` here is
-  **maw-rs**. Still **atlas's artifact** (co-authored with sage-codex); still installed globally
-  and **still live for every other oracle** — this line retires it from *our* lane only.
-  If a task genuinely needs promotion receipts, that is now a **hand-off to mason**, not a
-  skill we reach for. See 🧭 above.
+- `codex-team` — 🗄️ **MOVED OFF THE LOAD PATH MACHINE-WIDE, 2026-08-08.** `[arnon direct order:
+  "เก็บเข้ากรุ" → "ไม่ใช้งานแต่ก็ไม่ได้ลบ" → "ย้ายออกไปอยู่ folder อื่นที่ไม่ใช้ skill"]`
+  `~/.claude/skills/codex-team/` → **`~/.claude/archived-skills/codex-team/`**
+  `[verified: manifest md5 28947f7c650807b493559081069d4a05 · 110 files · 249,202 bytes —
+  identical before and after · old path confirmed gone]`
+  **Nothing deleted, nothing edited** — it is still **atlas's artifact** and we still don't own it.
+  Reversal is one `mv`, spelled out in the tombstone `~/.claude/skills/codex-team.ARCHIVED.md`.
+  ⚠️ **This move is wider than this repo** — it takes the skill away from atlas, mason, lucifer
+  and ajfon too. Done on explicit owner instruction after the scope was put to arnon; recorded
+  here because a machine-wide change made from *our* chat is the kind of thing the next session
+  must not mistake for a repo-local one.
+  ⚠️ **Not verifiable from the session that made it** — this session's skill list was loaded
+  before the move, so "Claude Code no longer offers it" is `[inferred: load path no longer
+  contains it]`, **not** `[verified]`. A fresh session is the only thing that proves it.
+  If a task genuinely needs promotion receipts, that is a **hand-off to mason**. See 🧭 above.
 - `oracle-team` — **PRIMARY** for team lifecycle. Also installed globally; the repo copy is the
   same file plus a 45-line repo-local appendix `[verified 2026-08-08: diff → 45 lines, all
   additions, first 2,012 lines byte-identical]`
