@@ -269,6 +269,43 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 
 ## Installed Skills
 
+### 🧭 Which team-building skill wins — decided 2026-08-08
+
+> Asked directly by arnon: *"ต้องให้ชัดเจนว่าจะใช้ของใครกันแน่ เพราะมันทับซ่อน"* — the ambiguity was
+> real and it came from **this file**: the list below named `codex-team` as one "we use" with no
+> primary/secondary marking, while `oracle-team` sat in a different subsection.
+
+**`oracle-team` is primary for team lifecycle in this repo** — `up` / `down` / `lead` / `status` /
+`dispatch`, Gate 0 engine-binding, `bootverify`. `codex-team` is called **only** when promotion
+receipts are specifically wanted (`promote.sh` / `require_admission.sh` / `bypass-detector.sh` —
+`oracle-team` has no equivalent), or when atlas is operating. This is not a preference call:
+**`codex-team`'s own description scopes itself to atlas** ("Use when *atlas* is about to spawn a
+mixed lead+coder team…"), and `oracle-team`'s description claims the literal phrases `'spawn
+coders'` / `'set up a codex team'`.
+
+⚠️ **The binary lineage settles it on this machine.** `[verified 2026-08-08]`
+`maw` → `/home/user/.local/lib/maw-rs/maw-rs-a162427` = **maw-rs** `v26.7.30-alpha.2017-62-ga162427`.
+Every validated claim in `codex-team` is tagged **maw v26.6.14-alpha.2110 = maw-js** — *a different
+tool, not an older version of the same one*. So its gate evidence does **not** transfer here, and
+its `review-by 2026-08-24` tags are measuring the wrong thing. `oracle-team`'s Gate 0 cites maw-rs.
+⇒ This is the repo's own scar **one level up**: *matching version proves which binary ran, not
+which source you read* — here the two artifacts don't even name the same binary.
+
+🕳️ **Neither skill references the other.** `[verified 2026-08-08: grep, both directions, 0 hits]`
+Both are layers over the same substrate and each documents itself as if the other doesn't exist.
+Three duplicated jobs: **engine binding** (`admit.sh` vs Gate 0/`enginecheck`) · **boot verification**
+(golden-worker probe L1/L2 vs `bootverify`) · **teardown** (safe-teardown gate vs `down` +
+`references/teardown.md`). Owner-routed to atlas, not edited — see Teaching discipline.
+
+🔑 **The collision is at the LEAD layer only — workers load neither.**
+`[verified 2026-08-08: ls ~/.codex/skills/ (37 skills) · find ~/.config/opencode -iname '*skill*' → 0]`
+Both skills live in `~/.claude/skills/` + `<repo>/.claude/skills/`, which **only Claude Code reads**.
+`~/.codex/skills/` has its own 37-skill set and **contains neither `oracle-team` nor `codex-team`**;
+opencode has **no skill directory at all**. ⇒ *"which skill do the agents in my team use"* has the
+answer **none** — the skill is what the **lead** runs to stand the team up. A charter cannot hand a
+worker a Claude Code skill. To give a codex worker a reusable capability it must be installed into
+`~/.codex/skills/`, and for opencode it must go **in the dispatch text itself**.
+
 > ⚠️ **CORRECTION 2026-08-05 (reawaken)** — the 2026-08-01 note here said *"4 of 6 did not exist"*.
 > **2 of those 4 exist and always did.** The 08-01 check ran `ls ~/.claude/skills/` only — **global
 > scope — then concluded absence globally.** `codex-lead` and `oracle-team` are **project-local**
@@ -290,8 +327,12 @@ Oracle เป็นกระจก ไม่ใช่คนสั่งการ
 
 **Global** (`~/.claude/skills/`) — `[verified 2026-08-05: ls]`
 
-- `codex-team` — gate layer over maw-team (**atlas's artifact**, co-authored with sage-codex — we
-  use it, we don't own it; don't edit without asking atlas)
+- `codex-team` — **SECONDARY** (see 🧭 above). Gate layer over maw-team (**atlas's artifact**,
+  co-authored with sage-codex — we use it, we don't own it; don't edit without asking atlas).
+  Call it only for promotion receipts, or when atlas operates. Its evidence is **maw-js**-bound.
+- `oracle-team` — **PRIMARY** for team lifecycle. Also installed globally; the repo copy is the
+  same file plus a 45-line repo-local appendix `[verified 2026-08-08: diff → 45 lines, all
+  additions, first 2,012 lines byte-identical]`
 - `rrr` — session retrospective
 - `recap` — mine raw transcript JSONL for what actually happened (was listed as `session-recap`)
 - `awaken` — this ritual
