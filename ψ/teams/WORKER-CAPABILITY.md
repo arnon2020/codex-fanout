@@ -527,6 +527,11 @@ before the first `maw team` call?
 | pane pid | `-bash` | **ไม่มี** |
 | ลูกของมัน | `node …/codex --model gpt-5.6-sol` | **`/home/user/.codex-fanout/coder`** ✅ |
 
+✅ **n=2 อิสระ — ajfon ยืนยันเองภายในชั่วโมงเดียวกัน** `[คนละบ้าน คนละ role คนละ engine home]`
+`CODEX_HOME=/home/user/.codex-ajfon/corpus-builder` ที่ลูกของ pane · pane เป็น bash เปล่าเหมือนกัน ·
+เขา**วัดที่ลูกตั้งแต่แรก** (`pgrep -f "codex --model…"`) ไม่ได้พลาดจุดนี้ ⇒ **สองบ้านคนละวิธี ผลตรงกัน**
+เขาเจอ update dialog เดียวกัน (`0.146.1 → 0.147.0`) และจัดการแบบเดียวกัน — **peek ก่อน อ่านเมนู ส่ง `2`**
+
 ⇒ **env prefix ใน alias ผูกกับ `codex` ไม่ใช่กับ shell** — shell ที่ถือ pane ไม่มีค่านี้
 ใครวัดที่ pane pid จะสรุปว่า **ไม่ถึง** ทั้งที่ถึง ⇒ **วัดที่ลูก ไม่ใช่ที่ pane**
 
