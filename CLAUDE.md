@@ -297,6 +297,22 @@ Three duplicated jobs: **engine binding** (`admit.sh` vs Gate 0/`enginecheck`) �
 (golden-worker probe L1/L2 vs `bootverify`) · **teardown** (safe-teardown gate vs `down` +
 `references/teardown.md`). Owner-routed to atlas, not edited — see Teaching discipline.
 
+🗄️ **Retired for this repo 2026-08-08 on arnon's direct order** — see the `codex-team` entry below.
+Scope of that retirement is **this repo's lane**, not the machine: the global install is untouched.
+⚠️ **Three parties are attached to the artifact, and none of them is us** `[verified 2026-08-08]`:
+**atlas** owns it · **mason-oracle** was *budded from atlas on 2026-07-24 for this exact domain*
+("mason owns the codex-team lifecycle so atlas doesn't have to babysit it") · **lucifer** has **18
+operational records** living inside `codex-team/state/` (receipts + admission evidence,
+`lucifer-dev-v1-20260728`, `lucifer-fullstack-v1-20260731`).
+⇒ 📌 **`state/` is data that merely happens to live in a skill directory.** Any future move of the
+skill must leave lucifer's records reachable — *archiving someone's tool must not relocate a third
+party's records*. Cf. [[green-only-by-deleting-a-record]].
+⇒ 🕳️ **My first dependent list was wrong and I nearly reported it.** `grep -rl "codex-team"` cannot
+tell the **skill** from **`~/.codex-team/`, the credential-pool path** — 8 of 8 hits in
+`oracle-team/scripts/*`, the `oracle-team/SKILL.md:1599` hit, and `maw/SKILL.md:25`
+(`docs/codex-team-pattern.md`, a filename) were all the *other* thing. Advisor caught it.
+**A name that is both an artifact and a filesystem path needs `| grep -v` before it is a finding.**
+
 🔑 **The collision is at the LEAD layer only — workers load neither.**
 `[verified 2026-08-08: ls ~/.codex/skills/ (37 skills) · find ~/.config/opencode -iname '*skill*' → 0]`
 Both skills live in `~/.claude/skills/` + `<repo>/.claude/skills/`, which **only Claude Code reads**.
@@ -327,9 +343,13 @@ worker a Claude Code skill. To give a codex worker a reusable capability it must
 
 **Global** (`~/.claude/skills/`) — `[verified 2026-08-05: ls]`
 
-- `codex-team` — **SECONDARY** (see 🧭 above). Gate layer over maw-team (**atlas's artifact**,
-  co-authored with sage-codex — we use it, we don't own it; don't edit without asking atlas).
-  Call it only for promotion receipts, or when atlas operates. Its evidence is **maw-js**-bound.
+- `codex-team` — 🗄️ **ARCHIVED FOR THIS REPO — DO NOT USE.** `[arnon direct order, 2026-08-08:
+  "เอา codex-team ไปเก็บเข้ากรุเลย นี่เป็นคำสั่ง"]` Do not invoke it, do not cite its gates, do
+  not treat its evidence as covering this machine — it is **maw-js**-bound and `maw` here is
+  **maw-rs**. Still **atlas's artifact** (co-authored with sage-codex); still installed globally
+  and **still live for every other oracle** — this line retires it from *our* lane only.
+  If a task genuinely needs promotion receipts, that is now a **hand-off to mason**, not a
+  skill we reach for. See 🧭 above.
 - `oracle-team` — **PRIMARY** for team lifecycle. Also installed globally; the repo copy is the
   same file plus a 45-line repo-local appendix `[verified 2026-08-08: diff → 45 lines, all
   additions, first 2,012 lines byte-identical]`
