@@ -295,13 +295,63 @@ finished at 3%:**
 ⇒ 📌 **A size claim needs its own probe.** "It worked before" is not evidence about a file that has
 since changed — the same shape as `valid-if:` on a stale dependency. Re-probe on material growth.
 
-## 6. ⚠️ What is NOT verified
+## 6. ✅ CLOSED 2026-08-08 — a live worker loaded, selected, and used a role skill
 
-All of the above is disk and binary. **No live worker has been observed loading or invoking a
-skill.** On this repo's evidence ladder that is far below the top rung — *agent refers to the
-content* is the only thing that proves a turn was entered. Probe before teaching any of it onward:
-spawn one codex worker and one opencode worker, ask each to name a skill it can see, and require a
-quote that appears only in that `SKILL.md`.
+> ⚠️ **What this section used to say was stale against §1 of this same file.** It read *"No live
+> worker has been observed loading or invoking a skill"* — written before PROBE-8F2A, three
+> sections above, watched a worker list 45 of them. **A document can go out of date against
+> itself**, and nothing in the writing process catches it: each section was true when written, and
+> §6 is the one a reader reaches last. Kept visible rather than silently overwritten.
+
+**PROBE-R0LE, `[verified 2026-08-08 · codex 0.146.1 · gpt-5.6-sol · exit 0 · two runs]`**
+
+`CODEX_HOME=$HOME/.codex-fanout/coder codex exec … </dev/null`, question naming no file:
+
+| run | skill | what the worker did |
+|---|---|---|
+| 1 | throwaway, containing `RECEIPT-QX7K2` — `grep`-unique on this machine | quoted it verbatim |
+| 2 | the real `team-coder` | answered *"a one-line restatement of the dispatch's done-criteria"* |
+
+Both times it announced the selection itself, unprompted: *"I'm using the `team-coder` skill
+because…"* — then read it. **The catalogue swapped**: 35 oracle skills gone, the role's skill
+present. `auth.json` as a symlink meant no re-login.
+
+⇒ 🔑 **This is rung 4 for the skill channel** — not "the file is reachable" but "the worker chose
+it and answered out of it". It also settles §1's leftover: on `gpt-5.6-sol`, with
+`include_skills_usage_instructions: False`, **a newly installed skill is both visible and usable.**
+
+### The four traps, every one found by running it
+
+None of these is reachable by reading, and none of them fails loudly.
+
+1. **codex writes 616K of its own built-ins into `$CODEX_HOME/skills/.system/` on first boot**
+   (`imagegen`, `openai-docs`, `plugin-creator`, `skill-creator`, `skill-installer`,
+   `review-agent`). ⇒ **the skill root is a directory codex writes to.** Symlink it straight at a
+   git-tracked folder and codex commits its built-ins into the repo. `skills/` must belong to the
+   private home, with each skill linked in **by name** — which also lets one role carry a few
+   universal skills without copying anything. ⇒ 📌 **This corrects §5's diagram**, which drew the
+   symlink at the root.
+2. **`CODEX_HOME` under `/tmp`** — codex refuses to create its PATH helpers, **warns, and
+   proceeds**.
+3. **`codex exec` hangs forever without `</dev/null`** — prints *"Reading additional input from
+   stdin…"* even though the prompt was passed as an argument. Cost 12 minutes and two timeouts.
+4. **Nesting is `<root>/<name>/SKILL.md`** — one directory off gives zero skills at exit 0.
+   `ln -sfn` onto an existing **real** directory silently links *inside* it. Caught by real usage
+   in the first minute, which is the whole argument for real usage.
+
+Plus, from `oracle-team/SKILL.md:1608` and confirmed here: **a pinned `CODEX_HOME` loses
+`~/.codex/config.toml`**, including `model` and `model_reasoning_effort`. Copy it.
+
+### What is still not isolable — and is not even stable
+
+`.system/` and plugin skills stay visible whatever the charter says. **Isolation of the skill ROOT
+is total; isolation of the CATALOGUE is not.** And the remainder moved **7 → 11** between two runs
+of the same command (`github:*` appeared in the second). ⇒ **A measurement without a mechanism.**
+Do not promise anyone a fixed catalogue; this is the claim in today's fan-out most likely to fall.
+
+`ψ/teams/scripts/setup-role-home.sh` guards traps 2–4 and replaces `setup-codex-home.sh`, which
+no-ops (§3). ⚠️ **Still owed: none of this has gone through `maw team up`** — it is `codex exec`
+direct. The full spawn loop is unproven.
 
 ---
 
