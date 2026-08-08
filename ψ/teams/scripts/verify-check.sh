@@ -1702,9 +1702,36 @@ selftest() {
     echo "     ⇒ มี candidate หลุดออกจาก pipeline โดยไม่ถูกนับ — คลาสเดียวกับบั๊ก 2026-08-08"
     fail=1
   fi
-  echo "   (กวาดของจริงจาก cwd นี้: union=$s_union swept=$s_swept nostore=$s_nostore · conservation OK"
+  echo "   (กวาดของจริงจาก cwd นี้: union=$s_union swept=$s_swept nostore=$s_nostore · conservation $([ $((s_swept + s_nostore)) -eq "$s_union" ] && echo OK || echo ✗ตก)"
   echo "    candidate มาจากระบบไฟล์ ไม่ได้ parse ตาราง · swept=0 = ไม่มีเคสให้ตรวจ **ไม่ใช่ผ่าน**"
   echo "    ตัวเลขนี้แปรตาม cwd — อ่านคู่กับ cwd เสมอ ห้ามเทียบข้ามบ้าน)"
+  # 🧭 2026-08-08 รอบห้า [lucifer ออกแบบ + ทดสอบบนเคสจริง 92 ตัว · สำเนาทำลาย 3 ตัว] —
+  #    เขาทำซ้ำการทดลองทำลายแล้วพบว่า **A) `continue` ก่อน `union++` ไม่มีกลไกไหนจับได้เลย**
+  #    (`SELFTEST OK` ทั้งที่ union หดเงียบ 92→37) · PC จับต้นน้ำได้ **เฉพาะเมื่อ blindness
+  #    ครอบรูปที่มันฉีด** (สั้น 1 / ยาว 61) ⇒ conservation เฝ้าท้ายน้ำของ `union++` เท่านั้น
+  #    เพราะ **ตัวหารหดตามตัวตั้ง** · PC เฝ้าเฉพาะสองรูปที่ฉีด ⇒ ไม่มีใครเฝ้าคำถาม
+  #    *"source list ถูกอ่านครบไหม"* ซึ่งเป็นคลาสของบั๊ก 2026-08-08 พอดี
+  #  🔑 **ไม่เก็บ state**: เทียบสอง derivation **ในรอบเดียวกัน** ไม่ใช่เทียบกับเลขที่จำไว้
+  #  ⚠️ ขอบเขตที่ lucifer ประกาศเอง ไม่ได้ให้ผมไปเจอ: สองทาง **ใช้ glob list ชุดเดียวกัน**
+  #     ⇒ จับ *ความไม่ตรงกัน* ได้ **ไม่ได้จับ *ความตาบอดร่วม*** — ลบ source ทั้งก้อนออกจาก
+  #     ทั้งสองที่ มันจะเห็นตรงกันและเงียบพร้อมกัน · source list ยังเป็นจุดที่ต้องเชื่อจุดเดียว
+  echo "5i2) independent-union: source list ต้องถูกอ่านครบ (derive ซ้ำอีกทาง ไม่ใช้โค้ดร่วมกับ _vc_sweep_scan)"
+  local u_indep
+  u_indep=$( { ls -d .maw/teams/*.yaml "$HOME/.claude/teams/"*/ "ψ/memory/mailbox/teams/"*/ ; } 2>/dev/null \
+             | sed -e 's:/$::' -e 's:.*/::' -e 's:\.yaml$::' | sort -u | grep -c . )
+  if [ "$u_indep" -ne "$s_union" ]; then
+    echo "   ✗ independent-union ตก: scan นับ union=$s_union แต่ derive อิสระได้ $u_indep"
+    echo "     ⇒ source list ถูกอ่านไม่ครบ **ก่อน** ถูกนับ — conservation มองไม่เห็นโดยโครงสร้าง"
+    fail=1
+  fi
+  if [ "$u_indep" -eq 0 ]; then
+    echo "   (independent=0 scan=$s_union · cwd=$PWD"
+    echo "    0 = **ไม่มี candidate ในบ้านนี้ ไม่ใช่ผ่าน** — แขนนี้ไม่ได้ตรวจอะไรเลยรอบนี้)"
+  else
+    echo "   (independent=$u_indep scan=$s_union $([ "$u_indep" -eq "$s_union" ] && echo 'สองทางตรงกัน' || echo '**ไม่ตรงกัน**') · cwd=$PWD"
+    echo "    ตัวเลขแปรตาม cwd — อ่านคู่กับ cwd เสมอ ห้ามเทียบข้ามบ้าน"
+    echo "    ขอบเขต: ใช้ glob list ชุดเดียวกับ scan ⇒ จับความไม่ตรงกัน **ไม่จับความตาบอดร่วม**)"
+  fi
   echo "5j) positive control: pipeline ของแขน ง ต้องยัง 'อ่านอะไรได้อยู่' (บ้านสะอาดตรวจข้อนี้ไม่ได้ด้วยวิธีอื่น)"
   # 🔑 ฉีดชื่อ 2 ตัว **ตัวสั้น 1 · ตัวยาวเกินความกว้างคอลัมน์ 1** แล้ว assert ว่า swept เพิ่ม **พอดี 2**
   #    lucifer วัดขอบเขตการชนให้: **29 ตัวอักษรผ่าน · 30 ชน** (`…-v19-gated` vs `…-v20-bridge`)
