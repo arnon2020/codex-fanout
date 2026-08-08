@@ -304,6 +304,34 @@ relay() {
 # ในเทสต์ไม่ได้ (`maw team list` ไม่ลิสต์ charter ที่วางเปล่า ๆ ใน cwd — ลองแล้ว ทั้งมี/ไม่มี
 # `git init` ก็ไม่โผล่ ⇒ มันมาจาก vault store ที่ `maw team prep` ลงทะเบียน ไม่ใช่จากไฟล์ล้วน)
 # ⇒ เทสต์ตัวนี้ตรวจ **ตรรกะการจัดประเภทของผม** ไม่ได้ตรวจ **พฤติกรรมการลิสต์ของ maw**
+# ── _vc_sweep_scan ─────────────────────────────────────────────────────────
+# กวาด candidate ทั้งหมด **จากระบบไฟล์** (ไม่ parse ตารางที่ render ให้คนอ่าน) แล้ว assert
+# invariant: **ทีมที่มี store dir ค้าง ต้องไม่มีวันได้ `CHARTER-ONLY` และต้องไม่ rc=0**
+# พิมพ์บรรทัดสรุปเครื่องอ่านได้: `SWEEP swept=N nostore=N union=N`
+# ⚠️ **ทุก element ของ union ต้องออกทางถังใดถังหนึ่งพอดี** (swept | nostore) — ห้ามมี `continue`
+#    เส้นทางไหนที่ไม่เพิ่มถังใดเลย ไม่งั้น conservation ในแขน ง จะจับไม่ได้ว่าของหาย
+_vc_sweep_scan() {
+  local cand seen=" " swept=0 nostore=0 union=0 out rc
+  for cand in .maw/teams/*.yaml "$HOME/.claude/teams/"*/ "ψ/memory/mailbox/teams/"*/; do
+    [ -e "$cand" ] || continue                      # glob ไม่แมตช์ = ไม่ใช่ element ของ union
+    cand=$(basename -- "${cand%/}"); cand=${cand%.yaml}
+    case "$seen" in *" $cand "*) continue ;; esac   # นับ union แบบ unique
+    seen="$seen$cand "
+    union=$((union+1))
+    if [ -d "$HOME/.claude/teams/$cand" ] || [ -d "ψ/memory/mailbox/teams/$cand" ]; then
+      swept=$((swept+1))
+      out=$(teamclosed "$cand" 2>&1); rc=$?
+      case "$out" in
+        *CHARTER-ONLY*) echo "   ✗ '$cand' มี store dir ค้างแต่ได้ CHARTER-ONLY — บันทึกบัง residue" ;;
+        *) [ $rc -eq 0 ] && echo "   ✗ '$cand' มี store dir ค้างแต่ rc=0" ;;
+      esac
+    else
+      nostore=$((nostore+1))                        # charter อย่างเดียว ไม่มี residue = ไม่ใช่เคสของแขนนี้
+    fi
+  done
+  echo "SWEEP swept=$swept nostore=$nostore union=$union"
+}
+
 # ── _vc_team_list_plain ────────────────────────────────────────────────────
 # seam เดียวที่ selftest แทนได้ — คืนตาราง `maw team list` ดิบ ๆ พร้อม rc ของมัน
 _vc_team_list_plain() { maw team list 2>&1; }
@@ -1650,26 +1678,54 @@ selftest() {
   #    สร้างแถวมาจากมันอยู่แล้ว: charter ใน `.maw/teams/*.yaml` ∪ dir ใน 2 store
   #    (`maw team list --json` **ไม่มี** — พิมพ์ `unknown argument --json` แล้ว **exit 0**
   #     รูปเดียวกับ `maw team <typo>` ที่ rc โกหกซึ่งไฟล์นี้จดไว้แล้ว)
-  local swept=0 cand seen=" " unparsed=0
-  # นับแถวที่ชื่อชนคอลัมน์ — ไม่ได้ใช้ตัดสินอะไร แต่ **ต้องพิมพ์คู่กับ swept เสมอ**
-  unparsed=$(_vc_team_list_plain 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
-    | awk '$1=="TEAM" && $2=="STORE"{h=1;next} h && NF>=3 && $1 ~ /(vault|tool)$/ {n++} END{print n+0}')
-  for cand in .maw/teams/*.yaml "$HOME/.claude/teams/"*/ "ψ/memory/mailbox/teams/"*/; do
-    [ -e "$cand" ] || continue
-    cand=$(basename -- "${cand%/}"); cand=${cand%.yaml}
-    case "$seen" in *" $cand "*) continue ;; esac
-    seen="$seen$cand "
-    [ -d "$HOME/.claude/teams/$cand" ] || [ -d "ψ/memory/mailbox/teams/$cand" ] || continue
-    swept=$((swept+1))
-    out=$(teamclosed "$cand" 2>&1); rc=$?
-    case "$out" in
-      *CHARTER-ONLY*) echo "   ✗ '$cand' มี store dir ค้างแต่ได้ CHARTER-ONLY — บันทึกบัง residue"; fail=1 ;;
-      *) [ $rc -eq 0 ] && { echo "   ✗ '$cand' มี store dir ค้างแต่ rc=0"; fail=1; } ;;
-    esac
-  done
-  # **ประกาศเสมอ**: swept เดี่ยว ๆ บอกไม่ได้ว่าคือ *ทั้งหมด* หรือ *เท่าที่อ่านออก* (lucifer ข้อ 2)
-  echo "   (กวาดของจริงจาก cwd นี้: swept=${swept} · แถวที่ชื่อชนคอลัมน์ใน maw team list=${unparsed}"
-  echo "    candidate มาจากระบบไฟล์ ไม่ได้ parse ตาราง ⇒ unparsed ไม่ทำให้ swept หาย · 0 = ไม่มีเคสให้ตรวจ ไม่ใช่ผ่าน)"
+  #  🧮 2026-08-08 รอบสี่ [lucifer ออกแบบ · ผมเขียน · เขามีเคสจริง 88 ตัวไว้ยืนยัน] —
+  #     เขาปฏิเสธข้อเสนอ baseline ของผมทั้งอัน: *"ตัวเลขคือ artifact ที่ผิด ไม่ใช่ว่าเก็บผิดที่"*
+  #     **baseline ที่เก็บเป็นเลขจะเน่าเงียบเสมอไม่ว่าวางตรงไหน เพราะไม่มีใครแยกออกว่า
+  #     เลขที่ลดลงคือ *เครื่องสะอาดขึ้น* หรือ *โค้ดตาบอดขึ้น*** ⇒ ใช้ 2 กลไกที่ **ไม่เก็บ state เลย**
+  #  1️⃣ **conservation** — ทุก element ของ union ต้องออกทาง**ถังที่นับได้ ถังเดียว**:
+  #       `swept + nostore == union` · **ฆ่าคลาส ไม่ใช่ instance**: บั๊กรอบก่อนคือ `continue`
+  #       ที่ทำให้ของหลุดจาก pipeline **โดยไม่ถูกนับ** ⇒ conservation ตกทันทีจาก cwd ไหนก็ได้
+  #       **รวมถึงบ้านที่มี 0 เคส** · และมัน **ไม่ assert ขนาด** จึงไม่มีอะไรให้เน่า
+  #  2️⃣ **positive control** (อยู่ในแขน จ ข้างล่าง) — พิสูจน์ว่า pipeline *ยังต่อสายอยู่*
+  #       ซึ่ง**บ้านที่สะอาดทดสอบไม่ได้เลยด้วยวิธีอื่น**
+  #  ⚠️ lucifer พูดความย้อนแย้งของตัวเองก่อนถูกถาม: ทั้ง thread เขาเถียงว่า *fixture รับ blind spot
+  #     ของสิ่งที่มันตรวจ* — จริง **สำหรับคำถามว่าตรรกะถูกไหม** (งานของแขน ค) · แต่ positive
+  #     control ถาม *pipeline ยังต่อสายไหม* ซึ่งเป็นคำถามที่ fixture เป็นเครื่องมือที่ถูกต้องพอดี
+  #     **ห้ามอ่านมันเป็นคำตอบของคำถามแรก** เท่านั้นเอง
+  local sweepout
+  sweepout=$(_vc_sweep_scan)
+  printf '%s\n' "$sweepout" | grep '^   ✗' && fail=1
+  local s_swept s_nostore s_union
+  eval "$(printf '%s\n' "$sweepout" | sed -n 's/^SWEEP //p' | tr ' ' '\n' | sed 's/^/s_/')"
+  if [ $((s_swept + s_nostore)) -ne "$s_union" ]; then
+    echo "   ✗ conservation ตก: swept($s_swept) + nostore($s_nostore) != union($s_union)"
+    echo "     ⇒ มี candidate หลุดออกจาก pipeline โดยไม่ถูกนับ — คลาสเดียวกับบั๊ก 2026-08-08"
+    fail=1
+  fi
+  echo "   (กวาดของจริงจาก cwd นี้: union=$s_union swept=$s_swept nostore=$s_nostore · conservation OK"
+  echo "    candidate มาจากระบบไฟล์ ไม่ได้ parse ตาราง · swept=0 = ไม่มีเคสให้ตรวจ **ไม่ใช่ผ่าน**"
+  echo "    ตัวเลขนี้แปรตาม cwd — อ่านคู่กับ cwd เสมอ ห้ามเทียบข้ามบ้าน)"
+  echo "5j) positive control: pipeline ของแขน ง ต้องยัง 'อ่านอะไรได้อยู่' (บ้านสะอาดตรวจข้อนี้ไม่ได้ด้วยวิธีอื่น)"
+  # 🔑 ฉีดชื่อ 2 ตัว **ตัวสั้น 1 · ตัวยาวเกินความกว้างคอลัมน์ 1** แล้ว assert ว่า swept เพิ่ม **พอดี 2**
+  #    lucifer วัดขอบเขตการชนให้: **29 ตัวอักษรผ่าน · 30 ชน** (`…-v19-gated` vs `…-v20-bridge`)
+  #    ⇒ คอลัมน์กว้าง 30 พอดีและไม่มีช่องคั่นเมื่อชื่อเต็มพอดี — **แต่ไม่ hardcode 30**
+  #    ใช้ 60 ไปเลยเพราะความกว้างคอลัมน์เปลี่ยนได้ (คำเตือนของเขาเอง)
+  #  ⚠️ ฉีดใน **tmpdir แล้ว cd เข้าไป** ไม่ใช่ใน repo ที่รันอยู่ — selftest ห้ามทิ้งรอยในบ้านคนอื่น
+  #    (แขน 14 ของไฟล์นี้: *ผลข้างเคียงคือความเสียหาย*) · baseline วัดจาก tmpdir เปล่าในรอบเดียวกัน
+  #    จึงไม่ต้องเก็บเลขไว้ที่ไหนเลย — ซึ่งคือทั้งประเด็นของข้อเสนอ lucifer
+  local pcd base inj long
+  pcd=$(mktemp -d "${TMPDIR:-/tmp}/vc-pc-XXXXXX")
+  mkdir -p "$pcd/empty" "$pcd/inj/ψ/memory/mailbox/teams"
+  long="zz-vc-pc-$(printf 'x%.0s' $(seq 1 52))"
+  mkdir -p "$pcd/inj/ψ/memory/mailbox/teams/zz-vc-pc-s" "$pcd/inj/ψ/memory/mailbox/teams/$long"
+  base=$( cd "$pcd/empty" && _vc_sweep_scan | sed -n 's/^SWEEP .*swept=\([0-9]*\).*/\1/p' )
+  inj=$( cd "$pcd/inj" && _vc_sweep_scan | sed -n 's/^SWEEP .*swept=\([0-9]*\).*/\1/p' )
+  if [ $((inj - base)) -ne 2 ]; then
+    echo "   ✗ ฉีด 2 ชื่อ (สั้น 1 + ยาว ${#long} ตัวอักษร 1) แต่ swept ขยับ $((inj - base)) ไม่ใช่ 2"
+    echo "     ⇒ pipeline อ่าน candidate ไม่ครบ — คลาสเดียวกับชื่อชนคอลัมน์ที่ lucifer จับได้"
+    fail=1
+  fi
+  rm -rf "$pcd"
   echo "7) enginereg: engine ที่ลงทะเบียนจริง (codex) ต้อง REGISTERED"
   if maw config >/dev/null 2>&1; then
     enginereg codex >/dev/null 2>&1 || { echo "   ✗ codex ควร REGISTERED (มีใน global maw.config.50.json)"; fail=1; }
