@@ -5,10 +5,15 @@ description: The dispatch loop a coder on this team runs — how to turn a dispa
 
 # team-coder
 
-> **Why this is a skill and not a line in `AGENTS.md`** — `AGENTS.md` is injected into every
-> member on every turn, so it holds the *rules* every member obeys. This file holds a **procedure
-> only coders run**, and it is too long to make every reviewer, tester and probe carry it on every
-> turn. Nothing here restates `AGENTS.md`; where the two touch, `AGENTS.md` wins.
+> **Why this is a skill and not a line in `AGENTS.md`** — **criteria go in `AGENTS.md`;
+> procedures are skill-shaped.** `[the line is lucifer's, 2026-08-08 — sharper than the version
+> that was here first, which could only say what did NOT belong in a skill, never why]`
+>
+> A criterion is short, always relevant to the role, and **something the worker must not be free
+> to decide does not apply** — so it belongs in the file that is injected on every turn. A
+> procedure is long, needed only while that work is actually happening, and loading it always is a
+> tax on every turn of that role's context. This file is procedure end to end. Nothing here
+> restates `AGENTS.md`; where the two touch, `AGENTS.md` wins.
 
 ---
 
