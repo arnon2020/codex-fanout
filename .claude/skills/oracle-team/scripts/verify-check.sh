@@ -1638,9 +1638,27 @@ selftest() {
   #     ง) ถามว่า *เครื่องนี้ตอนนี้มีเคสที่ถูกบังอยู่ไหม* (canary · ขึ้นกับ cwd และสภาพเครื่อง)
   #  🔑 invariant ที่ assert: **ทีมที่มี store dir ค้าง ต้องไม่มีวันได้ `CHARTER-ONLY`**
   #     (ไม่ assert ว่าเป็น GHOST เป๊ะ ๆ เพราะถ้าทีมนั้นยัง LIVE ผิว 1 ตอบก่อน — ซึ่งก็ถูก)
-  local swept=0 cand
-  while read -r cand; do
-    [ -n "$cand" ] || continue
+  #  🔴 2026-08-08 รอบสาม [lucifer จับ] — เวอร์ชันแรกของแขนนี้ **ดึงชื่อทีมด้วย `awk '{print $1}'`
+  #     จากตารางที่ render ไว้ให้คนอ่าน** ⇒ ชื่อยาว **ชนคอลัมน์ STORE** จนไม่มีช่องว่างคั่น
+  #     `[verified: 11 แถวบนเครื่องนี้ · เช่น 'software-full-cycle-v17-selfclosevault']`
+  #     ชื่อเพี้ยนพวกนั้นไม่มีทั้ง charter และ store dir ⇒ **ถูก `continue` ทิ้งก่อนถึงตัวนับ**
+  #     ⇒ มันพิมพ์ `54` ทั้งที่ candidate จริงคือ **65** · ทั้ง 11 ตัวเป็นของจริงทุกตัว
+  #  🔑 **ตัวนับที่ผมเพิ่มมาเพื่อไม่ให้ 0 แอบเป็น pass ถูกคำนวณด้วยโค้ดที่มี blind spot เอง**
+  #     ⇒ `54` อ่านเหมือน *ความครอบคลุม* ทั้งที่มันคือ *ความครอบคลุมลบสิ่งที่ parse ไม่ออก*
+  #     (lucifer: *"รูปเดิมอีกชั้นหนึ่ง"* — และเขาถูก)
+  #  ⇒ **เลิก parse ตารางไปเลย** · candidate มาจาก **ระบบไฟล์ล้วน ๆ** ซึ่งเป็นที่ที่ maw
+  #    สร้างแถวมาจากมันอยู่แล้ว: charter ใน `.maw/teams/*.yaml` ∪ dir ใน 2 store
+  #    (`maw team list --json` **ไม่มี** — พิมพ์ `unknown argument --json` แล้ว **exit 0**
+  #     รูปเดียวกับ `maw team <typo>` ที่ rc โกหกซึ่งไฟล์นี้จดไว้แล้ว)
+  local swept=0 cand seen=" " unparsed=0
+  # นับแถวที่ชื่อชนคอลัมน์ — ไม่ได้ใช้ตัดสินอะไร แต่ **ต้องพิมพ์คู่กับ swept เสมอ**
+  unparsed=$(_vc_team_list_plain 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
+    | awk '$1=="TEAM" && $2=="STORE"{h=1;next} h && NF>=3 && $1 ~ /(vault|tool)$/ {n++} END{print n+0}')
+  for cand in .maw/teams/*.yaml "$HOME/.claude/teams/"*/ "ψ/memory/mailbox/teams/"*/; do
+    [ -e "$cand" ] || continue
+    cand=$(basename -- "${cand%/}"); cand=${cand%.yaml}
+    case "$seen" in *" $cand "*) continue ;; esac
+    seen="$seen$cand "
     [ -d "$HOME/.claude/teams/$cand" ] || [ -d "ψ/memory/mailbox/teams/$cand" ] || continue
     swept=$((swept+1))
     out=$(teamclosed "$cand" 2>&1); rc=$?
@@ -1648,13 +1666,10 @@ selftest() {
       *CHARTER-ONLY*) echo "   ✗ '$cand' มี store dir ค้างแต่ได้ CHARTER-ONLY — บันทึกบัง residue"; fail=1 ;;
       *) [ $rc -eq 0 ] && { echo "   ✗ '$cand' มี store dir ค้างแต่ rc=0"; fail=1; } ;;
     esac
-  done <<EOF
-$(_vc_team_list_plain 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
-  | awk '$1=="TEAM" && $2=="STORE"{h=1;next} h && NF>=4 {print}' \
-  | while IFS= read -r r; do [ "$(_vc_row_verdict "$r")" = "charter-only" ] && printf '%s\n' "$(printf '%s' "$r" | awk '{print $1}')"; done)
-EOF
-  # **ประกาศเสมอว่ากวาดเจอกี่ตัว** — ถ้าเงียบตอน 0 ตัว แขนนี้จะกลายเป็น echo วันที่ของหาย
-  echo "   (กวาดของจริง: พบ ${swept} ทีมที่มีทั้งแถว charter-only และ store dir ค้าง จาก cwd นี้ — 0 = ไม่มีเคสให้ตรวจ ไม่ใช่ผ่าน)"
+  done
+  # **ประกาศเสมอ**: swept เดี่ยว ๆ บอกไม่ได้ว่าคือ *ทั้งหมด* หรือ *เท่าที่อ่านออก* (lucifer ข้อ 2)
+  echo "   (กวาดของจริงจาก cwd นี้: swept=${swept} · แถวที่ชื่อชนคอลัมน์ใน maw team list=${unparsed}"
+  echo "    candidate มาจากระบบไฟล์ ไม่ได้ parse ตาราง ⇒ unparsed ไม่ทำให้ swept หาย · 0 = ไม่มีเคสให้ตรวจ ไม่ใช่ผ่าน)"
   echo "7) enginereg: engine ที่ลงทะเบียนจริง (codex) ต้อง REGISTERED"
   if maw config >/dev/null 2>&1; then
     enginereg codex >/dev/null 2>&1 || { echo "   ✗ codex ควร REGISTERED (มีใน global maw.config.50.json)"; fail=1; }
