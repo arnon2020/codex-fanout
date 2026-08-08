@@ -29,8 +29,35 @@ negatives. The real binary is `…/@openai/codex-linux-x64/vendor/x86_64-unknown
 `skills.read` contract with `{"authority":{"kind":"executor"}}`, `<skills_instructions>`,
 `Failed to load environment skill at`.
 
-🔴 **`include_skills_usage_instructions` is a per-model flag, and the models this repo boots have
-it OFF.** `[verified: ~/.codex/models_cache.json]`
+## 🔴 REFUTED BY LIVE PROBE — 2026-08-08, `PROBE-8F2A`
+
+**The claim below that a `gpt-5.6-sol` worker "has the skills on disk and is never told they
+exist" is FALSE.** A live codex worker on exactly that model **listed 45 skills by name** when
+asked. `[verified: probe-1 @ 114-codex-fanout, codex 0.146.1, gpt-5.6-sol xhigh, own worktree]`
+
+> `imagegen, openai-docs, plugin-creator, skill-creator, skill-installer, about-oracle,
+> arra-oracle-search, awaken, bampenpien, bank-to-arra, bud, calver, code-to-blueprint,
+> create-shortcut, deep-research, dig, find-skills, forward, github:gh-address-comments,
+> github:gh-fix-ci, github:github, github:yeet, go, incubate, kien-thai, learn, …`
+
+⇒ `include_skills_usage_instructions: False` **does not gate skill visibility.** What it *does*
+gate is **unmeasured** — plausibly only the long "How to use skills" protocol preamble, while the
+catalogue is listed regardless. **Do not replace one inference with another: it is now
+`[unverified]`, not "harmless".**
+
+⇒ 45 names > the 35 dirs in `~/.codex/skills/` ⇒ **plugins and `.system/` contribute skills too**
+(`github:*`, `imagegen`, `skill-creator`). The skill surface is wider than the directory listing.
+
+⇒ 🪞 **This is why the probe existed.** The flag reading was labelled a structural claim, shipped
+in two commits, and used to argue *"settle the model question before writing anything."* That
+advice was **wrong and would have cost a model migration nobody needed.** Reading a config field
+correctly is not the same as knowing what the program does with it — the same defect as reading a
+shim instead of the program, one level up: **right file, right value, invented consequence.**
+
+The original reading, kept because the *fact* is still true and only the *conclusion* was wrong:
+
+`include_skills_usage_instructions` is a per-model flag, and the models this repo boots have
+it OFF. `[verified: ~/.codex/models_cache.json]`
 
 | model | skills usage instructions |
 |---|---|
@@ -188,6 +215,41 @@ Nothing else can leak in, and nothing can leak out.
 skip its auto-loaded `~/.claude/skills/` root. `"skills": {` exists in its config schema; the
 bundled/minified binary did not yield the semantics. **`[unresolved — not "no such option"]`**
 Out of scope now that the requirement is group→main only; it returns if main→group ever matters.
+
+## 5b. PROBE-8F2A — what the live worker actually did `[2026-08-08]`
+
+Setup: `ψ/teams/probe-agentsmd.yaml` · 1 member · engine `codex-sol` → `codex --model gpt-5.6-sol`
+· own worktree `agents/probe-agentsmd` off `main` · `maw team apply … --apply`.
+
+**Three things the spawn path taught, before the answer even arrived:**
+
+- `maw team up` takes a **team name, not a charter path**. `maw team apply <team.yaml> --apply` is
+  the verb that reads a charter. `maw team up <path>` prints `charter not found` **and exits 0** —
+  the lying-rc trap, again.
+- `maw team preflight` earned its place: it caught **3 real blockers** (worktree dir absent,
+  `.maw-engine` unreadable, and **no codex trust entry** for the worktree path in
+  `~/.codex/config.toml`). All three would have produced a confusing half-boot.
+- The window came up as **`probe-1-oracle`**, not `probe-1` — the repo's own golden rule, live.
+  And `bootverify` caught the pane **sitting on the codex update dialog** with *"Update now"*
+  highlighted. A blind Enter there runs `npm install -g` against the whole machine. Read the menu,
+  send `2` (Skip). `relay()` also correctly **REFUSED** a target missing its `.pane`.
+
+**The answer:**
+
+1. **AGENTS.md is reachable and was quoted verbatim** — final line, exactly, including em-dash.
+2. **Trap 2 quoted word-for-word**, markdown formatting and all.
+3. **45 skills listed by name** (see the refutation above).
+
+🔑 **Unprompted, it answered in the file's own format**: `1. Yes. [verified: sed -n '1,$p'
+AGENTS.md → exit 0]` — the evidence label `AGENTS.md` defines, applied on its first turn without
+being asked to. **That is the strongest evidence in this document that the file works.**
+
+⚠️ **But the probe does not prove auto-load, and the question was mine to get right.** The worker
+ran `git rev-parse --show-toplevel` and then `sed -n '1,$p' AGENTS.md` — **it went and read the
+file because the question named it.** That proves *reachable and obeyed*, not *injected at session
+start*. Asking "is there a file named AGENTS.md" **built the answer into the question**. The clean
+test names no file: ask a team-rule question cold and see whether it answers or goes looking — and
+it needs a **fresh** worker, because this one now has the whole file in context.
 
 ## 6. ⚠️ What is NOT verified
 

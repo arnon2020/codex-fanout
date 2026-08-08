@@ -1,0 +1,30 @@
+# Probe charter — 2026-08-08
+# Question: does a codex worker (a) read AGENTS.md at its cwd, and (b) see any skills?
+# Engine is deliberately codex-sol = gpt-5.6-sol, the model this repo actually boots and the
+# one whose include_skills_usage_instructions is False in models_cache.json. Testing any other
+# model would answer a question nobody asked.
+name: probe-agentsmd
+project: arnon2020/codex-fanout
+session: 114-codex-fanout
+
+goal: |
+  One codex worker, one probe, no code changes. Report to lead and stop.
+
+members:
+  - role: probe-1
+    name: probe-1
+    engine: codex-sol
+    worktree: agents/probe-agentsmd
+    branch: agents/probe-agentsmd
+    prompt: |
+      You are a probe. Do NOT write code, do NOT commit, do NOT change any file.
+      WAIT for your question via maw hey, answer it exactly, then stop.
+      Report to: 114-codex-fanout:codex-fanout
+
+  # No lead member on purpose: the lead (114-codex-fanout:codex-fanout) is already live.
+  # Declaring it here made preflight fail on ".maw-engine: lead has no worktree to inspect"
+  # and would have risked spawning a second claude over the running session.
+
+lifecycle:
+  worktree: true
+  merge_on_shutdown: false
