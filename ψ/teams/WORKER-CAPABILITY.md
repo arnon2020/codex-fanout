@@ -334,8 +334,21 @@ Both return `success: true` with IDs, and both files exist on disk at
 `~/.arra-oracle-v2/ψ/memory/learnings/` — **not** in this repo, because Arra banks into its own
 vault regardless of the `project:` field.
 
-🔴 **But neither is searchable yet.** `arra_search` in `mode: fts` returns **`ftsMatches: 0`** for
-`PROBE-C4D1`, and a query on the new entry's own concept token surfaces only unrelated documents.
+🔴 **But neither is searchable yet — and my first proof of that was worthless.**
+
+> ⚠️ **Correction, caught by arnon asking "reindex อะไรว่ะ".** I first showed "not findable" by
+> searching **`PROBE-C4D1`** and getting `ftsMatches: 0`. **That token is not in the document** —
+> `grep -c` → **0**. It only ever lived in the `verified_by` *parameter*, which does not land in the
+> file body. **I searched for a word I never wrote, then blamed the index.** Then I proposed
+> "reindex" as the fix — **there is no such verb**; Arra exposes 13 tools and none touches the
+> index. A guessed remedy for a defect proven by a broken probe.
+>
+> **The conclusion survives on real evidence:** `cwd` appears in the entry's own *title*; `fts` for
+> `cwd` returns 6 documents and **mine is not among them**. FTS itself is healthy — it returns hits
+> for every probe. The new entries are simply absent from it.
+>
+> ⇒ 🪞 **Being accidentally right is worse than being wrong**, because nothing forces a recheck.
+> The claim shipped in a commit and would have stood if one word in a summary had gone unquestioned.
 The write response says `"embedding": "enqueued"` — async, and the FTS index has not taken them.
 
 ⇒ **`arra_learn` returning success means written, not findable.** That is the same shape as every
@@ -345,5 +358,6 @@ root: `awaken/SKILL.md` step 5.2 claims *"auto-memory layer picks up new files a
 separate API call needed"*, and that claim is **false**.
 
 ⇒ **Do not report "banked" as done.** Report it as written, and **re-probe with a distinctive
-single token before claiming the fleet can find it.** Unresolved here: whether the index catches
-up on its own or needs an explicit reindex — **`[unverified]`**, deliberately not guessed.
+single token before claiming the fleet can find it.** Unresolved here: what actually
+closes the gap. **Not** "reindex" — that verb does not exist. `[unverified]`, and this time
+genuinely not guessed.
