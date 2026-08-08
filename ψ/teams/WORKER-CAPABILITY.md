@@ -99,7 +99,97 @@ Not a missing feature — a **distribution** failure, the class this repo alread
 Related: field notes 08-04 line 417 — this repo has **no tracked `AGENTS.md`**, the other thing
 codex reads at cwd ⇒ a worker gets **zero** role and zero persona from the repo it works in.
 
-## 5. ⚠️ What is NOT verified
+## 5. Containment — keeping group-only skills out of main
+
+arnon's requirement, narrowed by arnon himself to the one direction that matters:
+*"แค่ไม่ให้ skill ที่ใช้เฉพาะกลุ่มไหลเข้า main ก็พอ"* — **group → main**, not main → group.
+The reason is selection signal-to-noise, not storage: a bloated main makes the right skill
+unpickable.
+
+**Answer: nothing flows up, on either engine.** No mechanism in codex or opencode promotes a
+project/group skill into `~/.claude/skills/`. Skills arrive in main exactly two ways, both
+deliberate: **an installer puts them there**, or **someone symlinks them in**. ⇒ What arnon wants
+is already guaranteed by construction. There is no hole to plug — only a discipline to hold:
+**a skill born for a team never gets installed globally.**
+
+`[scope of this absence claim: skill-root strings in both real binaries — codex reads only
+$CODEX_HOME/skills; opencode reads 4 fixed roots. Neither exposes a promote/publish path. The
+observed population of main is fully accounted for by install + symlink, below.]`
+
+### But main is already crowded, and it was not leakage
+
+`[verified 2026-08-08]` `~/.claude/skills/` = **53 real dirs + 25 symlinks = 78 entries**, and
+**24 of the 25 symlinks point into one external collection**, `ghq/github.com/mattpocock/skills`:
+
+`caveman` `diagnose` `edit-article` `git-guardrails-claude-code` `grill-me` `grill-with-docs`
+`handoff` `improve-codebase-architecture` `migrate-to-shoehorn` `obsidian-vault` `prototype`
+`review` `scaffold-exercises` `setup-matt-pocock-skills` `setup-pre-commit` `tdd` `to-issues`
+`to-prd` `triage` `write-a-skill` `writing-beats` `writing-fragments` `writing-shape` `zoom-out`
+(the 25th is `find-skills` → `~/.agents/skills/`).
+
+⇒ **The bloat arnon predicted has already happened, and its cause is not the one this document
+spent the day chasing.** It is one collection mounted wholesale, 24 deliberate acts. Some of it
+is arguably universal for a coder (`tdd`, `triage`, `review`, `diagnose`); some is clearly not
+(`obsidian-vault`, `writing-beats`, `migrate-to-shoehorn`). **Not this oracle's call — the owner
+of those symlinks decides.**
+
+### The design, collapsed
+
+⚠️ **The 3-tier tree drawn earlier in this conversation was over-engineered for the stated
+requirement.** Once the requirement is one-directional, per-role roots and the `skills/extraRoots`
+alias machinery stop being necessary. Recorded rather than quietly dropped, because the smaller
+answer only appeared *after* arnon narrowed the question — which is the useful lesson.
+
+```
+📁 <repo>/
+├── ψ/teams/skills/ ........... skills born for the team — in git, one source
+│   👁️ codex worker:   ~/.codex-<oracle>/N/skills ──symlink──▶ here
+│   👁️ opencode:       <repo>/.opencode/skills/ (cwd-relative, picked up free)
+│   🚫 never installed to ~/.claude/skills/  ← the whole rule
+└── .claude/skills/ ........... lead only
+
+🏠 ~/.claude/skills/ .......... universal only · shared by every oracle ·
+                                cannot be trimmed unilaterally
+```
+
+| what | rule |
+|---|---|
+| **the one rule** | a skill born for a team lives in `<repo>/ψ/teams/skills/` and is **never installed globally** |
+| **codex** | symlink `$CODEX_HOME/skills` → the team folder (per-worker home keeps sqlite isolated — `setup-codex-home.sh` already has `skills` in `SYMLINK_ITEMS`) |
+| **opencode** | `<repo>/.opencode/skills/` — cwd-relative, no setup |
+| **one decision, not ours** | the 24 `mattpocock` symlinks: keep, drop, or make repo-scoped |
+
+### 🎯 If the team is all codex — which it usually is here
+
+arnon, mid-thread: *"ลูกทีมเป็น codex จะทำอย่างไรล่ะ มันไม่ใช่ claude"*. Fair — most of §5 above is
+framed around `~/.claude/skills/`, and **codex cannot see that directory at all.**
+
+For a codex-only team the containment question is **already solved and always was**:
+
+| | codex worker |
+|---|---|
+| `~/.claude/skills/` (54 + 25 symlinks) | **invisible** — not a root codex reads |
+| the 24 `mattpocock` symlinks | **irrelevant** — cannot reach a codex worker |
+| what *is* their "main" | **`~/.codex/skills/` — 35 skills**, seen by every codex worker today |
+| why they see all 35 | `CODEX_HOME` is unset ⇒ default `~/.codex` ⇒ one shared main (§3) |
+
+⇒ **Restating the requirement in codex's own terms**: *"main มีแค่ skill ที่ทุกคนจำเป็น"* means
+trimming **`~/.codex/skills/`**, not `~/.claude/skills/`. And that directory is **far easier to
+act on** — it is not the shared Claude Code root every oracle depends on, and its current 35 are
+an oracle catalogue installed once on 2026-07-17 (§4), not something the fleet is relying on.
+
+⇒ **The move for a codex team is a single lever**: give each worker a `CODEX_HOME` whose
+`skills/` symlinks to `<repo>/ψ/teams/skills/<role>/`. That one change simultaneously
+(a) fixes the SQLite collision, (b) gives per-role skill sets, and (c) makes what a worker can see
+**exactly** what the charter chose — because `$CODEX_HOME/skills/` is codex's *only* skill root.
+Nothing else can leak in, and nothing can leak out.
+
+📌 **Unresolved, and it only affects the *other* direction** — whether opencode can be told to
+skip its auto-loaded `~/.claude/skills/` root. `"skills": {` exists in its config schema; the
+bundled/minified binary did not yield the semantics. **`[unresolved — not "no such option"]`**
+Out of scope now that the requirement is group→main only; it returns if main→group ever matters.
+
+## 6. ⚠️ What is NOT verified
 
 All of the above is disk and binary. **No live worker has been observed loading or invoking a
 skill.** On this repo's evidence ladder that is far below the top rung — *agent refers to the
@@ -111,11 +201,15 @@ quote that appears only in that `SKILL.md`.
 
 ## Next moves, cheapest first
 
-1. **Probe** — one codex + one opencode worker, level-4 evidence. §1–§2 are structural until then.
+1. **Probe** — one codex + one opencode worker, level-4 evidence (quote a string that exists only
+   in one `SKILL.md`). §1–§2 are structural claims until this runs, and it settles the §1 model
+   flag in the same shot.
 2. **Settle the model question before writing anything.** On `gpt-5.6-sol` the usage instructions
    are `False`; a new skill may be invisible. Either boot a `True` model for coders, or carry the
    contract in the dispatch text / `AGENTS.md` where the flag cannot gate it.
-3. **Write the missing coder skill** — dispatch contract · done-criteria · worktree/branch
-   discipline · report-back shape. Install to `~/.codex/skills/` **and** a root opencode reads.
+3. **Create `<repo>/ψ/teams/skills/`** and write the missing coder skill — dispatch contract ·
+   done-criteria · worktree/branch discipline · report-back shape. **Do not install it globally**
+   (§5). Point `$CODEX_HOME/skills` at it; opencode picks it up from `.opencode/skills/`.
 4. **Add a tracked `AGENTS.md`** so role/persona survive with no skill install and no flag.
-5. **Repair the seeder before using it** so isolation stops costing capability.
+5. **Repair the seeder before using it** so isolation stops costing capability (§3).
+6. **Owner's call, not ours** — the 24 `mattpocock` symlinks in main (§5).
