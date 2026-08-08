@@ -1191,6 +1191,29 @@ maw team up "$TEAM"               # real
 > |---|---|---|
 > | 0.146.0 | `1. Update now` · `2. Skip` | **2** |
 > | 0.146.1 | `1. Update now` · `2. Skip` · `3. Skip until next version` | **2** — and **3 writes a persistent preference into shared codex state** |
+> | 0.147.0 | **no update dialog at all** (it is current). A fresh worktree lands on the **trust** dialog instead: `1. Yes, continue` · `2. No, quit` | **n/a — and the highlighted default is now `1`, which GRANTS trust** |
+>
+> > 🔴 **That last row inverts what a blind Enter does — and this machine reached it the hard
+> > way.** `[verified 2026-08-08 ~23:5x: codex --version → 0.147.0; binary mtime 23:52; booted
+> > a fresh dir and read the screen]` Hours earlier, a member pane in another oracle's team took
+> > `1` on the 0.146.1 update dialog **before its lead had touched that pane**, ran `npm install
+> > -g @openai/codex`, and upgraded codex for **every oracle on this machine**. Second
+> > occurrence of the incident this section was written about, different house, five days apart.
+> >
+> > ⇒ 🔑 **The lesson most people took from the first occurrence — "learn which number Skip
+> > is" — is the wrong lesson, and this row proves it.** The index that was *catastrophic* on
+> > 0.146.1 is the index that is *required* on 0.147.0. **No number is safe to know in
+> > advance**, because the hazard belongs to *(version × pane state)*, not to the CLI. Only two
+> > things generalize: **match the banner first**, then **read the number off the pane you just
+> > matched**.
+> >
+> > ⇒ ⚠️ **A bare Enter takes the highlighted item, and the pane looks identical either way.**
+> > If any spawn path in your stack sends Enter to "clear startup screens", it is not dismissing
+> > a dialog — it is **answering an unread question about shared state**. After an incident like
+> > this, audit that path, not the operator.
+> >
+> > ⇒ ⏳ **Every claim tagged to codex 0.146.x on this machine now measures a binary that no
+> > longer exists.** `valid-if: codex --version`
 >
 > Step 6's table said `2`, prism's snippet says `3`, and `verify-check.sh`'s own remedy line said
 > **`(3=Skip)`** — mislabelled, **in the hint attached to the check whose entire lesson is "never
