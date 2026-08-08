@@ -319,3 +319,31 @@ quote that appears only in that `SKILL.md`.
 4. **Add a tracked `AGENTS.md`** so role/persona survive with no skill install and no flag.
 5. **Repair the seeder before using it** so isolation stops costing capability (§3).
 6. **Owner's call, not ours** — the 24 `mattpocock` symlinks in main (§5).
+
+---
+
+## 📡 Banked to Arra — and the bank is not yet a distribution `[2026-08-08]`
+
+Two entries written, split per `bank-to-arra` step 2 (the draft was one packet with a "Plus:" in
+it — two findings, two categories, so two calls):
+
+- `pattern_2026-08-08_codex-injects-agentsmd-from-cwd-at-session-start` (`category:agent-orchestration`)
+- `learning_2026-08-08_codex-includeskillsusageinstructionsfalse-does` (`category:dev-tooling`)
+
+Both return `success: true` with IDs, and both files exist on disk at
+`~/.arra-oracle-v2/ψ/memory/learnings/` — **not** in this repo, because Arra banks into its own
+vault regardless of the `project:` field.
+
+🔴 **But neither is searchable yet.** `arra_search` in `mode: fts` returns **`ftsMatches: 0`** for
+`PROBE-C4D1`, and a query on the new entry's own concept token surfaces only unrelated documents.
+The write response says `"embedding": "enqueued"` — async, and the FTS index has not taken them.
+
+⇒ **`arra_learn` returning success means written, not findable.** That is the same shape as every
+other lesson today — `delivered` is not received, a file on my disk is not a file on theirs, a
+`git commit` is not distribution — arriving one layer further out. This repo already records the
+root: `awaken/SKILL.md` step 5.2 claims *"auto-memory layer picks up new files automatically — no
+separate API call needed"*, and that claim is **false**.
+
+⇒ **Do not report "banked" as done.** Report it as written, and **re-probe with a distinctive
+single token before claiming the fleet can find it.** Unresolved here: whether the index catches
+up on its own or needs an explicit reindex — **`[unverified]`**, deliberately not guessed.
