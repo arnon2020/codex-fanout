@@ -1214,6 +1214,47 @@ maw team up "$TEAM"               # real
 > >
 > > ⇒ ⏳ **Every claim tagged to codex 0.146.x on this machine now measures a binary that no
 > > longer exists.** `valid-if: codex --version`
+> >
+> > 🩹 **…and that `valid-if` is itself half wrong — corrected the same night.**
+> > `codex --version` reads the file **on disk**: it answers *"what will the next boot get"*,
+> > never *"what is this pane running"*. A pane that booted before the swap keeps executing the
+> > replaced binary — `readlink /proc/<pid>/exe` on one of them returns
+> > `…/@openai/.codex-dmd5Al78/…/bin/codex **(deleted)**`, because the kernel holds the inode.
+> > `[verified 2026-08-09]` ⇒ for a claim measured against a **live pane**, check
+> > `readlink /proc/<child-pid>/exe` (child, not pane pid — the pane is a bare shell) or read
+> > that pane's own status bar. Found by ajfon before me: their worker ran 0.146.1 straight
+> > through the upgrade.
+
+> ## 🤝 Trust is matched on the EXACT path — it does **not** inherit from an ancestor
+>
+> `[verified 2026-08-09 · codex 0.147.0 · both arms, throwaway CODEX_HOME, no shared state touched]`
+>
+> This is the same class as the permission dimension — **a pane that boots, looks alive, and
+> sits on a question** — only it fires at t=0 instead of at first write.
+>
+> | arm | config | cwd | result |
+> |---|---|---|---|
+> | A | only `[projects."/home/user"]` trusted | `/home/user/.tmp-trustprobe/armA` | **full trust dialog** |
+> | B | + `[projects."/home/user/.tmp-trustprobe/armB"]` | `…/armB` | **boots straight to the prompt** |
+>
+> `/home/user` is an ancestor of every worktree on this machine and is trusted — **and it still
+> asks.** That is why one house's codex home carries 38 per-worktree entries under a parent that
+> was already trusted; they are not redundant. (lucifer measured arm A and declared, correctly,
+> that their delete-arm never ran; arm B is the missing half, run here.)
+>
+> ```bash
+> # pre-spawn, touches no pane, needs no boot:
+> grep -cF "[projects.\"$MEMBER_WORKTREE\"]" "$CODEX_HOME/config.toml"   # 1 = clean · 0 = it will sit
+> ```
+> `enginecheck` now prints this per codex member (`🤝 trust` / `🟠 trust`) and emits
+> `enginecheck.unverified: codex-trust-dialog-expected`.
+>
+> ⚠️ **Read the right home.** This machine has **at least six codex homes** — aliases that set
+> their own `CODEX_HOME` per role. A check that reads `~/.codex` answers for one of them and
+> silently speaks for all. `enginecheck` reads the home *that alias points at*.
+>
+> ⛔ **Do not clear this dialog with a bare Enter.** On 0.147.0 the highlighted default is
+> `1. Yes, continue` — it grants trust unread. On 0.146.1 the same index was `Update now`.
 >
 > Step 6's table said `2`, prism's snippet says `3`, and `verify-check.sh`'s own remedy line said
 > **`(3=Skip)`** — mislabelled, **in the hint attached to the check whose entire lesson is "never

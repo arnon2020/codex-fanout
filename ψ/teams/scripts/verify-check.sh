@@ -1381,6 +1381,54 @@ _vc_perm_report() {
 "
 }
 
+# ── _vc_trust_report <role> <resolved-cmd> <member-dir> ─────────────────────
+# 🔴 คลาสเดียวกับ permission เป๊ะ — **ค้างตอน boot โดยที่ทุกด่านเขียว** แค่คนละนาที
+#    codex ถาม `Do you trust the contents of this directory?` เมื่อ **path ของสมาชิก**
+#    ไม่มี entry ใน `$CODEX_HOME/config.toml` ⇒ pane นั่งรอ ไม่รับ turn
+#
+# 🧪 **trust เทียบ path แบบเป๊ะ ไม่สืบทอดจาก ancestor** `[verified 2026-08-09 · 0.147.0 · 2 แขน]`
+#    lucifer วัดแขนบวกได้แขนเดียวแล้วประกาศขอบเขตตัวเองไว้ตรง ๆ · ผมยิงแขนที่ขาดให้ครบ
+#    ใช้ throwaway `CODEX_HOME` (ไม่แตะ home จริงของใคร) แล้วลบทิ้งพร้อม auth:
+#      ARM A  trust เฉพาะ `[projects."/home/user"]` · cwd `/home/user/.tmp-trustprobe/armA`
+#             ⇒ **ขึ้น trust dialog เต็มจอ** ทั้งที่ ancestor ถูก trust แล้ว
+#      ARM B  เพิ่ม `[projects."/home/user/.tmp-trustprobe/armB"]` · cwd อันเดียวกัน
+#             ⇒ **บูตเข้า prompt ตรง ไม่มี dialog**
+#    ⇒ **ตกได้ทั้งสองทิศ** ⇒ `/home/user` ถูก trust ไม่ได้ช่วย worktree ลูกแม้แต่ระดับเดียว
+#    ⇒ นี่คือเหตุผลที่ home ของ lucifer มี entry ราย worktree 38 อัน ทั้งที่ ancestor trusted แล้ว
+#
+# ⚠️ **เครื่องนี้มี codex home อย่างน้อย 6 แห่ง** (lucifer ตั้ง `CODEX_HOME` แยกต่อ role)
+#    ⇒ ด่านที่อ่าน `~/.codex` ที่เดียว **ตอบแทนทั้งเครื่องไม่ได้** ⇒ อ่าน home ที่ *alias นี้* ชี้ไป
+_vc_trust_report() {
+  local role="$1" cmd="$2" mdir="$3" ch cfg n
+  case "$(_vc_argv_basename "$(_vc_strip_env_prefix "$cmd")" 1)" in
+    codex) ;;
+    *) return 0 ;;                      # engine อื่นไม่มีกลไกนี้ — เงียบ ดีกว่าเดา
+  esac
+  ch=$(printf '%s' "$cmd" | sed -n 's/.*CODEX_HOME=\([^ ]*\).*/\1/p')
+  ch="${ch/#\$HOME/$HOME}"; ch="${ch/#\~/$HOME}"
+  cfg="${ch:-$HOME/.codex}/config.toml"
+  if [ ! -r "$cfg" ]; then
+    printf '    ❓ trust    อ่าน %s ไม่ได้ ⇒ ตอบไม่ได้ว่าจะเจอ trust dialog ไหม\n' "$cfg"
+    machine="${machine}enginecheck.trust: $role unknown home=${ch:-$HOME/.codex}
+"; return 0
+  fi
+  n=$(grep -cF "[projects.\"$mdir\"]" "$cfg" 2>/dev/null || true)
+  if [ "${n:-0}" -ge 1 ]; then
+    printf '    🤝 trust    exact-path entry มีอยู่แล้วใน %s ⇒ ไม่เจอ dialog ตอนบูต\n' "$cfg"
+    machine="${machine}enginecheck.trust: $role trusted home=${ch:-$HOME/.codex}
+"
+  else
+    printf '    🟠 trust    **ไม่มี entry สำหรับ path นี้** ⇒ pane จะขึ้น `Do you trust…` แล้วนั่งรอ\n'
+    printf '               ตรวจที่: %s\n' "$cfg"
+    printf '               ⚠️ trust เทียบ path **เป๊ะ** ไม่สืบทอดจาก ancestor — `/home/user` trusted ไม่ช่วย\n'
+    printf '                  `[verified 2026-08-09 · codex 0.147.0 · ตกได้สองทิศ]`\n'
+    printf '               ⛔ **อย่าเคลียร์ด้วย Enter เปล่า** — 0.147.0 ไฮไลต์ `1. Yes, continue`\n'
+    printf '                  (บน 0.146.1 เลข 1 คือ `Update now` ที่อัปเกรด binary ทั้งเครื่อง)\n'
+    machine="${machine}enginecheck.trust: $role untrusted home=${ch:-$HOME/.codex}
+"
+  fi
+}
+
 # ── permstall <session> ─────────────────────────────────────────────────────
 # 🔑 **ชั้นที่บันไดหลักฐานของเราไม่มี: ความพร้อมมันหมดอายุ**
 #
@@ -1713,6 +1761,7 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
       # แยก namespace เป็น `enginecheck.perm:` ไม่ยัดใน `enginecheck.member:`
       # เพราะ consumer ของ atlas grep ฟิลด์นั้นอยู่ — เพิ่มบรรทัด ไม่แก้รูปเดิม
       _vc_perm_report "$role" "$engine" "$cmd"
+      _vc_trust_report "$role" "$cmd" "$mdir"
       if [ -n "$model" ]; then
         case "$cmd" in
           *"--model $model"*|*"-m $model"*|*"--model=$model"*)
@@ -1749,6 +1798,9 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
   # ⇒ ต้องอยู่ใน unverified list ที่ gate ของบ้านอื่น grep ได้ ไม่ใช่ซ่อนใน prose ไทย
   printf '%s\n' "$machine" | grep -qE 'enginecheck.perm: .* (ask|allowlist|unknown) ' \
     && unv="${unv}${unv:+,}permission-not-bypassed"
+  # 2026-08-09: trust dialog = ค้างตอน boot คลาสเดียวกับ permission แค่คนละนาที
+  printf '%s\n' "$machine" | grep -qE 'enginecheck.trust: .* (untrusted|unknown) ' \
+    && unv="${unv}${unv:+,}codex-trust-dialog-expected"
   printf '%s\n' "$machine" | grep -q ' UNVERIFIED ' && unv="${unv}${unv:+,}member-unresolvable"
   printf '%s\n' "$machine" | grep -q 'scope=dir-absent' && unv="${unv}${unv:+,}answered-from-ancestor"
   # 🏷️ ajfon 2026-08-06: เขาแต่งชื่อ model ที่ไม่มีอยู่จริง (`gpt-5.5-codex` ทั้งที่ default
@@ -2527,6 +2579,30 @@ PY
     ask\|*) echo "   ✓ env prefix + ไม่มีแฟลก → ยัง ask (ไม่ใช่ผ่านเพราะอ่านออกแล้ว)" ;;
     *) echo "   ✗ พออ่าน env ทะลุแล้วกลับตัดสินว่าผ่าน"; fail=1 ;;
   esac
+  # 🧪 trust: exact-path ไม่สืบทอดจาก ancestor `[verified 2026-08-09 · 2 แขนจริงบน 0.147.0]`
+  #    ทดสอบตัวอ่าน config ด้วย fixture ของตัวเอง — ไม่แตะ home จริงของใคร
+  local _tcfg _td; _td=$(mktemp -d); mkdir -p "$_td/home"
+  printf '[projects."/parent"]\ntrust_level = "trusted"\n' > "$_td/home/config.toml"
+  machine=""
+  _vc_trust_report probe "CODEX_HOME=$_td/home codex --model x" "/parent/child" >/dev/null
+  case "$machine" in
+    *"probe untrusted"*) echo "   ✓ trust: ancestor trusted ไม่ทำให้ลูกผ่าน (แขนที่ lucifer รันไม่ได้)" ;;
+    *) echo "   ✗ trust: ตัวอ่านสืบทอดจาก ancestor ซึ่งขัดกับของจริง — ได้: $machine"; fail=1 ;;
+  esac
+  machine=""
+  printf '[projects."/parent/child"]\ntrust_level = "trusted"\n' >> "$_td/home/config.toml"
+  _vc_trust_report probe "CODEX_HOME=$_td/home codex --model x" "/parent/child" >/dev/null
+  case "$machine" in
+    *"probe trusted"*) echo "   ✓ trust: exact-path entry ทำให้ผ่าน (ไม่ false alarm)" ;;
+    *) echo "   ✗ trust: มี entry เป๊ะแล้วยังบอกว่าไม่มี"; fail=1 ;;
+  esac
+  machine=""
+  _vc_trust_report probe "CODEX_HOME=$_td/nonexistent codex --model x" "/parent/child" >/dev/null
+  case "$machine" in
+    *"probe unknown"*) echo "   ✓ trust: อ่าน config ไม่ได้ → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
+    *) echo "   ✗ trust: อ่านไม่ได้แล้วตัดสินว่าผ่าน"; fail=1 ;;
+  esac
+  rm -rf "$_td"; machine=""
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
