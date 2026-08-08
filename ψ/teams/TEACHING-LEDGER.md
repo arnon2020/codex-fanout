@@ -2005,3 +2005,47 @@ psi-teams / ชื่อยาว≥30 ต่อบ้าน) ⇒ เครื�
 `restart-verify-v1` CLOSED rc=0 · tmux 0 · fleet reservation 0 · worktree เก็บครบ 3/3 ตามตั้งใจ
 
 🕳️ **เปิดค้าง ตรงกันทั้งสองบ้าน**: รูตาบอดร่วม 3 source — ไม่มี witness ที่ไม่ผ่าน glob ของเราเอง
+
+---
+
+## 2026-08-08 · 📮 แจกงาน "worker skill ตรงกับ role" ให้หัวหน้าทีม 7 บ้าน
+
+**คำสั่ง arnon**: *"มอบหมายงานพัฒนาทีมให้กับหัวหน้าทีมของแต่ละทีมไปทำกับทีมตัวเอง
+มีคำถามให้ถาม codex-fanout"* ⇒ ผมไม่ได้เขียน skill ให้ใคร ผมส่งของที่พิสูจน์แล้ว + ยืนเป็นโต๊ะตอบ
+
+**ผู้รับ 7 คน · ส่ง 2 ช่องทางทุกคน**
+`relay()` เข้า pane (`delivered` rc=0 ทั้ง 7) **และ** เขียนไฟล์ลง `ψ/inbox/` **ของเขาเอง**
+(`2026-08-08_codex-fanout_ASSIGN-role-matched-worker-skills.md` · 12,354 bytes เท่ากันทุกคน)
+— ไม่ใช่ `--durable` ซึ่งเขียนลงตู้ผมเอง
+
+| ผู้รับ | target | pane | ไฟล์ในบ้านเขา |
+|---|---|---|---|
+| lucifer | `84-lucifer:lucifer-oracle.0` | ✅ delivered | ✅ (ฉบับของเขามีย่อหน้าเพิ่ม — ชนกับ `audit-worker-skills-tools` ที่เขาทำอยู่) |
+| atlas | `112-atlas:atlas-oracle.0` | ✅ delivered | ✅ |
+| tars | `113-tars:tars-oracle.0` | ✅ delivered | ✅ |
+| loom | `116-loom:loom-oracle.0` | ✅ delivered | ✅ |
+| prism | `117-prism:prism-oracle.0` | ✅ delivered | ✅ |
+| holmes | `18-holmes:holmes-oracle.0` | ✅ delivered | ✅ |
+| ajfon | `40-ajfon:ajfon.0` | ✅ delivered | ✅ |
+
+🪜 **ทั้ง 7 อยู่ที่ชั้น 1 ของบันไดหลักฐาน** — `delivered` แปลว่าข้อความถึง pane เท่านั้น
+6 ใน 7 เป็น session ที่ `maw ls -v` แสดงเป็น ◌ (ไม่ active) **ยังไม่มีใครอ้างถึงเนื้อหากลับมา
+= ยังไม่มีใครรับเข้า turn** ห้ามนับเป็นสอนแล้ว จนกว่าจะมีคำตอบที่อ้างถึงเนื้อใน
+
+### claim ที่แจกออกไป — ถ้าข้อไหนล้ม ต้องส่ง retraction ให้ครบทั้ง 7
+
+| # | claim | label |
+|---|---|---|
+| C1 | codex inject `AGENTS.md` จาก cwd ตั้งแต่เปิดเซสชัน ⇒ กฎที่ทุกคนต้องทำให้ใส่ที่นั่น ไม่ใช่ skill | `[verified: PROBE-C4D1 + 9B7E · codex 0.146.1 · gpt-5.6-sol · 4/4 ไม่รันคำสั่ง]` |
+| C2 | ตั้ง `CODEX_HOME` แยกต่อ role แล้ว catalogue เปลี่ยนทั้งกอง และ worker **เลือก** skill เอง | `[verified 2026-08-08: 2 probe · exit 0 · token grep-unique + คำตอบที่มีในไฟล์เดียว]` |
+| C3 | codex เขียน built-in 616K ลง `$CODEX_HOME/skills/.system/` ตอนบูตแรก ⇒ ห้าม symlink root ชี้เข้า git | `[verified: find + du หลังบูตจริง]` |
+| C4 | `CODEX_HOME` ใต้ `/tmp` → ปฏิเสธสร้าง PATH helper แล้ว**เตือนอย่างเดียว ไปต่อ** | `[verified: เจอกับตัว]` |
+| C5 | `codex exec` ค้างตลอดกาลถ้าไม่ `</dev/null` ทั้งที่ส่ง prompt เป็น argument | `[verified: ค้าง 2 รอบ 12 นาที แล้วหายเมื่อปิด stdin]` |
+| C6 | opencode อ่าน `~/.claude/skills/` ด้วย ⇒ ถือ global inventory ของหัวหน้าไปเงียบ ๆ | `[verified: doc table ในตัว binary]` — **นี่คือการถอน claim เก่าของผมที่ว่า "opencode ไม่มีช่อง skill"** |
+| C7 | การแยก skill **root** ทำได้ 100% · การแยก **catalogue** ทำไม่ได้ และจำนวนไม่นิ่ง (7→11 ระหว่างสองรอบ) | `[verified: นับจาก output ของ worker เอง 2 ครั้ง]` |
+
+⚠️ **C7 คือข้อที่ผมเสี่ยงจะโดนล้มที่สุด** — ผมอธิบายไม่ได้ว่าทำไม `github:*` โผล่รอบที่สอง
+แต่ไม่โผล่รอบแรก **ผมส่งตัวเลขที่วัดได้ ไม่ได้ส่งกลไก** ถ้าใครหาเหตุได้ ผมอยากรู้
+
+📌 **สิ่งที่ผมยังไม่ได้ทำและบอกไปตรง ๆ**: ที่พิสูจน์มาเป็น `codex exec` ตรง ๆ
+**ยังไม่ได้ผ่าน `maw team up` จริงสักรอบ** — วงจร spawn เต็มยังเป็นหนี้ค้างของผมเอง
