@@ -251,6 +251,32 @@ start*. Asking "is there a file named AGENTS.md" **built the answer into the que
 test names no file: ask a team-rule question cold and see whether it answers or goes looking — and
 it needs a **fresh** worker, because this one now has the whole file in context.
 
+## 5c. PROBE-C4D1 — ✅ AGENTS.md **is** auto-injected `[verified 2026-08-08]`
+
+The clean re-run PROBE-8F2A could not do. Fresh worker (`probe-2`, `gpt-5.6-sol`, own worktree,
+`Context 0% used`), a question that **names no file**, and an explicit instruction: *answer only
+from what is already in your context; do not read, open, list, grep or search any file; if you
+would need to look something up, reply exactly `NEED-TO-LOOK`.*
+
+| asked | answered |
+|---|---|
+| what must accompany a DONE report? | *"The command and its output (including exit code), test name and actual pass/fail line, and changed-file commit SHA"* |
+| what happens to a claim with no label? | *"An unlabeled claim is read as `[unverified]`."* ← **verbatim** |
+| which branch do PRs target? | *"Pull requests target alpha."* |
+
+**No `NEED-TO-LOOK`. No command executed** — the transcript shows no `Ran …` line, and context went
+0% → 2%, the cost of a reply, not of reading a 90-line file.
+
+⇒ **codex injects `AGENTS.md` from the working directory at session start.** A worker knows the
+team's rules **before it is told anything**. This is the one claim in this document that reached
+the top of the evidence ladder by a probe designed not to give away its own answer.
+
+⇒ **Consequence for the design in §5**: `AGENTS.md` is strictly stronger than a skill for anything
+every member must obey — no install, no `CODEX_HOME`, no symlink, no model flag, and **no decision
+by the worker about whether the rule applies**. A skill must be *selected*; `AGENTS.md` is simply
+*present*. Reserve skills for what only some roles need, or for procedures too long to keep in a
+file every worker carries on every turn.
+
 ## 6. ⚠️ What is NOT verified
 
 All of the above is disk and binary. **No live worker has been observed loading or invoking a

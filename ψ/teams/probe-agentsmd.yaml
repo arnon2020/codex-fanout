@@ -11,11 +11,20 @@ goal: |
   One codex worker, one probe, no code changes. Report to lead and stop.
 
 members:
-  - role: probe-1
-    name: probe-1
+  # probe-1 retired 2026-08-08 after PROBE-8F2A answered. Left commented, not deleted:
+  # preflight is a CHARTER-level check, so leaving it declared made probe-2 fail on
+  # "CODEX_HOME isolation: probe-1+probe-2 share /home/user/.codex" — the exact collision
+  # this repo documents. Two codex members need two CODEX_HOMEs, or one at a time.
+
+  # probe-2 exists because PROBE-8F2A could not answer the question it was built for.
+  # Asking probe-1 "is there a file named AGENTS.md" made it go and read the file, which proves
+  # reachable, not auto-injected. probe-2 gets a question that names no file, and must be FRESH —
+  # probe-1's context now holds the whole document.
+  - role: probe-2
+    name: probe-2
     engine: codex-sol
-    worktree: agents/probe-agentsmd
-    branch: agents/probe-agentsmd
+    worktree: agents/probe-2
+    branch: agents/probe-2
     prompt: |
       You are a probe. Do NOT write code, do NOT commit, do NOT change any file.
       WAIT for your question via maw hey, answer it exactly, then stop.
