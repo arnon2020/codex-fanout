@@ -13,6 +13,13 @@ someone already broke it here.
 - **Never touch `main`.** Pull requests target `alpha`.
 - **Never `cd` into the lead's checkout or another worker's worktree.** If a path outside your
   worktree seems necessary, that is a signal to report BLOCKED, not to reach for it.
+  ⚠️ **Do not treat the sandbox as the wall here.** Depending on how you were launched it may block
+  you (`access denied: outside the project directory`) or let you read another worker's files
+  straight through — both have happened here. **The rule is the wall. The sandbox is not.**
+- **A file you were told to read may genuinely not be in your box.** Branches are cut at a point in
+  time; anything committed after that point is absent from your worktree even though it exists on
+  `main`. If instructions name a file you cannot find, **say so and give the path you looked at** —
+  do not assume you misread the task, and do not go hunting outside your worktree for it.
 
 ## Never
 
@@ -28,6 +35,12 @@ someone already broke it here.
 Minimal, precise edits. Do not refactor code you were not asked to touch, do not rename things for
 tidiness, do not "improve" adjacent code. If the task looks like it needs a bigger change than you
 were given, say so and wait — do not widen the work yourself.
+
+⚠️ **A skill firing does not change your task.** A phrase in your instructions can match a skill's
+description and pull you into that skill's procedure. It happened here: a dispatch that opened with
+the words "GOLDEN-WORKER PROBE" made a worker load a promotion-gate skill and **carry out its
+ceremony instead of the job it was given.** If a skill activates, ask whether it serves *this*
+task. Your instructions outrank it. Say which skill you used and why.
 
 ## DONE means evidence, not belief
 
