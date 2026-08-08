@@ -361,3 +361,32 @@ separate API call needed"*, and that claim is **false**.
 single token before claiming the fleet can find it.** Unresolved here: what actually
 closes the gap. **Not** "reindex" — that verb does not exist. `[unverified]`, and this time
 genuinely not guessed.
+
+---
+
+## 🪞 I ran this whole probe without opening my own manual `[arnon caught it, 2026-08-08]`
+
+*"ลืมอ่าน skill หรือเปล่า"* — yes.
+
+`oracle-team/SKILL.md` is 2,057 lines, lives in this repo, and **I declared it PRIMARY for team
+lifecycle six commits earlier today.** It already documents every obstacle I then discovered by
+trial and error: `charter not found` (`:1128`), that **`maw team up <team>` matches the FILE STEM,
+not the `name:` inside the charter** (`:1382`), the codex update dialog (7 places), the codex trust
+entry (4 places). I spawned three workers by guessing, holding the manual.
+
+Same for `arra_search`: `CLAUDE.md` requires invoking `/search-arra` first. Five calls, zero
+invocations.
+
+⇒ **This is the defect this entire document is about, aimed at its author.** *ความรู้มีพันธะเรื่อง
+การกระจาย — การถือไว้เป็น defect แม้เนื้อหาจะถูก.* I spent a day fixing "the worker never receives
+the rules" while not reading the rules I wrote. **A skill that exists, is correct, is installed,
+and is not opened is worth exactly as much as one that was never written.**
+
+⇒ The recovery was not mine either: `preflight` caught the missing trust entry and `bootverify`
+caught the pane sitting on the update dialog with *Update now* highlighted. Without those two the
+blind Enter would have run `npm install -g` against the machine. **The guardrails worked; the
+operator did not.**
+
+⇒ 📌 Concrete: **before any `maw team` verb, open `oracle-team/SKILL.md` first.** Not "consider
+it" — open it. The check on whether that happened is cheap: did a `Read`/`grep` of the skill appear
+before the first `maw team` call?
