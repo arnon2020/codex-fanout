@@ -47,16 +47,49 @@ back:
 **An unlabeled claim is read as `[unverified]`.** That is not a punishment; it is how the lead
 decides what still needs checking.
 
-## Four traps that catch workers in this repo
+## Traps that catch workers in this repo
 
-1. **Exit code 0 is not success.** Some tools here print an error to stdout and still exit 0.
-   Read **stdout and stderr and the exit code** — all three, every time.
-2. **Never read `$?` after a pipe.** You get the *last* command's status, not the one you care
-   about. A false green was broadcast from this exact mistake.
-3. **"It doesn't exist" is a claim and needs evidence too.** Say **where you looked and with what
-   command**. One directory checked is not "nowhere" — that error has been made here twice.
-4. **Verify the object you actually mean.** A wrapper script is not the program. A file in the
-   working tree is not the code that is running. Check the thing itself.
+Every one of these has already cost someone here a wrong answer.
+
+1. **Exit code 0 is not success.** Tools here print errors to stdout and still exit 0 — `maw` does
+   exactly this. Read **stdout, stderr, and the exit code**. All three, every time.
+2. **rc and output do not agree the same way twice.** In one job here, three commands disagreed
+   three different ways: one always returned 0 with the error on stdout; one had a truthful rc with
+   the message on stderr; one had a truthful rc but printed a scary `warning:` on success. **Decide
+   what counts as evidence for that specific command before you read its result.** Do not carry the
+   pattern over from the last command you ran.
+3. **Never read `$?` after a pipe.** You get the *last* command's status, not the one you mean.
+   A false green was broadcast from exactly this.
+4. **`cmd | grep -q` can make a passing command look failed.** `grep -q` exits early, closing the
+   pipe, and the producer dies of SIGPIPE. Capture into a variable first, then match.
+5. **A check whose pattern matches its own command line will always find itself.** `pgrep -f "x
+   --flag"` counts your own `pgrep`. Grepping a log for `DONE` matches the message that *asked* for
+   DONE. If your search string can appear in your search command, the check is broken.
+6. **Substring is not identity.** `grep -F atlas` also hits `atlas-codex`. Match exact fields
+   (`awk '$1==name'`) when you mean identity.
+7. **"It doesn't exist" is a claim and needs evidence too.** Say **where you looked and with what
+   command**. One directory checked is not "nowhere" — made here twice. And keep **"not there"**
+   separate from **"I couldn't check"**: they lead to different fixes.
+8. **Verify the object you actually mean.** A wrapper script is not the program. A file in your
+   working tree is not the code that is running. A config value is not what the program does with
+   it. Check the thing itself.
+9. **Never `pkill -f <pattern>`.** It has killed the test loop that was running it. Keep the PID
+   from launch and `kill "$pid"`, or let `timeout` end it.
+
+## Before you write "I checked"
+
+Four questions. If any answer is no, you have not checked yet.
+
+1. **Could the check match itself?** (trap 5)
+2. **Did I throw the output away?** `>/dev/null 2>&1` answers "did it exit 0", never "did it work".
+3. **Did my search cover the whole scope I am claiming?** A partial sweep produces "not found",
+   which is not "not there".
+4. **Am I measuring at the endpoint my claim is about, or at the one that was easy to reach?**
+   A string matching is not a file existing. A file existing is not it running. It running is not
+   it running *correctly*. Your screen showing something is not the other end receiving it.
+
+**The check itself needs checking, not just the thing it checks.** A test written by the same
+person, in the same sitting, as the thing it tests proves the author's intent — not correctness.
 
 ## When you are blocked
 
@@ -79,6 +112,30 @@ sent reports into the void.
 DONE <one line: what now works> — <evidence: command, output, sha>
 BLOCKED <one line: what stopped you> — <the exact error text>
 ```
+
+### Three things that silently break a report
+
+- **Build the message with a quoted heredoc, never inside `"…"`.** In double quotes, bash runs
+  everything in backticks and `$(…)` and substitutes the *result* into your message. A report has
+  already gone out here with holes in it and a bash syntax error pasted into the middle, and every
+  delivery check passed — it was caught only because one paragraph did not read like language.
+  ```sh
+  MSG=$(cat <<'EOF'
+  DONE …
+  EOF
+  )
+  ```
+- **Do not start a message with `[something]`.** That bracket prefix is reserved for signed
+  transport and the send is **rejected outright**. Write plain text and sign at the end with
+  `— <your-role>`.
+- **`delivered` does not mean anyone received it.** It means the text reached a pane. The only
+  proof that a turn was entered is **a reply that refers to the content**. If your report matters
+  and nothing comes back, say so rather than assuming it landed.
+
+### What actually proves you finished
+
+Not a file appearing, not your screen, not the word DONE in your own message — **a new commit on
+your branch.** Give the sha. Everything else can be true while the work is lost.
 
 If you finished only part of the task, say **which part** and report the rest as BLOCKED. A partial
 result reported honestly is useful. A partial result reported as DONE costs the lead a re-check of
