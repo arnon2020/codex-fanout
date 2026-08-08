@@ -1,6 +1,6 @@
 ---
 name: oracle-team
-description: "Stand up a maw agent team with the engine and model each member is supposed to get — and prove they got it. Covers the full lifecycle: up (tmux), down (teardown), lead (orchestrate), status (peek), dispatch (headless codex exec). Gate 0 is the part most teams get wrong: a charter's `engine:` is only a lookup key into `commands.<name>` in a config layer visible from the WORKER's directory, and a charter's `model:` never reaches the pane — inert when `engine:` is present, and used as the engine key itself when `engine:` is absent, which misses with certainty. An unregistered name silently boots a different engine with exit 0. After spawning, `bootverify <session>` reads /proc and the pane to separate 'the right process is running' from 'the agent can actually receive a turn' — a CLI sitting on its own update or trust dialog looks identical to a ready agent from every cheaper check, and a blind Enter there presses whatever is highlighted. Use for any of: '/oracle-team up|down|lead|status|dispatch', 'bring up the team', 'spawn coders', 'set up a codex team', 'is the team really down / what did the teardown leave behind', or whenever a member booted with the wrong engine/model, a charter's model: had no effect, a pane is not responding to prompts, or you need per-member engine/model selection (codex vs claude, gpt vs opus) in one team. Path-agnostic — works from any oracle's repo."
+description: "Stand up a maw agent team with the engine and model each member is supposed to get — and prove they got it. Covers the full lifecycle: up (tmux), down (teardown), lead (orchestrate), status (peek), dispatch (headless codex exec). Gate 0 is the part most teams get wrong: a charter's `engine:` is only a lookup key into `commands.<name>` in a config layer visible from the WORKER's directory, and a charter's `model:` never reaches the pane — inert when `engine:` is present, and used as the engine key itself when `engine:` is absent, which misses with certainty. An unregistered name silently boots a different engine with exit 0. After spawning, `bootverify <session>` reads /proc and the pane to separate 'the right process is running' from 'the agent can actually receive a turn' — a CLI sitting on its own update or trust dialog looks identical to a ready agent from every cheaper check, and a blind Enter there presses whatever is highlighted. An alias carries a THIRD thing besides engine and model — permission mode — which no charter field can express: leave the bypass token out and every member boots correctly, passes every gate, then stalls on its first write asking a human who is not watching; `permstall <session>` is the read-only loop that catches it, because every other check in this file is measured at boot and readiness expires. Use for any of: '/oracle-team up|down|lead|status|dispatch', 'bring up the team', 'spawn coders', 'set up a codex team', 'is the team really down / what did the teardown leave behind', or whenever a member booted with the wrong engine/model, a charter's model: had no effect, workers keep asking for permission / approval and the team is not progressing, a pane is not responding to prompts, or you need per-member engine/model selection (codex vs claude, gpt vs opus) in one team. Path-agnostic — works from any oracle's repo."
 argument-hint: "up [profile] [--only codex-N] | down [1,2,3] [--clean] | lead | status | dispatch [issue#] [--model X]"
 ---
 
@@ -285,6 +285,39 @@ cat > "$ROOT/.maw/maw.config.60.json" <<'JSON'
 } }
 JSON
 ```
+> ## 🔴 An alias carries THREE things, not two — engine · model · **permission mode**
+>
+> `[verified 2026-08-08: --help of each binary on the machine + a live team that stalled]`
+>
+> This file taught engine and model for four days and **never named the third**. A charter has
+> no field for permission either — so, exactly like model, **the only place it can be expressed
+> is inside the alias command string.** Leave it out and the alias is still valid, still
+> registered, still resolves to the right engine and the right model — and the worker stops at
+> its **first write or first shell command** and waits for a human who is not watching.
+>
+> | engine | token that stops the asking | source |
+> |---|---|---|
+> | `codex` | `--ask-for-approval never` (or `--dangerously-bypass-approvals-and-sandbox`) | `codex --help` |
+> | `claude` | `--dangerously-skip-permissions` (or `--permission-mode bypassPermissions`) | `claude --help` |
+> | `opencode` | `--auto` — ⚠️ *"auto-approve permissions that are **not explicitly denied**"*, so a deny-list still stalls it | `opencode --help` |
+> | `thclaws` | `--accept-all` (or `--permission-mode auto`) | `thclaws --help` |
+>
+> ⚠️ **`--allowed-tools` is not a bypass.** It is an allowlist — a different mechanism, and one
+> that still blocks the moment the model reaches for a tool outside the list. An alias carrying
+> only `--allowed-tools` reads as safe and is not.
+>
+> 🕳️ **Why `enginecheck` used to bless this.** It printed the resolved command — permission flag
+> visibly absent — on the line directly above `✅ PASS`, and its declared out-of-scope list
+> (`model-served, prompt-delivery, account-quota`) **did not contain the word permission**. So
+> this was not a known-open gap; it was an unnamed dimension. It now prints a `perm=` verdict per
+> member and emits `enginecheck.unverified: permission-not-bypassed` for gates to grep. **It
+> warns rather than fails** — an ask-mode worker is a legitimate choice for a read-only probe or
+> a supervised team; the tool's job is to make "this will stall" visible *before* spawn, not to
+> decide for the team's owner.
+>
+> ⇒ 🪜 A **registered** alias is not a **working** alias. Add the row to Gate 0's question:
+> *does each member get the engine, the model, **and the permission mode** it needs?*
+
 **Finding model names that actually work — one per engine, they are not interchangeable:**
 
 **First: see what is already registered.** On a machine with an existing fleet, most of the
@@ -1064,9 +1097,57 @@ maw team up "$TEAM"               # real
 > | **`/proc` cmdline correct** | **right process, right model — says NOTHING about readiness** |
 > | screen is the agent's own prompt | it can now receive a turn |
 > | agent quotes your content back | it entered a turn |
+> | **— every rung above is measured at t=0 —** | **and none of them stays true** |
+> | **no permission prompt on screen *right now*** | **it can still act — expires continuously** |
 >
 > **A correct process is not a ready agent**, and the two are indistinguishable from every check
 > above the last two.
+>
+> ### 🔴 …and a ready agent is not a working agent an hour later
+>
+> `[verified 2026-08-08 ~22:2x +07 · tmux capture-pane + ps --ppid on a live team]`
+>
+> Every rung above answers **"can it start?"**. None answers **"is it still going?"** — and the
+> way a team dies in practice is the second one. A real team, `pivot-registry-expand`, six
+> members, all six booted clean and **passed the top rung** (received turns, answered, began
+> work). Then:
+>
+> ```
+> permstall.count: panes=6 blocked=5
+>   🔴 BLOCKED  integrator-oracle          Do you want to proceed?
+>   🔴 BLOCKED  prober-thai-gov-oracle     Do you want to create prober-thai-gov.md?
+>   🔴 BLOCKED  prober-intl-corp-oracle    Do you want to proceed?
+>   🔴 BLOCKED  prober-academic-alt-oracle Do you want to proceed?
+>   🔴 BLOCKED  reviewer-oracle            This command requires approval
+>       proc=claude --model claude-opus-5
+>       perm=ask  (no --dangerously-skip-permissions ⇒ asks on every write/bash)
+> ```
+>
+> **Five of six, including the team's own lead.** Each one sitting on a question, burning
+> wall-clock, indistinguishable from "thinking" to every check that existed before this one.
+>
+> ⇒ 🔑 **This is also the honest answer to "why didn't the lead go look at the workers?"** The
+> lead *did* verify — at boot, exactly as this file instructed — saw READY, and went to do
+> something else. **Nothing anywhere said readiness expires.** That is a defect in this
+> document, not in the lead's diligence. A boot-time gate cannot be the last gate.
+>
+> ```bash
+> # after spawn, and then ON A LOOP for as long as the team is alive — read-only, sends nothing:
+> bash <skill>/scripts/verify-check.sh permstall "$SESSION"
+> ```
+>
+> ⚠️ `no-prompt-visible` **does not mean the worker is working** — it means no question is on
+> screen *at this instant*. A prompt that scrolled out of the capture buffer is invisible to it.
+> **That is why it is a loop, not a gate.**
+>
+> 🔴 **`permstall` deliberately cannot fix anything.** Pressing `Yes` in a pane grants a
+> permission on behalf of that team's human. If the team is yours, read the option number off
+> the live screen (never hardcode it — see the update-dialog lesson above). If it is someone
+> else's, send them the evidence and let their human decide.
+>
+> 📏 **Sweep, don't sample.** The first pass at this looked at four panes and reported three
+> blocked. The full sweep found **five, plus the lead**. A team-shaped problem needs a
+> team-shaped read.
 >
 > ### The dismissal pattern that already works — prism's, not invented here
 >
@@ -1974,6 +2055,10 @@ Same as `lead` Step 1 + Step 2 (peek + PR list), but takes NO action.
 No dispatch, no merge, no nudge. Just report.
 
 ```bash
+# 🔴 FIRST — one command, whole team, read-only. A stalled team looks exactly like a busy team
+#    in the per-role peek below, because a permission question renders as a quiet screen.
+bash "$SKILL/scripts/verify-check.sh" permstall "$SESSION"   # rc=1 ⇒ someone is blocked
+
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="
   maw peek "${SESSION}:${ROLE}-oracle" 2>&1 | grep -n . | head -12
@@ -2002,6 +2087,14 @@ gh pr list --repo "$PROJECT" --base "$BASE" --state open 2>/dev/null || echo "no
    in this list**, which is exactly the single-surface-fix failure this file warns about
    elsewhere. It violated both prism's owner rule and this repo's own golden rules. Report
    merge candidates; a human merges.
+8b. 🔴 **Readiness expires — verify on a loop, not at a gate.** Every check in this file above
+    `permstall` is measured at boot. A member that booted clean, took a turn, and started
+    working can be sitting on `Do you want to proceed?` twenty minutes later, silent and
+    indistinguishable from thinking. On 2026-08-08 a six-member team had **five blocked,
+    including its own lead**, and the lead had verified correctly — at boot. Run
+    `permstall "$SESSION"` on the same cadence you peek, and **sweep every pane; do not sample
+    a few.** The prevention is upstream (a bypass token in the alias, see Gate 0's third
+    dimension); this is the detection that has to exist anyway.
 9. NO-GAP dispatch: next task in same message as done confirmation.
 10. Context handling differs per engine — check before assuming auto-compaction.
 11. `SendMessage` does not reach a tmux pane — always use `maw hey`, and prefer

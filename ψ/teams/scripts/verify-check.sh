@@ -1217,6 +1217,176 @@ engineone() {
   printf 'overall: FAIL requires-post-boot-verification=true\n'; return 1
 }
 
+# ── _vc_permmode <resolved-cmd> ─────────────────────────────────────────────
+# มิติที่ **สาม** ของ alias ที่เราไม่เคยตั้งชื่อ: engine · model · **permission mode**
+#
+# 🔴 เกิดจากของจริง 2026-08-08 ~22:1x +07 — ทีม `pivot-registry-expand` ของ holmes
+#    ค้าง **3 pane พร้อมกัน** โดยที่ทุกด่านของเราขึ้นเขียว
+#    `[verified: tmux capture-pane + ps --ppid <pane_pid>]`
+#      :1 prober-thai-gov  "Do you want to create prober-thai-gov.md?"
+#      :2 prober-intl-corp "Do you want to proceed?"
+#      :5 reviewer         "This command requires approval"
+#      process จริง (pid ลูก ไม่ใช่ pane pid): `claude --model claude-opus-5`
+#      alias: holmes-oracle/.maw/maw.config.60.json:30
+#             "holmes-fresh-claude": "claude --model claude-opus-5"   ← ไม่มี bypass
+#
+# 🕳️ **ทำไม enginecheck เดิมถึงไม่จับ — และมันแย่กว่า "ไม่จับ"**
+#    `[verified: รัน enginecheck กับ charter ที่ engine=default]`
+#      จะรันจริง  : claude --model claude-opus-5 --continue
+#      ✅ PASS · overall: PASS · ENGINECHECK OK
+#    มัน **พิมพ์คำสั่งที่ขาดแฟลกออกมาให้เห็นเต็ม ๆ แล้วตัดสินว่าผ่าน** — และ
+#    `out-of-scope=model-served,prompt-delivery,account-quota` **ไม่มีคำว่า permission**
+#    ⇒ นี่ไม่ใช่ช่องที่เรารู้ตัวว่าเปิดอยู่ด้วยซ้ำ · alias ที่ลงทะเบียนถูกต้อง 100%
+#      และจะค้างทุกครั้งที่ worker เขียนไฟล์แรก **ได้ PASS เท่ากับ alias ที่ใช้งานได้**
+#
+# ⚖️ ทำไม WARN ไม่ใช่ FAIL: ask-mode เป็นทางเลือกที่ **ถูกต้องได้** (probe ที่ห้ามเขียน,
+#    ทีมที่มีคนนั่งเฝ้า) ⇒ เครื่องมือนี้ไม่มีสิทธิ์ตัดสินแทนเจ้าของทีม · หน้าที่มันคือ
+#    ทำให้ "จะค้าง" **มองเห็นก่อน spawn** ไม่ใช่ค้นพบตอนนาทีที่ 40
+#    ⇒ machine block พ่น `perm=<mode>` ให้ gate ตัดสินเองตามนโยบายบ้านตัวเอง
+#
+# 🏷️ ทุกแถวมาจาก `--help` ของไบนารีบนเครื่องนี้ `[verified 2026-08-08]` ไม่ใช่ความจำ:
+#   codex    `--dangerously-bypass-approvals-and-sandbox` = "Skip all confirmation prompts"
+#            `-a|--ask-for-approval never` = "Never ask for user approval"
+#   claude   `--dangerously-skip-permissions` = "Bypass all permission checks"
+#            `--permission-mode bypassPermissions`
+#   opencode `--auto` = "auto-approve permissions that are not explicitly denied (dangerous!)"
+#            ⚠️ **"that are not explicitly denied"** — deny-list ยังค้างได้ ⇒ อ่อนกว่าอีกสามตัว
+#   thclaws  `--accept-all` = "Never ask for tool-call approval (alias: --dangerously-skip-permissions)"
+#            `--permission-mode auto`
+#            ⚠️ `--allowed-tools` **ไม่ใช่ bypass** — มันคือ allowlist คนละกลไก
+#               จะยังค้าง/ปฏิเสธเมื่อโมเดลเรียก tool นอกลิสต์
+#   engine อื่น ⇒ `unknown` **ไม่ใช่ ok** (ตอบไม่ได้ ≠ ผ่าน — กฎเดิมของไฟล์นี้)
+_vc_permmode() {
+  local cmd="$1" bin
+  bin=$(_vc_argv_basename "$cmd" 1)
+  case "$bin" in
+    codex)
+      case "$cmd" in
+        *--dangerously-bypass-approvals-and-sandbox*) echo "bypass|--dangerously-bypass-approvals-and-sandbox" ;;
+        *"--ask-for-approval never"*|*"--ask-for-approval=never"*|*"-a never"*) echo "bypass|--ask-for-approval never" ;;
+        *) echo "ask|codex ไม่มี --ask-for-approval never และไม่มี --dangerously-bypass-approvals-and-sandbox" ;;
+      esac ;;
+    claude)
+      case "$cmd" in
+        *--dangerously-skip-permissions*) echo "bypass|--dangerously-skip-permissions" ;;
+        *"--permission-mode bypassPermissions"*|*"--permission-mode=bypassPermissions"*) echo "bypass|--permission-mode bypassPermissions" ;;
+        *) echo "ask|claude ไม่มี --dangerously-skip-permissions ⇒ ถามทุก write/bash" ;;
+      esac ;;
+    opencode)
+      case "$cmd" in
+        *--auto*) echo "bypass-weak|--auto (auto-approve เฉพาะที่ไม่ได้ถูก deny ไว้)" ;;
+        *) echo "ask|opencode ไม่มี --auto" ;;
+      esac ;;
+    thclaws)
+      case "$cmd" in
+        *--accept-all*) echo "bypass|--accept-all" ;;
+        *"--permission-mode auto"*|*"--permission-mode=auto"*) echo "bypass|--permission-mode auto" ;;
+        *--allowed-tools*) echo "allowlist|มีแต่ --allowed-tools ซึ่งเป็น allowlist ไม่ใช่ bypass" ;;
+        *) echo "ask|thclaws ไม่มี --accept-all" ;;
+      esac ;;
+    "") echo "unknown|แยกชื่อไบนารีจากคำสั่งไม่ได้" ;;
+    *)  echo "unknown|ไม่รู้จักธงของ engine \"$bin\" — ตอบไม่ได้ ≠ ผ่าน · ดู \`$bin --help\`" ;;
+  esac
+}
+
+# ── _vc_perm_report <role> <engine> <resolved-cmd> ──────────────────────────
+# พิมพ์บรรทัดคนอ่าน + ต่อ machine block  (อาศัย dynamic scope ของ bash เพื่อเขียน `machine`
+# ของ enginecheck — ตั้งใจ ไม่ใช่อุบัติเหตุ · จึง **ห้าม** ประกาศ `local machine` ที่นี่)
+#
+# 🔴 ต้องเรียกจาก **ทั้งสองสาย** ของ enginecheck:
+#    · สาย alias ลงทะเบียนแล้ว
+#    · สาย fallthrough (engine ไม่ลงทะเบียน ⇒ ตกไป `default`)  ← **สายที่ holmes เดินมา**
+#      `default` บนเครื่องนี้ = `claude --model claude-opus-5 --continue` = **ask**
+#      ⇒ สายที่อันตรายที่สุดคือสายที่เกือบไม่ได้ตรวจ (แพตช์แรกของผมตกสายนี้ไปจริง ๆ)
+_vc_perm_report() {
+  local role="$1" engine="$2" cmd="$3" pm pmode pwhy
+  [ -n "$cmd" ] || { printf '    ❓ perm     unknown — ไม่มีคำสั่งให้ตรวจ\n'
+                     machine="${machine}enginecheck.perm: $role unknown engine=$engine
+"; return 0; }
+  pm=$(_vc_permmode "$cmd"); pmode="${pm%%|*}"; pwhy="${pm#*|}"
+  case "$pmode" in
+    bypass)      printf '    🔓 perm     bypass — %s\n' "$pwhy" ;;
+    bypass-weak) printf '    🔓 perm     bypass-weak — %s\n' "$pwhy"
+                 printf '               deny-list ยังทำให้ค้างได้ ⇒ อ่อนกว่า bypass ของ codex/claude\n' ;;
+    allowlist)   printf '    ⚠️ perm     allowlist — %s\n' "$pwhy"
+                 printf '               จะค้าง/ถูกปฏิเสธเมื่อโมเดลเรียก tool นอกลิสต์\n' ;;
+    ask)         printf '    🔴 perm     ASK — %s\n' "$pwhy"
+                 printf '               ⇒ worker จะค้างที่ **การเขียนไฟล์/คำสั่งแรก** ไม่ใช่ตอน boot\n'
+                 printf '               ⇒ bootverify จับไม่ได้ (มันตรวจจอตอน boot) · หลัง spawn ใช้ `permstall <session>`\n'
+                 printf '               ถ้าตั้งใจให้ถาม (probe/มีคนเฝ้า) = ถูกต้อง · ถ้าไม่ ต้องฝัง bypass ใน alias\n' ;;
+    *)           printf '    ❓ perm     unknown — %s\n' "$pwhy" ;;
+  esac
+  machine="${machine}enginecheck.perm: $role $pmode engine=$engine
+"
+}
+
+# ── permstall <session> ─────────────────────────────────────────────────────
+# 🔑 **ชั้นที่บันไดหลักฐานของเราไม่มี: ความพร้อมมันหมดอายุ**
+#
+#    บันไดเดิมทั้งบันได (delivered → capture-pane เห็นข้อความ → busy marker →
+#    /proc cmdline ถูก → จอเป็นของ agent → agent อ้างเนื้อความกลับมา)
+#    **วัดที่ t=0 ทั้งหมด** · `bootverify` ก็ตรวจจอตอน boot (update/trust dialog)
+#    ซึ่งตอนนั้นยัง **ไม่มี** permission prompt เพราะ worker ยังไม่ได้เขียนอะไร
+#
+#    worker ของ holmes **ผ่านชั้นสูงสุด** (รับ turn · ตอบ · ลงมือทำงาน) แล้วค่อยไปค้าง
+#    ตอนเขียนไฟล์แรก ⇒ `READY` ตอน boot **ไม่ใช่หลักฐานว่า READY ตอน write แรก**
+#
+# ⇒ และนี่คือคำตอบว่าทำไม lead ไม่เดินดู: **ไม่ใช่เพราะ lead ขี้เกียจ** — lead ตรวจครบ
+#   ตามที่ skill สั่ง เห็น READY แล้วไปทำอย่างอื่น เพราะ **ไม่มีที่ไหนบอกว่าความพร้อม
+#   หมดอายุได้** ⇒ แก้ที่เครื่องมือ+เอกสาร ไม่ใช่ที่วินัยของ lead
+#
+# อ่านอย่างเดียว: capture-pane · **ไม่ส่ง ไม่กด ไม่เลือกตัวเลืกใด ๆ**
+# การกด "Yes" คือการให้สิทธิ์แทนมนุษย์ของทีมนั้น — ไม่ใช่งานของเครื่องมือตรวจ
+# (golden rule: ห้ามเป็นคนถือ "อนุญาต" ของมนุษย์ไปส่งต่อ)
+permstall() {
+  local sess="${1:?usage: permstall <session>   # อ่านอย่างเดียว ไม่ส่งอะไรเข้า pane}"
+  local wins n_block=0 n_pane=0
+  wins=$(tmux list-windows -t "=$sess" -F '#{window_index}:#{window_name}' 2>/dev/null) || {
+    echo "permstall.session: $sess NOT-FOUND (tmux list-windows)"; echo "overall: UNVERIFIED"; return 2; }
+  [ -n "$wins" ] || { echo "permstall.session: $sess NO-WINDOWS"; echo "overall: UNVERIFIED"; return 2; }
+  echo "permstall $sess   [อ่านอย่างเดียว · ไม่ส่ง Enter · ไม่เลือกตัวเลือก]"
+  while IFS= read -r w; do
+    [ -n "$w" ] || continue
+    local idx="${w%%:*}" name="${w#*:}" pane cap q
+    pane="${sess}:${idx}"
+    n_pane=$((n_pane+1))
+    cap=$(tmux capture-pane -p -t "=$pane" 2>/dev/null | tail -40)
+    # ธงของ prompt ต่อ engine — จับ **ตัวคำถาม** ไม่ใช่ตัวเลือก เพราะตัวเลือก/ตัวเลข
+    # เปลี่ยนตามเวอร์ชัน (บทเรียน update-dialog: ห้าม hardcode เลข)
+    q=$(printf '%s' "$cap" | grep -m1 -E \
+      'Do you want to (proceed|create|make|edit|run)|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|อนุญาต' 2>/dev/null)
+    if [ -n "$q" ]; then
+      n_block=$((n_block+1))
+      printf '  🔴 BLOCKED  %-34s %s\n' "$name" "$(printf '%s' "$q" | sed 's/^[[:space:]]*//' | cut -c1-70)"
+      printf '      pane=%s\n' "$pane"
+      # ของจริงที่รันอยู่ — ต้องอ่าน **pid ลูก** เพราะ pane เป็น bash เปล่าในรูป `maw wake`
+      local ppid child
+      ppid=$(tmux display-message -p -t "=$pane" '#{pane_pid}' 2>/dev/null)
+      child=$(ps --ppid "$ppid" -o args= 2>/dev/null | head -1)
+      [ -n "$child" ] && printf '      proc=%s\n' "$(printf '%s' "$child" | cut -c1-96)"
+      if [ -n "$child" ]; then
+        local pm; pm=$(_vc_permmode "$child")
+        printf '      perm=%s  (%s)\n' "${pm%%|*}" "${pm#*|}"
+      fi
+      printf '      permstall.pane: %s BLOCKED\n' "$name"
+    else
+      printf '      permstall.pane: %s no-prompt-visible\n' "$name"
+    fi
+  done <<< "$wins"
+  echo
+  printf 'permstall.count: panes=%s blocked=%s\n' "$n_pane" "$n_block"
+  echo 'permstall.scope: out-of-scope=agent-actually-working,prompt-older-than-scrollback'
+  echo '  ⚠️ "no-prompt-visible" ไม่ได้แปลว่า worker กำลังทำงาน — แปลว่า *ตอนนี้* ไม่มีคำถามบนจอ'
+  echo '     prompt ที่เลื่อนพ้น scrollback ไปแล้ว มันมองไม่เห็น ⇒ วนตรวจ ไม่ใช่ตรวจครั้งเดียว'
+  if [ "$n_block" -gt 0 ]; then
+    echo "overall: BLOCKED panes=$n_block"
+    echo '  แก้ไม่ได้ด้วยเครื่องมือนี้โดยเจตนา — การกด Yes คือการให้สิทธิ์แทนมนุษย์ของทีมนั้น'
+    echo '  ถ้าเป็นทีมของคุณเอง: อ่านตัวเลขจากจอจริง (อย่า hardcode) หรือ restart ด้วย alias ที่มี bypass'
+    return 1
+  fi
+  echo 'overall: NO-VISIBLE-PROMPT'
+}
+
 enginecheck() {
   local arg="${1:?usage: enginecheck <charter.yaml|team-name>}" charter=""
   if [ -f "$arg" ]; then charter="$arg"
@@ -1402,6 +1572,7 @@ PY
         # ⇒ WARN ถูกเข้ารหัสเป็น PASS + ฟิลด์ `pinned=no` แทนการเพิ่มค่าที่ 4 ที่จะทำ parse เขาพัง
         machine="${machine}enginecheck.member: $role PASS engine=$engine resolved=$probe pinned=no
 "
+        _vc_perm_report "$role" "$engine" "$probe"
       else
         printf '    ❌ FAIL    engine "%s" ไม่ได้ลงทะเบียนใน commands ⇒ ถูกทิ้งเงียบ ๆ\n' "$engine"
         if [ -n "$hijack" ]; then
@@ -1425,10 +1596,20 @@ PY
         esac
         machine="${machine}enginecheck.member: $role FAIL engine=$engine resolved=$probe
 "
+        # แม้จะ FAIL ไปแล้ว ก็ยังพ่น perm ให้ครบทุกสมาชิก — gate ที่นับ `enginecheck.perm:`
+        # ต้องได้จำนวนเท่ากับจำนวนสมาชิกเสมอ ไม่งั้น "ไม่มีบรรทัด" จะอ่านได้สองความหมาย
+        # (ไม่มีปัญหา vs ไม่ได้ตรวจ) — คลาสเดียวกับ `ตอบไม่ได้ ≠ ผ่าน`
+        [ -n "$probe" ] && _vc_perm_report "$role" "$engine" "$probe"
         fail=1
       fi
     else
       printf '    จะรันจริง  : %s\n' "$cmd"
+      # ── มิติที่ 3: permission mode ──────────────────────────────────────────
+      # เพิ่ม 2026-08-08 หลังทีมของ holmes ค้าง 3 pane โดยที่บรรทัด "จะรันจริง" ข้างบน
+      # **พิมพ์คำสั่งที่ขาดแฟลกออกมาแล้ว** และบรรทัดถัดไปเขียนว่า ✅ PASS
+      # แยก namespace เป็น `enginecheck.perm:` ไม่ยัดใน `enginecheck.member:`
+      # เพราะ consumer ของ atlas grep ฟิลด์นั้นอยู่ — เพิ่มบรรทัด ไม่แก้รูปเดิม
+      _vc_perm_report "$role" "$engine" "$cmd"
       if [ -n "$model" ]; then
         case "$cmd" in
           *"--model $model"*|*"-m $model"*|*"--model=$model"*)
@@ -1461,6 +1642,10 @@ PY
   # รวมสิ่งที่ **ผันแปรจริง** ต่อรอบ — ว่างเมื่อไม่มี ⇒ กฎของ atlas เป็นเท็จได้จริง
   local unv=""
   printf '%s\n' "$machine" | grep -q 'pinned=no' && unv="${unv}${unv:+,}unpinned-alias"
+  # 2026-08-08: permission mode เป็นของ **ผันแปรต่อ charter** (ไม่ใช่ขอบเขตถาวร)
+  # ⇒ ต้องอยู่ใน unverified list ที่ gate ของบ้านอื่น grep ได้ ไม่ใช่ซ่อนใน prose ไทย
+  printf '%s\n' "$machine" | grep -qE 'enginecheck.perm: .* (ask|allowlist|unknown) ' \
+    && unv="${unv}${unv:+,}permission-not-bypassed"
   printf '%s\n' "$machine" | grep -q ' UNVERIFIED ' && unv="${unv}${unv:+,}member-unresolvable"
   printf '%s\n' "$machine" | grep -q 'scope=dir-absent' && unv="${unv}${unv:+,}answered-from-ancestor"
   # 🏷️ ajfon 2026-08-06: เขาแต่งชื่อ model ที่ไม่มีอยู่จริง (`gpt-5.5-codex` ทั้งที่ default
@@ -2186,6 +2371,36 @@ PY
     *) echo "   ✗ ข้อความสะอาดตกด้วยเหตุที่คาดไม่ถึง — อ่าน: $_clean"; fail=1 ;;
   esac
 
+  # 🔴 2026-08-08 — ข้อนี้เกิดจากทีมของ holmes ค้าง **5 จาก 6 pane รวม lead ของทีมเอง**
+  #    โดยที่ enginecheck ตอบ ✅ PASS ให้ alias ที่จะค้างแน่นอน `[verified: permstall จริง]`
+  #    เทสต์นี้ต้อง **ตกได้สองทิศ** ไม่งั้นมันเป็น echo:
+  #      ทิศ ก — alias ไม่มี bypass แล้วบอกว่า bypass  (ช่องเดิมที่เปิดอยู่ 4 วัน)
+  #      ทิศ ข — alias มี bypass แล้วบอกว่า ask        (false alarm ที่จะทำให้คนเลิกอ่าน)
+  echo "21) permmode: ต้องแยก alias ที่จะค้าง ออกจาก alias ที่ไม่ค้าง — ตกได้ทั้งสองทิศ"
+  local _pmt _pmf
+  # ทิศ ก: ของจริงที่พาทีม holmes ค้าง — ตัวอักษรตรงจาก ps --ppid ของ pane ที่ค้างอยู่
+  _pmt=$(_vc_permmode "claude --model claude-opus-5")
+  case "$_pmt" in
+    ask\|*) echo "   ✓ claude ไม่มีแฟลก → ask (เคสจริงของ holmes 2026-08-08)" ;;
+    *) echo "   ✗ claude ไม่มีแฟลกแต่ไม่ได้ตอบ ask — ได้: $_pmt"; fail=1 ;;
+  esac
+  # ทิศ ข: alias ที่ใช้งานได้จริงต้องไม่ถูกกล่าวหา
+  _pmf=$(_vc_permmode "BASH_ENV=x codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access")
+  case "$_pmf" in
+    bypass\|*) echo "   ✓ codex --ask-for-approval never → bypass (ไม่ false alarm)" ;;
+    *) echo "   ✗ codex ที่ bypass จริงถูกตอบเป็นอย่างอื่น — ได้: $_pmf"; fail=1 ;;
+  esac
+  # allowlist ≠ bypass — thclaws มี --allowed-tools แต่ไม่มี --accept-all ⇒ ยังค้างได้
+  case "$(_vc_permmode 'thclaws --cli --allowed-tools "Read,Write"')" in
+    allowlist\|*) echo "   ✓ thclaws --allowed-tools อย่างเดียว → allowlist ไม่ใช่ bypass" ;;
+    *) echo "   ✗ allowlist ถูกนับเป็น bypass — คนละกลไก"; fail=1 ;;
+  esac
+  # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
+  case "$(_vc_permmode 'some-future-cli --run')" in
+    unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
+    *) echo "   ✗ engine ที่ไม่รู้จักถูกตัดสินว่าผ่าน"; fail=1 ;;
+  esac
+
   # 🔌 2026-08-07 — copy-drift-check.sh (holmes) ตอบคำถามที่ผมถามค้างไว้: "อะไรจะเตือนเราครั้งหน้า"
   #    หลังจาก verify-check.sh สามก๊อป drift กันจน CLAUDE.md ชี้ไปที่ตัวที่อ่อนกว่า 6 verb
   #    **holmes เตือนเองว่าเครื่องมือของเขา "เขียนเสร็จก็นอนเฉย ๆ ไม่มีอะไรเรียกมัน"**
@@ -2234,7 +2449,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
+VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
@@ -2243,6 +2458,8 @@ verify_check_usage() {
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
   echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
   echo "  bootverify <session>   ← หลัง spawn: pane boot ตรง engine ไหม + จอเป็นของ agent หรือ installer"
+  echo "  permstall <session>    ← **ระหว่างงาน วนซ้ำ**: worker ค้างขอ permission อยู่ไหม (อ่านอย่างเดียว)"
+  echo "                            bootverify ตอบ t=0 · permstall ตอบ t=ตอนนี้ — READY ตอน boot หมดอายุได้"
   echo "  unstick <session> [n]  ⚠ ส่ง Enter เข้า pane: เคลียร์คำสั่งที่ค้าง (ต้องมากกว่า 1 ครั้ง)"
   echo "  mawverb <team-subcommand>  ← `maw team <พิมพ์ผิด>` คืน rc=0 + usage ลง stdout"
   echo "  selftest"

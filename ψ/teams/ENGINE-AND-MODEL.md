@@ -1,7 +1,39 @@
 # กำหนด harness + model ให้สมาชิกทีม `maw team` — ที่มันทำงานจริง
 
+> ## 🔓 แก้ชื่อเรื่องเอง 2026-08-08 — เอกสารนี้พูดถึง **สองมิติ** มาตลอด แต่ alias มี **สาม**
+>
+> **engine · model · permission mode** — และอันที่สาม *ไม่เคยถูกตั้งชื่อในไฟล์นี้เลย* ทั้งที่มัน
+> อยู่ใต้กฎเดียวกันเป๊ะ: **charter ไม่มีฟิลด์ให้ประกาศ ⇒ แสดงออกได้ที่เดียวคือสตริงคำสั่ง**
+>
+> `[verified 2026-08-08 ~22:2x +07 · tmux capture-pane + ps --ppid · ทีม `pivot-registry-expand`]`
+> **5 จาก 6 pane ค้างพร้อมกัน รวม lead ของทีมเอง** — `Do you want to proceed?` ·
+> `This command requires approval` · process จริง `claude --model claude-opus-5`
+> alias `holmes-fresh-claude` **ถูกต้องครบทุกมิติที่เอกสารนี้เคยตั้งชื่อ** — ลงทะเบียนแล้ว
+> engine ถูก model pin แล้ว · ขาดแค่ `--dangerously-skip-permissions`
+>
+> 🕳️ **และ `enginecheck` ให้ ✅ PASS** — พิมพ์คำสั่งที่ขาดแฟลกออกมาให้เห็นเต็ม ๆ
+> ในบรรทัดเหนือคำว่า PASS แล้ว `out-of-scope=model-served,prompt-delivery,account-quota`
+> **ไม่มีคำว่า permission** ⇒ ไม่ใช่ช่องที่รู้ตัวว่าเปิดอยู่ แต่เป็นมิติที่ไม่เคยถูกตั้งชื่อ
+>
+> | engine | token ที่หยุดการถาม | ที่มา `[verified 2026-08-08]` |
+> |---|---|---|
+> | `codex` | `--ask-for-approval never` · `--dangerously-bypass-approvals-and-sandbox` | `codex --help` |
+> | `claude` | `--dangerously-skip-permissions` · `--permission-mode bypassPermissions` | `claude --help` |
+> | `opencode` | `--auto` ⚠️ *"auto-approve permissions that are **not explicitly denied**"* ⇒ deny-list ยังค้างได้ | `opencode --help` |
+> | `thclaws` | `--accept-all` · `--permission-mode auto` | `thclaws --help` |
+>
+> ⚠️ **`--allowed-tools` ไม่ใช่ bypass** — เป็น allowlist คนละกลไก ยังค้างเมื่อโมเดลเรียก tool นอกลิสต์
+> ⇒ alias ที่มีแต่ `--allowed-tools` **อ่านแล้วดูปลอดภัย แต่ไม่ใช่**
+>
+> ⏱️ **และมิติที่สามนี้พังคนละเวลากับสองมิติแรก** — engine/model ผิด **เห็นตอน boot** ·
+> permission ผิด **เห็นตอน worker เขียนไฟล์แรก** ซึ่งอาจเป็นนาทีที่ 40
+> ⇒ `enginecheck` (ก่อน spawn) ตอบมิตินี้ได้ · แต่ `bootverify` **ตอบไม่ได้โดยโครงสร้าง**
+> เพราะตอน boot ยังไม่มีคำถามบนจอ ⇒ ต้องมี **`permstall <session>` วนซ้ำตลอดอายุทีม**
+> ⇒ 🔑 **นี่คือเหตุผลที่ lead ไม่เดินดู worker: ไม่มีที่ไหนบอกว่าความพร้อมหมดอายุได้**
+
 > **สรุปหนึ่งบรรทัด**: `engine:` ใน charter เป็น **คำขอ ไม่ใช่การตั้งค่า** และ `model:` **ไม่มีผลเลย**
 > — ทั้งสองอย่างแสดงออกได้ที่เดียวคือ **สตริงคำสั่งของ engine alias** ใน `commands`
+> **(เติม 2026-08-08: permission mode เป็นอย่างที่สาม กฎเดียวกัน — ดูกล่องข้างบน)**
 >
 > 🔬 **วิธีอ่าน source ให้ตรงกับ binary ที่รัน** (atlas ชี้ 2026-08-06 · ผมยืนยันเองแล้ว):
 > checkout ของ `maw-rs` บนเครื่องนี้อยู่บน branch `agents/fix-wake-oracle-alias-hijack` @ `cc0fc61`
