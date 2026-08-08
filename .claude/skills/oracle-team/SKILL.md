@@ -302,6 +302,17 @@ JSON
 > | `opencode` | `--auto` — ⚠️ *"auto-approve permissions that are **not explicitly denied**"*, so a deny-list still stalls it | `opencode --help` |
 > | `thclaws` | `--accept-all` (or `--permission-mode auto`) | `thclaws --help` |
 >
+> ⚠️ **The alias is not the only layer that can satisfy this — and that cuts both ways.**
+> `[verified 2026-08-08: booted a bare `codex` with no flags, told it to curl and to write a
+> file outside its cwd — it did both without asking, because `~/.codex/config.toml` sets
+> `approval_policy = "never"` machine-wide]` So a codex alias with no bypass token may be
+> perfectly fine here, and a checker that reads only the command string would cry wolf at it.
+> `enginecheck` therefore reads `$CODEX_HOME/config.toml` (falling back to `~/.codex`) before
+> calling a codex alias `ask`. ⚠️ But a persisted config **does not travel with the charter** —
+> hand the charter to another machine and the protection is gone while the alias looks
+> unchanged. Put the token in the alias anyway; treat the config as a reason not to panic, not
+> as the answer.
+>
 > ⚠️ **`--allowed-tools` is not a bypass.** It is an allowlist — a different mechanism, and one
 > that still blocks the moment the model reaches for a tool outside the list. An alias carrying
 > only `--allowed-tools` reads as safe and is not.
@@ -1133,7 +1144,7 @@ maw team up "$TEAM"               # real
 >
 > ```bash
 > # after spawn, and then ON A LOOP for as long as the team is alive — read-only, sends nothing:
-> bash <skill>/scripts/verify-check.sh permstall "$SESSION"
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh permstall "$SESSION"
 > ```
 >
 > ⚠️ `no-prompt-visible` **does not mean the worker is working** — it means no question is on
@@ -2057,7 +2068,7 @@ No dispatch, no merge, no nudge. Just report.
 ```bash
 # 🔴 FIRST — one command, whole team, read-only. A stalled team looks exactly like a busy team
 #    in the per-role peek below, because a permission question renders as a quiet screen.
-bash "$SKILL/scripts/verify-check.sh" permstall "$SESSION"   # rc=1 ⇒ someone is blocked
+bash ~/.claude/skills/oracle-team/scripts/verify-check.sh permstall "$SESSION"   # rc=1 ⇒ someone is blocked
 
 for ROLE in $CODERS; do
   echo "=== $ROLE ==="

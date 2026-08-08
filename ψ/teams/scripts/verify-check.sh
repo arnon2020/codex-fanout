@@ -1264,7 +1264,29 @@ _vc_permmode() {
       case "$cmd" in
         *--dangerously-bypass-approvals-and-sandbox*) echo "bypass|--dangerously-bypass-approvals-and-sandbox" ;;
         *"--ask-for-approval never"*|*"--ask-for-approval=never"*|*"-a never"*) echo "bypass|--ask-for-approval never" ;;
-        *) echo "ask|codex ไม่มี --ask-for-approval never และไม่มี --dangerously-bypass-approvals-and-sandbox" ;;
+        *)
+          # 🩹 2026-08-08 — **ผมเกือบส่ง false alarm ทิศตรงข้าม** และเจอตอน probe ของจริง:
+          #    boot codex เปล่า ๆ (ไม่มีแฟลกเลย) แล้วสั่งให้ `curl` + เขียนไฟล์นอก cwd
+          #    ⇒ **มันทำทั้งสองอย่างโดยไม่ถามสักครั้ง** เพราะ `~/.codex/config.toml`
+          #      มี `approval_policy = "never"` อยู่แล้วทั้งเครื่อง
+          #    ⇒ สำหรับ codex **แฟลกไม่ใช่ชั้นเดียวที่ตอบมิตินี้** — config ที่ persist ตอบได้เอง
+          #    ⇒ ถ้าอ่านแต่สตริงคำสั่ง จะตะโกน `ask` ใส่ alias ที่ไม่มีปัญหา
+          #      แล้วคนจะเลิกอ่านคำเตือน ซึ่งฆ่าเครื่องมือนี้ทั้งตัว
+          #    🕳️ นี่คือ scar เดิมของรีโปนี้ชี้กลับมาที่ผม: **ตรวจคุณสมบัติเดียว → เหมาว่าทั้งหมด**
+          #       ผมพิสูจน์ claude แล้วเขียนกฎให้ 4 engine · ทิศที่ผมพลาดคือทิศ "กล่าวหา"
+          #    ⇒ `CODEX_HOME` มาก่อน `~/.codex` เพราะ alias มักตั้งของตัวเอง (worktree-local)
+          local ch cfgfile pol
+          ch=$(printf '%s' "$cmd" | sed -n 's/.*CODEX_HOME=\([^ ]*\).*/\1/p')
+          ch="${ch/#\$HOME/$HOME}"; ch="${ch/#\~/$HOME}"
+          cfgfile="${ch:-$HOME/.codex}/config.toml"
+          pol=$(grep -m1 -E '^[[:space:]]*approval_policy[[:space:]]*=' "$cfgfile" 2>/dev/null \
+                | sed 's/.*=[[:space:]]*//; s/"//g; s/[[:space:]]*$//')
+          case "$pol" in
+            never|on-failure)
+              echo "bypass|ไม่มีแฟลก แต่ approval_policy=\"$pol\" ใน $cfgfile ⇒ ไม่ถาม [ผูกกับไฟล์ ไม่เดินทางไปกับ charter]" ;;
+            "") echo "ask|codex ไม่มีแฟลก และอ่าน approval_policy จาก $cfgfile ไม่ได้ (ไม่มีไฟล์/ไม่มีคีย์)" ;;
+            *)  echo "ask|codex ไม่มีแฟลก และ approval_policy=\"$pol\" ⇒ จะถาม" ;;
+          esac ;;
       esac ;;
     claude)
       case "$cmd" in
@@ -1375,9 +1397,19 @@ permstall() {
   done <<< "$wins"
   echo
   printf 'permstall.count: panes=%s blocked=%s\n' "$n_pane" "$n_block"
-  echo 'permstall.scope: out-of-scope=agent-actually-working,prompt-older-than-scrollback'
+  echo 'permstall.scope: out-of-scope=agent-actually-working,prompt-older-than-scrollback,prompt-vocabulary-non-claude'
   echo '  ⚠️ "no-prompt-visible" ไม่ได้แปลว่า worker กำลังทำงาน — แปลว่า *ตอนนี้* ไม่มีคำถามบนจอ'
   echo '     prompt ที่เลื่อนพ้น scrollback ไปแล้ว มันมองไม่เห็น ⇒ วนตรวจ ไม่ใช่ตรวจครั้งเดียว'
+  # 🔴 2026-08-08 [advisor จับ · แล้วผมไปทดสอบจริงแล้วเจอของที่ไม่คาด] ธงที่ใช้ grep จอ
+  #    **พิสูจน์กับ claude เท่านั้น** — ทุก BLOCKED ที่ผมวัดได้เป็น claude ทั้งหมด
+  #    · `selftest 21` ทดสอบ `_vc_permmode` ซึ่งอ่าน **สตริงคำสั่ง** ไม่ได้แตะ regex ตัวนี้เลย
+  #    · ผมพยายามสร้าง prompt ของ codex เพื่อทดสอบ **แล้วสร้างไม่ได้**: boot codex เปล่า ๆ
+  #      สั่ง `curl` + เขียนไฟล์นอก cwd ⇒ **ทำให้โดยไม่ถาม** เพราะ `~/.codex/config.toml`
+  #      ตั้ง `approval_policy = "never"` ไว้ทั้งเครื่อง ⇒ จะทดสอบต้องแก้ของกลาง **ซึ่งไม่ทำ**
+  #    ⇒ **ประกาศขอบเขตไว้ ดีกว่าปล่อยให้เข้าใจว่าครอบ** — ทีมที่ worker เป็น codex/opencode/
+  #      thclaws ยังต้องอ่านจอเองจนกว่าจะมีคนเจอ prompt จริงของเครื่องยนต์นั้นแล้วส่งข้อความมา
+  echo '  🔴 ธงที่ใช้จับ prompt **พิสูจน์กับ claude เท่านั้น** — codex/opencode/thclaws ยัง [unverified]'
+  echo '     (พยายามทดสอบ codex แล้วสร้าง prompt ไม่ได้: config.toml ทั้งเครื่องตั้ง approval_policy=never)'
   if [ "$n_block" -gt 0 ]; then
     echo "overall: BLOCKED panes=$n_block"
     echo '  แก้ไม่ได้ด้วยเครื่องมือนี้โดยเจตนา — การกด Yes คือการให้สิทธิ์แทนมนุษย์ของทีมนั้น'
@@ -1564,7 +1596,14 @@ PY
         case "$probe" in *"$model"*) ;; *) model_ok=0 ;; esac
       fi
       if [ -n "$probe_bin" ] && [ "$probe_bin" = "$engine" ] && [ "$model_ok" = "1" ]; then
-        printf '    ⚠️ WARN    engine "%s" ไม่ได้ลงทะเบียน — ตอนนี้ได้ของถูกโดยบังเอิญผ่าน default\n' "$engine"
+        # 🩹 2026-08-08 [lucifer · WORDING FIX — และเขาถูก] ข้อความเดิมเขียนว่า
+        #    "ตอนนี้ได้ของถูกโดยบังเอิญผ่าน default" ซึ่ง **ปลอบใจผิดเรื่อง**:
+        #    มันถูกเรื่อง *engine* เท่านั้น · `default` บนเครื่องนี้ **ไม่มี bypass token**
+        #    ⇒ คนอ่านคำว่า "ได้ของถูก" แล้ววางใจ ทั้งที่กำลังจะได้ ask-mode
+        #    ⇒ **ระบุขอบเขตของคำว่าถูกเสมอ** — ถูกในมิติไหน ไม่ใช่ถูกลอย ๆ
+        printf '    ⚠️ WARN    engine "%s" ไม่ได้ลงทะเบียน — **ได้ engine ถูกโดยบังเอิญ** ผ่าน default\n' "$engine"
+        printf '               ⚠️ "ถูก" ในที่นี้คือ **มิติ engine เท่านั้น** — ดูบรรทัด perm ข้างล่างต่อ\n'
+        printf '                  `default` ไม่จำเป็นต้องมี bypass token · บนเครื่องนี้ตอนนี้ **ไม่มี**\n'
         printf '               จะได้จริง: %s\n' "$probe"
         printf '               ไม่ pin: ผลขึ้นกับ *ชื่อ window* — `wake hermes -e claude` ได้ `hermes --yolo`\n'
         printf '               และ model ไม่ถูกกำหนดโดย charter ⇒ ใช้ alias ที่ pin model แทน\n'
@@ -1587,6 +1626,31 @@ PY
           printf '               (wake probe ตอบไม่ได้แม้ใส่ --repo-path %s แล้ว — **ตอบไม่ได้ ≠ ตกไป default**\n' "$mdir"
           printf '                อย่าสรุป consequence จากบรรทัดนี้ ยิงเองเพื่อดูของจริง:\n'
           printf '                maw wake %s --dry-run -e %s --repo-path %s)\n' "$ident" "$engine" "$mdir"
+        fi
+        # 🩹 2026-08-08 [lucifer รายงานว่า enginereg กับ enginecheck "ขัดกัน" · reproduce แล้ว
+        #    **ทั้งคู่ถูก มันตอบคนละคำถาม** และไม่มีตัวไหนบอกว่าคนละคำถาม]
+        #      enginereg <e> <dir>  ถามจาก **dir ที่ผู้เรียกยื่นให้**  (มัก = charter dir)
+        #      enginecheck          ถามจาก **path ของสมาชิกคนนั้นเอง** (worktree ของเขา)
+        #    ถ้าสอง path อยู่คนละสายบรรพบุรุษ ⇒ REGISTERED + FAIL พร้อมกัน **ถูกทั้งคู่**
+        #    ⇒ verdict ที่ใช้ตัดสินคือของ enginecheck เพราะ maw wake resolve จาก path ของสมาชิก
+        #    ⇒ และ `perm=ask` ที่ตามมา **จริง** — สมาชิกจะได้ default ที่ไม่มี bypass จริง ๆ
+        #    (lucifer ถามตรงจุด: *ถ้า fallback ไม่จริง perm ก็ไม่จริง* — fallback จริง จึง perm จริง)
+        #    เดิมผู้ใช้ต้องเดาเองว่าทำไมสองคำสั่งไม่ตรงกัน ⇒ พิมพ์ออกมาให้เห็น
+        local seen_from_charter=""
+        seen_from_charter=$( ( cd "$(dirname -- "$charter")" 2>/dev/null && maw config 2>/dev/null ) \
+          | python3 -c '
+import json,sys
+try: cfg=json.load(sys.stdin)
+except Exception: sys.exit(0)
+print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
+        if [ -n "$seen_from_charter" ]; then
+          printf '    🧭 ไม่ใช่ "ไม่มี alias" — alias **มีอยู่จริง แต่มองไม่เห็นจากที่ที่สมาชิกยืน**\n'
+          printf '               จาก charter dir : REGISTERED → %s\n' "$(printf '%s' "$seen_from_charter" | cut -c1-72)"
+          printf '               จาก path สมาชิก : มองไม่เห็น ⇒ ตกไป default\n'
+          printf '               ⇒ `enginereg` ถามจาก dir ที่คุณยื่นให้ · `enginecheck` ถามจาก path ของสมาชิก\n'
+          printf '                 สองอันนี้ตอบ **คนละคำถาม** — ตัวที่ตรงกับของจริงคือ enginecheck\n'
+          printf '                 เพราะ `maw wake` resolve จาก path ของสมาชิก ไม่ใช่จากที่คุณยืน\n'
+          printf '               ⇒ ดังนั้น perm ข้างล่างนี้ **เป็นของ default ที่จะได้จริง** ไม่ใช่ของ alias ที่ขอ\n'
         fi
         printf '               แก้: เพิ่ม "%s" ใน .maw/maw.config.<N>.json ที่เป็น**บรรพบุรุษของ %s**\n' "$engine" "$mdir"
         case "$mdir" in
@@ -2395,6 +2459,24 @@ PY
     allowlist\|*) echo "   ✓ thclaws --allowed-tools อย่างเดียว → allowlist ไม่ใช่ bypass" ;;
     *) echo "   ✗ allowlist ถูกนับเป็น bypass — คนละกลไก"; fail=1 ;;
   esac
+  # 🔴 ทิศ "กล่าวหา" — codex ที่ไม่มีแฟลก **ไม่ได้แปลว่าจะถาม** ถ้า config.toml ตั้ง never ไว้
+  #    ข้อนี้เกิดจาก probe ของจริง ไม่ใช่การอ่านเอกสาร (boot codex เปล่า → curl + เขียนนอก cwd
+  #    → ทำให้โดยไม่ถาม) · ถ้าไม่มีแขนนี้ เครื่องมือจะตะโกนใส่ alias ที่ไม่มีปัญหา
+  #    แล้วคนจะเลิกอ่านคำเตือน ซึ่งฆ่าเครื่องมือทั้งตัว
+  local _pmcfg
+  _pmcfg=$(_vc_permmode "CODEX_HOME=/tmp/vc-selftest-no-codex-home codex --model x")
+  case "$_pmcfg" in
+    ask\|*) echo "   ✓ codex ไม่มีแฟลก + ไม่มี config อ่านได้ → ask" ;;
+    *) echo "   ✗ codex ที่ไม่มีทั้งแฟลกและ config ถูกตัดสินว่าผ่าน — ได้: $_pmcfg"; fail=1 ;;
+  esac
+  if grep -qE '^[[:space:]]*approval_policy[[:space:]]*=[[:space:]]*"never"' "$HOME/.codex/config.toml" 2>/dev/null; then
+    case "$(_vc_permmode 'codex --model gpt-5.6-sol')" in
+      bypass\|*) echo "   ✓ codex ไม่มีแฟลก แต่ config.toml=never → bypass (ไม่ false alarm)" ;;
+      *) echo "   ✗ config บอก never แล้วยังตอบ ask — false alarm ทิศกล่าวหา"; fail=1 ;;
+    esac
+  else
+    echo "   – ข้ามแขน config-aware: เครื่องนี้ไม่มี approval_policy=never (ไม่ใช่ผ่าน ไม่ใช่ตก)"
+  fi
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
@@ -2461,7 +2543,13 @@ verify_check_usage() {
   echo "  permstall <session>    ← **ระหว่างงาน วนซ้ำ**: worker ค้างขอ permission อยู่ไหม (อ่านอย่างเดียว)"
   echo "                            bootverify ตอบ t=0 · permstall ตอบ t=ตอนนี้ — READY ตอน boot หมดอายุได้"
   echo "  unstick <session> [n]  ⚠ ส่ง Enter เข้า pane: เคลียร์คำสั่งที่ค้าง (ต้องมากกว่า 1 ครั้ง)"
-  echo "  mawverb <team-subcommand>  ← `maw team <พิมพ์ผิด>` คืน rc=0 + usage ลง stdout"
+  # 🩹 2026-08-08 [lucifer จับ] บรรทัดนี้เคยใช้ backtick ใน "..." ⇒ bash รัน `maw team <พิมพ์ผิด>`
+  #    เป็น command substitution **ทุกครั้งที่พิมพ์ usage** ⇒ syntax error ลง stderr และ
+  #    **เนื้อความหายไปจาก help** (ไม่ใช่แค่ noise — คำอธิบาย mawverb หายทั้งท่อน)
+  #    ⇒ คลาสเดียวกับ scar `maw hey` backtick ของผมเอง **และผมเห็นมันวิ่งผ่านตอนรัน selftest
+  #      ในเซสชันนี้แล้วปล่อยผ่าน** เพราะมันอยู่ท้าย output ที่ผมกำลังหาอย่างอื่นอยู่
+  #    ⇒ ใช้ single-quote สำหรับบรรทัดที่มี backtick เสมอ
+  echo '  mawverb <team-subcommand>  ← `maw team <พิมพ์ผิด>` คืน rc=0 + usage ลง stdout'
   echo "  selftest"
 }
 
