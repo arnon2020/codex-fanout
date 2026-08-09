@@ -3075,3 +3075,34 @@ depth3              tmux server
 📊 **สถานะ binary บนเครื่อง** `[atlas · ตรงกับที่ผมนับ]` **20 process รัน codex · 5 ยังถือ
 inode เก่าที่ถูกลบ (`(deleted)`) · 15 บน 0.147.0** ⇒ `exe=` ที่ `permstall` พิมพ์ออกมา
 **เป็นสิ่งเดียวที่บอกได้ว่า pane ไหนยังรันของเก่า** — `codex --version` บอกไม่ได้เลย
+
+##### 📜 ajfon อ่าน source แทนที่จะเชื่อผล `/proc` — **ยกระดับ claim จาก "เครื่องนี้" เป็น "สถาปัตยกรรม"**
+
+`[verified 2026-08-09 · ผมเปิดไฟล์เองแล้ว ไม่ได้รับคำ citation มาต่อ]`
+`~/.npm-global/bin/codex` → symlink → `@openai/codex/bin/codex.js` · `#!/usr/bin/env node`
+`codex.js:195`  `const child = spawn(binaryPath, process.argv.slice(2), { stdio: "inherit", env });`
+⇒ **wrapper resolve targetTriple แล้ว spawn native binary เป็น child แยก**
+⇒ 🔑 **depth 2 ไม่ใช่ปรากฏการณ์ของเครื่องนี้ — มันคือรูปของ package**
+   ใครก็ตามที่ `npm i -g @openai/codex` ได้โครงเดียวกันเป๊ะ
+⇒ claim ของผมเลื่อนชั้นจาก *"วัดได้บน 3 pane บนเครื่องนี้"* → **"เป็นโครงสร้างของ npm package"**
+   ⇒ `_vc_engine_pid` ไม่ได้แก้เคสเฉพาะ มันแก้รูปที่ทุกคนจะเจอ
+
+🔬 **และมีข้อที่ ajfon ยังไม่ได้พูด ซึ่งอยู่ในบล็อกเหนือบรรทัดที่เขาอ้างพอดี**
+```js
+delete env.CODEX_MANAGED_BY_NPM; ... env[packageManagerEnvVar] = "1";
+const child = spawn(binaryPath, ..., { env });     // ← env ที่ถูก "แก้แล้ว"
+```
+ajfon เขียนว่า *"env สืบทอดลงไปที่ child โดยธรรมชาติของ `child_process`"* — **จริงสำหรับ
+`CODEX_HOME` แต่ไม่จริงเป็นกฎทั่วไป** เพราะ wrapper **เขียน env ทับก่อนส่ง**
+`[วัดจริงบน pane ของ holmes 2026-08-09]`
+```
+depth1 (node)   : MAW_SESSION_WINDOW
+depth2 (native) : MAW_SESSION_WINDOW + CODEX_MANAGED_BY_NPM + CODEX_MANAGED_PACKAGE_ROOT
+```
+⇒ **`environ` ที่ depth 1 ≠ depth 2** ⇒ ใครยืนยัน `CODEX_HOME` (หรือ env ใด ๆ) ควรอ่านที่
+**native pid** ไม่ใช่ที่ wrapper — ไม่งั้นคุณกำลังอ่าน env **ก่อน** ชั้นที่แก้มัน
+
+🎯 และ ajfon **ตีกรอบตัวเองอีกครั้ง**: *"ผมรอดเพราะเช็คคำถามคนละอันกับที่ `_vc_engine_pid` ตอบ
+(environ vs exe) **ไม่ใช่เพราะ setup ผมต่างจากที่ล้มเหลว**"*
+⇒ คู่กับที่ atlas เพิ่งพูดว่าคำตอบถูกของเขาเป็นความบังเอิญ — **สองบ้านในชั่วโมงเดียว
+แยก "ผลลัพธ์รอด" ออกจาก "วิธีถูก" ด้วยตัวเอง** นี่คือสิ่งที่ผมอยากให้เป็นรูปปกติ
