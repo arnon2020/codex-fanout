@@ -1667,9 +1667,21 @@ permstall() {
     case "${_sexe:-}" in
       *"(deleted)"*)
         n_stale=$((n_stale+1))
-        printf '  ⏳ STALE-BIN %-34s รัน binary ที่ถูกแทนที่ไปแล้วบนดิสก์\n' "$name"
+        # 🩹 2026-08-09 [lucifer จับ · **คลาสเดียวกับ WARN ของ engine claude ที่เขาจับเมื่อคืน
+        #    คนเดิม ครั้งที่สอง**] ป้ายเดิมชื่อ `STALE-BIN` ⇒ **ยืนยันความล้าสมัยที่มันไม่ได้วัด**
+        #    `[verified 2026-08-09]` pane ของ lucifer (`2341711`) exe เป็น `(deleted)` **จริง**
+        #    แต่ build ที่มันประกาศคือ `2.1.226` = **เท่ากับเลขบนดิสก์เป๊ะ** (same-version replace)
+        #    ⇒ **`(deleted)` กับ "ล้าสมัย" เป็นคนละคำถาม** — pane รัน binary ที่ถูกลบได้
+        #      โดยเวอร์ชันไม่ล้าเลย · prism ก็เหมือนกัน
+        #    ⇒ ถ้าเหลือช่องเดียวชื่อ STALE ตัวที่ current จะถูกรายงานว่าเก่า **แล้วคนจะเลิกเชื่อสัญญาณ**
+        #      ซึ่งเป็นความล้มเหลวแบบเดียวกับ false alarm ที่เราไล่กันมาทั้งคืน
+        printf '  ⏳ REPLACED-BIN %-31s ไฟล์ที่รันอยู่ **ไม่ใช่ไฟล์ที่อยู่บนดิสก์ตอนนี้**\n' "$name"
         printf '      exe=%s\n' "$(printf '%s' "$_sexe" | sed 's|/home/user/.npm-global/lib/node_modules/||' | cut -c1-84)"
-        printf '      permstall.pane: %s STALE-BINARY\n' "$name" ;;
+        printf '      ⚠️ นี่ **ไม่ได้แปลว่าเวอร์ชันล้าสมัย** — same-version replace เกิดขึ้นจริงบนเครื่องนี้\n'
+        printf '         วัดเวอร์ชันที่รันอยู่แยกต่างหาก (claude): grep -o \x27"version":"[^"]*"\x27 <transcript.jsonl> | tail -1\n'
+        printf '         ⇒ **entry สุดท้าย** เท่านั้น — version เปลี่ยนกลางไฟล์ได้ตอน session resume ข้าม build\n'
+        printf '         ⇒ และมันบอก build **ตอนเขียน entry ล่าสุด** ไม่ใช่ "เดี๋ยวนี้"\n'
+        printf '      permstall.pane: %s REPLACED-BINARY\n' "$name" ;;
     esac
     # ธงของ prompt ต่อ engine — จับ **ตัวคำถาม** ไม่ใช่ตัวเลือก เพราะตัวเลือก/ตัวเลข
     # เปลี่ยนตามเวอร์ชัน (บทเรียน update-dialog: ห้าม hardcode เลข)
@@ -1753,11 +1765,12 @@ permstall() {
     fi
   done <<< "$wins"
   echo
-  printf 'permstall.count: panes=%s blocked=%s stale-binary=%s\n' "$n_pane" "$n_block" "$n_stale"
+  printf 'permstall.count: panes=%s blocked=%s replaced-binary=%s\n' "$n_pane" "$n_block" "$n_stale"
   if [ "$n_stale" -gt 0 ]; then
     printf '  ⏳ %s pane รัน binary ที่ไม่มีอยู่บนดิสก์แล้ว ⇒ `<engine> --version` **ตอบแทน pane เหล่านี้ไม่ได้**\n' "$n_stale"
-    printf '     พิสูจน์ได้แค่ว่า *ไฟล์ที่รันอยู่ ≠ ไฟล์บนดิสก์* — ไม่ได้พิสูจน์ว่าเลขเวอร์ชันต่างกัน\n'
-    printf '     (อ่าน inode ที่ถูกลบกลับไม่ได้) ⇒ restart เท่านั้นที่ทำให้ pane ตรงกับดิสก์\n'
+    printf '     สิ่งที่วัดได้: *ไฟล์ที่รันอยู่ ≠ ไฟล์บนดิสก์* · **สิ่งที่วัดไม่ได้จากช่องนี้: เลขเวอร์ชัน**\n'
+    printf '     ⚠️ same-version replace มีจริง — pane ที่ REPLACED อาจเป็นเวอร์ชันเดียวกับดิสก์เป๊ะ\n'
+    printf '     ⇒ "ไม่รู้ว่ารันอะไร" กับ "รันของเก่า" เป็นคนละช่อง อย่าบีบเป็นช่องเดียว\n'
   fi
   echo 'permstall.scope: out-of-scope=agent-actually-working,prompt-older-than-scrollback,prompt-vocabulary-non-claude'
   echo '  ⚠️ "no-prompt-visible" ไม่ได้แปลว่า worker กำลังทำงาน — แปลว่า *ตอนนี้* ไม่มีคำถามบนจอ'
