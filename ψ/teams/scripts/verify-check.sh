@@ -1335,6 +1335,20 @@ _vc_strip_env_prefix() {
   printf '%s' "$cmd"
 }
 
+# ── _vc_engine_basename <cmd> ───────────────────────────────────────────────
+# 🩹 2026-08-09 — `/proc` ของ worker จริงคืน `node /home/user/.npm-global/bin/codex --model …`
+#    ⇒ `_vc_argv_basename … 1` ได้ **`node`** ⇒ `perm=unknown` กับ **codex worker ทุกตัว**
+#    เจอตอนกวาดฟลีตจริง ไม่ใช่ตอนอ่านโค้ด — fixture ผมป้อน `codex …` ตรง ๆ เสมอ จึงไม่เคยโผล่
+#    ⇒ 🔑 **สตริงที่ alias เขียนไว้ กับสตริงที่ `/proc` คืนมา ไม่ใช่อันเดียวกัน**
+#      และ `_vc_permmode` ถูกใช้กับทั้งสองทาง (ก่อน spawn จาก alias · หลัง spawn จาก /proc)
+_vc_engine_basename() {
+  local b; b=$(_vc_argv_basename "$1" 1)
+  case "$b" in
+    node|nodejs|python|python3|bun|deno|ruby|perl|sh|bash|npx) _vc_argv_basename "$1" 2 ;;
+    *) printf '%s' "$b" ;;
+  esac
+}
+
 _vc_permmode() {
   # 🩹 2026-08-08 selftest จับ regression ที่ผมเพิ่งสร้างเองตอนแก้เคส `env` ของ loom:
   #    `_vc_strip_env_prefix` ตัด **assignment นำหน้า** ทิ้ง ⇒ `CODEX_HOME=…` หายไปด้วย
@@ -1343,7 +1357,7 @@ _vc_permmode() {
   #    🔑 บทเรียน: การ normalize ที่ทำเพื่อคำถามหนึ่ง **ทำลายข้อมูลของอีกคำถามในฟังก์ชันเดียวกัน**
   local orig="$1" cmd="$1" bin
   cmd=$(_vc_strip_env_prefix "$cmd")
-  bin=$(_vc_argv_basename "$cmd" 1)
+  bin=$(_vc_engine_basename "$cmd")
   case "$bin" in
     codex)
       case "$cmd" in
@@ -1500,7 +1514,7 @@ _vc_tier_summary() {
 #    ⇒ ด่านที่อ่าน `~/.codex` ที่เดียว **ตอบแทนทั้งเครื่องไม่ได้** ⇒ อ่าน home ที่ *alias นี้* ชี้ไป
 _vc_trust_report() {
   local role="$1" cmd="$2" mdir="$3" ch cfg n
-  case "$(_vc_argv_basename "$(_vc_strip_env_prefix "$cmd")" 1)" in
+  case "$(_vc_engine_basename "$(_vc_strip_env_prefix "$cmd")")" in
     codex) ;;
     *) return 0 ;;                      # engine อื่นไม่มีกลไกนี้ — เงียบ ดีกว่าเดา
   esac
@@ -1548,7 +1562,26 @@ _vc_trust_report() {
 # การกด "Yes" คือการให้สิทธิ์แทนมนุษย์ของทีมนั้น — ไม่ใช่งานของเครื่องมือตรวจ
 # (golden rule: ห้ามเป็นคนถือ "อนุญาต" ของมนุษย์ไปส่งต่อ)
 permstall() {
-  local sess="${1:?usage: permstall <session>   # อ่านอย่างเดียว ไม่ส่งอะไรเข้า pane}"
+  local sess="${1:?usage: permstall <session> [--watch [sec]]   # อ่านอย่างเดียว ไม่ส่งอะไรเข้า pane}"
+  # ── --watch: ตอบข้อที่เจ้าของงานชี้ตรง ๆ ว่า "lead ไม่ได้เดินดู worker" ────────
+  # เราแก้เรื่อง *มองไม่เห็น* ไปแล้ว (ตัวตรวจมีแล้ว) แต่ยังเหลือเรื่อง **ต้องจำว่าต้องตรวจ**
+  # ⇒ กฎที่พึ่งความจำของคนคือกฎที่จะพลาด — **ทำให้มันเป็นสิ่งที่เปิดทิ้งไว้ ไม่ใช่สิ่งที่ต้องนึกได้**
+  # ⇒ พิมพ์เฉพาะตอน **สถานะเปลี่ยน** ไม่งั้นมันกลายเป็นเสียงรบกวนแล้วคนจะปิดมัน
+  if [ "${2:-}" = "--watch" ]; then
+    local iv="${3:-60}" prev="" now
+    echo "permstall.watch: $sess ทุก ${iv}s — พิมพ์เฉพาะตอนสถานะเปลี่ยน · Ctrl-C เพื่อหยุด"
+    echo "  (อ่านอย่างเดียวทุกรอบ ไม่ส่ง ไม่กด — ปลอดภัยที่จะเปิดค้างไว้ข้ามคืน)"
+    while :; do
+      now=$(permstall "$sess" 2>&1)
+      local sig; sig=$(printf '%s' "$now" | grep -E '^permstall.pane:|^permstall.count:')
+      if [ "$sig" != "$prev" ]; then
+        printf '\n──── %s ────\n' "$(date '+%H:%M:%S')"
+        printf '%s\n' "$now"
+        prev="$sig"
+      fi
+      sleep "$iv"
+    done
+  fi
   local wins n_block=0 n_pane=0
   wins=$(tmux list-windows -t "=$sess" -F '#{window_index}:#{window_name}' 2>/dev/null) || {
     echo "permstall.session: $sess NOT-FOUND (tmux list-windows)"; echo "overall: UNVERIFIED"; return 2; }
@@ -1562,11 +1595,45 @@ permstall() {
     cap=$(tmux capture-pane -p -t "=$pane" 2>/dev/null | tail -40)
     # ธงของ prompt ต่อ engine — จับ **ตัวคำถาม** ไม่ใช่ตัวเลือก เพราะตัวเลือก/ตัวเลข
     # เปลี่ยนตามเวอร์ชัน (บทเรียน update-dialog: ห้าม hardcode เลข)
-    q=$(printf '%s' "$cap" | grep -m1 -E \
-      'Do you want to (proceed|create|make|edit|run)|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|อนุญาต' 2>/dev/null)
+    #
+    # 🔴 2026-08-09 [arnon ชี้ · ผมทดสอบแล้วมันจริง] เดิมด่านนี้จับ **เฉพาะ permission**
+    #    ⇒ pane ที่ค้างบน `✨ Update available!` ได้ `blocked=0` **เขียวสนิท**
+    #    ⇒ **false green ในเครื่องมือที่สร้างมาเพื่อฆ่า false green** — และเป็นเคสที่
+    #      เจ้าของงานบอกว่าเจอบ่อยที่สุด: *"worker เปิดขึ้นมาถามว่าจะ update ไหม
+    #      แล้ว lead ไม่ได้ตามดูว่ามันค้างอยู่หน้านั้นหรือเปล่า"*
+    #    ⇒ `bootverify` จับได้ แต่มันเป็น **ด่านครั้งเดียวที่ t=0** · เวอร์ชันใหม่ของ codex
+    #      **โผล่เมื่อไหร่ก็ได้** ⇒ worker ที่ spawn ตอนบ่ายเจอ dialog ที่ worker ตอนเช้าไม่เจอ
+    #      ⇒ ต้องอยู่ใน **ลูป** ไม่ใช่ในด่านบูต
+    #    ⇒ แยก `kind=` เพราะ **ทางแก้คนละทาง**:
+    #        permission  → ให้สิทธิ์ หรือ restart ด้วย alias ที่มี bypass token
+    #        cli-dialog  → อ่านเลขจากจอ · **ห้าม Enter เปล่าเด็ดขาด** — บน update dialog
+    #                      ตัวไฮไลต์คือ `Update now` ที่รัน `npm install -g` ทั้งเครื่อง
+    local kind="" q=""
+    # 🩹 2026-08-09 — เดิมจับคำเดี่ยว ⇒ **`อนุญาต` ลอย ๆ ในผลงานของ worker ทำให้เตือนมั่ว**
+    #    เจอตอนกวาดฟลีตจริง: `prober-academic-alt` ที่**กำลังทำงานอยู่** ถูกรายงานว่า BLOCKED
+    #    เพราะเนื้อความที่มันเขียนเองมีคำนั้น ⇒ ใช้กฎสองเงื่อนไขเดียวกับ cli-dialog:
+    #    **คำถาม + แถวตัวเลือกเลข ต้องอยู่ท้ายจอด้วยกัน** (prompt ของ claude มี `1. Yes` เสมอ)
+    local tail15; tail15=$(printf '%s' "$cap" | tail -15)
+    local qb qo
+    qb=$(printf '%s' "$tail15" | grep -m1 -E \
+      'Do you want to (proceed|create|make|edit|run)|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|ขออนุญาต' 2>/dev/null)
+    qo=$(printf '%s' "$tail15" | grep -m1 -E '^[[:space:]]*[›>❯[:space:]]*[0-9]\.[[:space:]]' 2>/dev/null)
+    if [ -n "$qb" ] && [ -n "$qo" ]; then q="$qb"; kind="permission"; fi
+    if [ -z "$q" ]; then
+      # 🔒 สองเงื่อนไข ไม่ใช่เงื่อนไขเดียว — บทเรียนจากด่าน `relay` เมื่อชั่วโมงก่อน:
+      #    ถ้าจับแค่ "มีคำ" มันจะเตือนใส่ pane ที่กำลัง**พูดถึง**ไดอะล็อก (เช่น oracle ที่
+      #    กำลังคุยเรื่องนี้อยู่) ⇒ **เตือนมั่วบ่อย ๆ = lead ปิดมันทิ้ง = กลับไปที่ปัญหาเดิม**
+      #    ⇒ ต้องมี **banner** + **แถวตัวเลือกเลข** อยู่ใน **ท้ายจอ** ด้วยกัน
+      local tailcap; tailcap=$(printf '%s' "$cap" | tail -15)
+      local b o
+      b=$(printf '%s' "$tailcap" | grep -m1 -E \
+        'Update available!|Do you trust the contents of this directory|Is this a project you created or one you trust|trust this folder' 2>/dev/null)
+      o=$(printf '%s' "$tailcap" | grep -m1 -E '^[[:space:]]*[›>❯[:space:]]*[0-9]\.[[:space:]]' 2>/dev/null)
+      if [ -n "$b" ] && [ -n "$o" ]; then q="$b"; kind="cli-dialog"; fi
+    fi
     if [ -n "$q" ]; then
       n_block=$((n_block+1))
-      printf '  🔴 BLOCKED  %-34s %s\n' "$name" "$(printf '%s' "$q" | sed 's/^[[:space:]]*//' | cut -c1-70)"
+      printf '  🔴 BLOCKED  %-34s [%s] %s\n' "$name" "$kind" "$(printf '%s' "$q" | sed 's/^[[:space:]]*//' | cut -c1-60)"
       printf '      pane=%s\n' "$pane"
       # ของจริงที่รันอยู่ — ต้องอ่าน **pid ลูก** เพราะ pane เป็น bash เปล่าในรูป `maw wake`
       local ppid child
@@ -1577,7 +1644,14 @@ permstall() {
         local pm; pm=$(_vc_permmode "$child")
         printf '      perm=%s  (%s)\n' "${pm%%|*}" "${pm#*|}"
       fi
-      printf '      permstall.pane: %s BLOCKED\n' "$name"
+      if [ "$kind" = "cli-dialog" ]; then
+        printf '      ⛔ นี่คือจอของ **CLI เอง ไม่ใช่ของ agent** — ข้อความที่ส่งไปจะไม่ถูก submit\n'
+        printf '         **ห้ามส่ง Enter เปล่า**: บน update dialog ตัวไฮไลต์คือ `Update now`\n'
+        printf '         ซึ่งรัน `npm install -g` **แทนที่ binary ของทุก oracle บนเครื่องนี้**\n'
+        printf '         (เกิดจริง 2026-08-08 · pane ของทีมหนึ่งอัป codex ทั้งเครื่องจาก 0.146.1)\n'
+        printf '         ⇒ อ่านเลขจากจอนี้เอง เมนูเปลี่ยนตามเวอร์ชัน · เลือกตัวที่ไม่ทิ้งร่องรอย\n'
+      fi
+      printf '      permstall.pane: %s BLOCKED kind=%s\n' "$name" "$kind"
     else
       printf '      permstall.pane: %s no-prompt-visible\n' "$name"
     fi
@@ -2730,6 +2804,20 @@ PY
     *) echo "   ✗ tier: alias ที่ไม่ pin ถูกรายงานว่ามีค่า"; fail=1 ;;
   esac
   machine=""
+  # 🩹 node shim: /proc คืน `node <path>/codex …` — index 1 คือ interpreter ไม่ใช่ engine
+  #    เจอตอนกวาดฟลีตจริง ไม่ใช่ตอนอ่านโค้ด · fixture เดิมป้อน `codex` ตรง ๆ เสมอจึงไม่เคยโผล่
+  case "$(_vc_permmode 'node /home/user/.npm-global/bin/codex --model x --ask-for-approval never')" in
+    bypass\|*) echo "   ✓ node shim: อ่านทะลุถึง codex ไม่ใช่หยุดที่ node" ;;
+    *) echo "   ✗ node shim: ยังอ่าน engine เป็น interpreter"; fail=1 ;;
+  esac
+  case "$(_vc_engine_basename 'node /home/user/.npm-global/bin/codex --model x')" in
+    codex) echo "   ✓ engine basename: node <path>/codex → codex" ;;
+    *) echo "   ✗ engine basename ผิด: $(_vc_engine_basename 'node /x/codex --model y')"; fail=1 ;;
+  esac
+  case "$(_vc_engine_basename 'codex --model x')" in
+    codex) echo "   ✓ engine basename: รูปตรง ๆ ยังถูก (ไม่พัง regression)" ;;
+    *) echo "   ✗ engine basename พังกับรูปตรง ๆ"; fail=1 ;;
+  esac
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
@@ -2793,7 +2881,8 @@ verify_check_usage() {
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
   echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
   echo "  bootverify <session>   ← หลัง spawn: pane boot ตรง engine ไหม + จอเป็นของ agent หรือ installer"
-  echo "  permstall <session>    ← **ระหว่างงาน วนซ้ำ**: worker ค้างขอ permission อยู่ไหม (อ่านอย่างเดียว)"
+  echo "  permstall <session> [--watch [sec]]  ← **ระหว่างงาน**: worker ค้างอยู่บนคำถามไหม (อ่านอย่างเดียว)"
+  echo "                            จับทั้ง permission prompt **และ** update/trust dialog ของ CLI"
   echo "                            bootverify ตอบ t=0 · permstall ตอบ t=ตอนนี้ — READY ตอน boot หมดอายุได้"
   echo "  unstick <session> [n]  ⚠ ส่ง Enter เข้า pane: เคลียร์คำสั่งที่ค้าง (ต้องมากกว่า 1 ครั้ง)"
   # 🩹 2026-08-08 [lucifer จับ] บรรทัดนี้เคยใช้ backtick ใน "..." ⇒ bash รัน `maw team <พิมพ์ผิด>`

@@ -1194,6 +1194,44 @@ maw team up "$TEAM"               # real
 > bash ~/.claude/skills/oracle-team/scripts/verify-check.sh permstall "$SESSION"
 > ```
 >
+> 🔴 **`permstall` also sweeps for the CLI's own dialogs, not just permission prompts — and it
+> did not until 2026-08-09.** The owner named this as the thing they hit most often: *a new codex
+> version lands, the worker boots into "update?", and the lead never goes back to check whether
+> it is sitting there.* Tested: a pane frozen on `✨ Update available!` returned **`blocked=0`**
+> from the version of this tool shipped hours earlier — **a false green inside the tool built to
+> kill false greens.** `bootverify` does catch it, but `bootverify` is a **one-shot at t=0**, and
+> a new version can be published at any hour: the worker spawned after lunch meets a dialog the
+> morning's worker never saw. A boot gate cannot cover a hazard that arrives on someone else's
+> release schedule.
+>
+> Output now carries `kind=`, because the remedies are opposite:
+> ```
+> 🔴 BLOCKED  worker-3  [cli-dialog]  ✨ Update available! 0.147.0 -> 0.148.0
+> 🔴 BLOCKED  worker-5  [permission]  Do you want to proceed?
+> ```
+> `permission` → grant it, or restart with a bypass token in the alias.
+> `cli-dialog` → **read the number off that screen**; a blind Enter takes the highlighted item,
+> which on the update dialog is `Update now` and rewrites the binary for every agent on the box.
+>
+> ```bash
+> # the answer to "the lead forgets to look" is not a reminder — leave it running:
+> bash ~/.claude/skills/oracle-team/scripts/verify-check.sh permstall "$SESSION" --watch 60
+> #   prints ONLY when the state changes, so it can sit in a pane overnight without becoming noise
+> ```
+>
+> ⚠️ **Both detectors require a banner AND an adjacent numbered option in the last 15 lines.**
+> A single keyword is not enough and the looser version was measured doing harm: sweeping the
+> live fleet, a *working* worker was reported BLOCKED because the Thai word for "permission"
+> appeared in prose it had just written. **A sweep that cries wolf gets turned off, which returns
+> you to the original problem by a longer road.** Validated across 22 live panes: zero false
+> positives, both dialog kinds still caught.
+>
+> 🩹 And the same sweep exposed a defect that only live panes could show: `/proc` returns
+> `node /home/user/.npm-global/bin/codex …`, so reading argv[1] gave **`node`** and every codex
+> worker reported `perm=unknown`. Fixtures always fed `codex …` directly, so it could not appear
+> in a test. **The string an alias declares and the string `/proc` returns are not the same
+> string**, and this checker is used against both.
+>
 > ⚠️ `no-prompt-visible` **does not mean the worker is working** — it means no question is on
 > screen *at this instant*. A prompt that scrolled out of the capture buffer is invisible to it.
 > **That is why it is a loop, not a gate.**
