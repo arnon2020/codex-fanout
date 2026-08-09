@@ -1335,6 +1335,52 @@ _vc_strip_env_prefix() {
   printf '%s' "$cmd"
 }
 
+# ── _vc_engine_pid <pane_pid> ───────────────────────────────────────────────
+# "process ไหนคือ engine จริงของ pane นี้" — คำถามที่ผมสั่งฟลีตไปแล้ว **สามครั้ง สามคำตอบผิด**
+#
+#   ครั้งที่ 1  `codex --version`            → อ่าน **ไฟล์บนดิสก์** ตอบเรื่อง boot ครั้งหน้า
+#   ครั้งที่ 2  `readlink /proc/<child>/exe` → **lucifer หักล้าง**: `/home/user/.npm-global/bin/codex`
+#               เป็น `#!/usr/bin/env node` script ไม่ใช่ ELF ⇒ ลูกชั้นที่ 1 คือ **`/usr/bin/node`**
+#               และ `comm` ที่ชั้นนั้นคือ **`MainThread`** ⇒ **ไม่มีฟิลด์ไหนมีคำว่า codex เลย**
+#   ครั้งที่ 3  `pgrep -x codex -P $PANE`    → **ผมทดสอบข้อเสนอนี้แล้วมันก็ตก**: บน 3 pane จริง
+#               คืน**ค่าว่างทั้งสาม** เพราะ codex เป็น **หลาน (depth 2)** ไม่ใช่ลูก
+#               และ atlas วัดไว้ว่า `comm` ก็ไม่น่าเชื่อ (`codex-code-mode` 8 ตัวบนเครื่องนี้)
+#
+# 🔑 **สองข้อเสนอจาก peer สองคน ขัดกันเองที่ขอบ**: lucifer ให้ key ที่ `comm==codex` ·
+#    atlas ให้เลิกใช้ `comm` แล้วใช้ `exe` ⇒ **ทางที่ทนทั้งสองรูปคือไม่ยึดทั้งชื่อและความลึก**:
+#    **เดินลูกหลานทุกชั้น แล้วเลือกตัวแรกที่ `exe` ชี้ไปที่ไบนารีของ engine ที่รู้จัก**
+#    `[verified 2026-08-09 · 3 pane จริง: codex อยู่ depth 2 · claude อยู่ depth 1]`
+#
+# ⇒ 🪜 บทเรียนที่ใหญ่กว่าตัวคำสั่ง: **คำสั่งเดียวกัน ถูกในเคสที่ผมวัด และผิดในรูปที่ผมไม่ได้วัด**
+#    ผมอ่าน pane ของ holmes ถูกตัวจริง ๆ — แต่ **generalize คำสั่งจากเคสเดียวไปให้ทั้งฟลีต**
+#    ซึ่งคือ scar ประจำรีโปนี้ (*"ตรวจคุณสมบัติเดียว → เหมาว่าทั้งหมด"*) **ผิวที่ ๕ ของคืนเดียว**
+_vc_engine_pid() {
+  # 🩹 กับดัก bash + `set -u`: `local a="$1" b="$a"` **บรรทัดเดียว** ตาย เพราะ bash
+  #    ขยายทุก word ก่อนแล้วค่อยกำหนดค่า ⇒ `$a` ยังไม่มีตอนขยาย ⇒ unbound variable
+  local root="${1:?usage: _vc_engine_pid <pane_pid>}"
+  local queue="$root" cur kids e
+  local depth=0
+  while [ -n "$queue" ] && [ "$depth" -lt 6 ]; do
+    local next=""
+    for cur in $queue; do
+      e=$(readlink "/proc/$cur/exe" 2>/dev/null) || e=""
+      case "$e" in
+        */codex*|*/claude*|*/opencode*|*/thclaws*)
+          # ข้าม shim ของ node/bun ที่บังเอิญมีคำว่า codex ใน path ไม่ได้ — ตรวจว่ามันไม่ใช่ interpreter
+          case "$e" in
+            */bin/node|*/bin/bun|*/bin/deno|/usr/bin/node) ;;
+            *) printf '%s	%s' "$cur" "$e"; return 0 ;;
+          esac ;;
+      esac
+      kids=$(pgrep -P "$cur" 2>/dev/null | tr '
+' ' ')
+      next="$next $kids"
+    done
+    queue="$next"; depth=$((depth+1))
+  done
+  return 1
+}
+
 # ── _vc_engine_basename <cmd> ───────────────────────────────────────────────
 # 🩹 2026-08-09 — `/proc` ของ worker จริงคืน `node /home/user/.npm-global/bin/codex --model …`
 #    ⇒ `_vc_argv_basename … 1` ได้ **`node`** ⇒ `perm=unknown` กับ **codex worker ทุกตัว**
@@ -1349,6 +1395,15 @@ _vc_engine_basename() {
   esac
 }
 
+# 🏷️ arg 2 (ทางเลือก) = **ชื่อ engine ที่ยืนยันมาจากภายนอก** — ใช้เมื่อมี process จริง
+#    atlas 2026-08-09: `comm` ก็ไม่ใช่ `codex` เสมอ — เครื่องนี้มี `comm=codex-code-mode` 8 ตัว
+#    ⇒ `pgrep -x codex` = 12 · ของจริง = 20 `[ผมยืนยันเอง: ไล่ /proc/*/exe · 5 เก่า 15 ใหม่]`
+#    🔑 **ชื่อ process เป็นสิ่งที่โปรแกรมตั้งเองได้ · `exe` เป็นสิ่งที่ kernel ตอบ**
+#    ⚠️ แต่รับข้อเสนอของ atlas ได้แค่ **ครึ่งเดียว และครึ่งที่รับไม่ได้สำคัญ**:
+#      `exe` บอกว่า **engine ไหน** — บอก **ธง** ไม่ได้ · `--ask-for-approval never` อยู่ใน argv
+#      ที่เดียว ⇒ **สองแหล่ง แหล่งละคำถาม** ไม่ใช่เลือกข้างใดข้างหนึ่ง
+#      และ `enginecheck` รัน **ก่อน spawn** ⇒ **ไม่มี process ให้ readlink เลย** ⇒ ข้อเสนอนี้
+#      ใช้กับ enginecheck ไม่ได้โดยโครงสร้าง ไม่ใช่เพราะไม่อยากทำ
 _vc_permmode() {
   # 🩹 2026-08-08 selftest จับ regression ที่ผมเพิ่งสร้างเองตอนแก้เคส `env` ของ loom:
   #    `_vc_strip_env_prefix` ตัด **assignment นำหน้า** ทิ้ง ⇒ `CODEX_HOME=…` หายไปด้วย
@@ -1357,7 +1412,7 @@ _vc_permmode() {
   #    🔑 บทเรียน: การ normalize ที่ทำเพื่อคำถามหนึ่ง **ทำลายข้อมูลของอีกคำถามในฟังก์ชันเดียวกัน**
   local orig="$1" cmd="$1" bin
   cmd=$(_vc_strip_env_prefix "$cmd")
-  bin=$(_vc_engine_basename "$cmd")
+  bin="${2:-$(_vc_engine_basename "$cmd")}"
   case "$bin" in
     codex)
       case "$cmd" in
@@ -1641,7 +1696,25 @@ permstall() {
       child=$(ps --ppid "$ppid" -o args= 2>/dev/null | head -1)
       [ -n "$child" ] && printf '      proc=%s\n' "$(printf '%s' "$child" | cut -c1-96)"
       if [ -n "$child" ]; then
-        local pm; pm=$(_vc_permmode "$child")
+        # ตัวตนของ engine ถามจาก kernel ไม่ใช่จากชื่อที่โปรแกรมตั้งเอง (atlas) และ
+        # **ไม่ยึดความลึก** เพราะ codex อยู่ depth 2 (node shim คั่น) ส่วน claude อยู่ depth 1
+        # (lucifer หักล้างรูป depth-1 ของผม · ข้อเสนอ `pgrep -x codex -P` ของเขาก็ตกด้วย
+        #  เพราะ `-P` ดูแค่ลูกตรง — ผมทดสอบแล้วคืนค่าว่างทั้ง 3 pane)
+        local cpid cexe cbin="" _ep
+        _ep=$(_vc_engine_pid "$ppid" 2>/dev/null) || _ep=""
+        cpid=$(printf '%s' "$_ep" | cut -f1)
+        cexe=$(printf '%s' "$_ep" | cut -f2)
+        case "$cexe" in
+          *codex*) cbin=codex ;; *claude*) cbin=claude ;;
+          *opencode*) cbin=opencode ;; *thclaws*) cbin=thclaws ;;
+        esac
+        if [ -n "$cexe" ]; then
+          printf '      exe=%s\n' "$(printf '%s' "$cexe" | cut -c1-92)"
+          case "$cexe" in *"(deleted)"*)
+            printf '      ⏳ binary ที่ pane นี้รันอยู่ **ถูกแทนที่ไปแล้วบนดิสก์** — pane เก่ากว่าเครื่อง\n' ;;
+          esac
+        fi
+        local pm; pm=$(_vc_permmode "$child" ${cbin:+"$cbin"})
         printf '      perm=%s  (%s)\n' "${pm%%|*}" "${pm#*|}"
       fi
       if [ "$kind" = "cli-dialog" ]; then
@@ -2818,6 +2891,34 @@ PY
     codex) echo "   ✓ engine basename: รูปตรง ๆ ยังถูก (ไม่พัง regression)" ;;
     *) echo "   ✗ engine basename พังกับรูปตรง ๆ"; fail=1 ;;
   esac
+  # 🩹 atlas 2026-08-09: ชื่อ process โปรแกรมตั้งเองได้ (`comm=codex-code-mode` 8 ตัวบนเครื่องนี้)
+  #    ⇒ ตัวตนต้องมาจาก kernel (`/proc/<pid>/exe`) แต่ **ธง** ยังต้องมาจาก argv
+  case "$(_vc_permmode 'codex-code-mode --ask-for-approval never' codex)" in
+    bypass\|*) echo "   ✓ exe override: ชื่อแปลก + ธงถูก → bypass (ตัวตนจาก kernel · ธงจาก argv)" ;;
+    *) echo "   ✗ exe override ไม่ถูกใช้"; fail=1 ;;
+  esac
+  # ⚠️ แขนนี้ผมเขียนหลวมรอบแรกจน `ask|*|bypass|*` แมตช์ทุกอย่าง = **ตกไม่ได้**
+  #    ซึ่งเป็น scar ที่ไฟล์นี้ทั้งไฟล์เขียนถึง ("check ที่ทำให้ตกไม่ได้ คือ check ที่ตกไม่ได้")
+  #    ⇒ บังคับให้ตกได้: ชี้ CODEX_HOME ไปที่ที่ไม่มี config ⇒ ไม่มีทั้งธงและ config ⇒ ต้อง ask
+  case "$(_vc_permmode 'CODEX_HOME=/tmp/vc-no-such-home codex-code-mode --model x' codex)" in
+    ask\|*) echo "   ✓ exe override ไม่ใช่ใบผ่าน — ไม่มีธง ไม่มี config ⇒ ยัง ask" ;;
+    *) echo "   ✗ exe override กลายเป็นใบผ่าน"; fail=1 ;;
+  esac
+  # 🩹 _vc_engine_pid: ต้องหา engine เจอไม่ว่ามันอยู่ลึกกี่ชั้น และ **ต้องไม่หยุดที่ interpreter**
+  #    เทสต์นี้ยิงกับ pane ของ **เซสชันนี้เอง** ⇒ เป็นข้อมูลจริง ไม่ใช่ fixture ที่ผมแต่ง
+  local _selfpane _epid _eexe
+  _selfpane=$(tmux display-message -p '#{pane_pid}' 2>/dev/null || true)
+  if [ -n "${_selfpane:-}" ]; then
+    _epid=$(_vc_engine_pid "$_selfpane" 2>/dev/null | cut -f1)
+    _eexe=$(_vc_engine_pid "$_selfpane" 2>/dev/null | cut -f2)
+    case "$_eexe" in
+      */bin/node|/usr/bin/node|"") echo "   ✗ engine_pid หยุดที่ interpreter หรือหาไม่เจอ: [$_eexe]"; fail=1 ;;
+      *codex*|*claude*|*opencode*|*thclaws*) echo "   ✓ engine_pid: เจอ engine จริงที่ความลึกใดก็ได้ (pid=$_epid)" ;;
+      *) echo "   ✗ engine_pid คืน exe ที่ไม่ใช่ engine: $_eexe"; fail=1 ;;
+    esac
+  else
+    echo "   – ข้าม engine_pid: ไม่ได้รันใน tmux (ไม่ใช่ผ่าน ไม่ใช่ตก)"
+  fi
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
