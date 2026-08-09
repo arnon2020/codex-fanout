@@ -1637,7 +1637,7 @@ permstall() {
       sleep "$iv"
     done
   fi
-  local wins n_block=0 n_pane=0
+  local wins n_block=0 n_pane=0 n_stale=0
   wins=$(tmux list-windows -t "=$sess" -F '#{window_index}:#{window_name}' 2>/dev/null) || {
     echo "permstall.session: $sess NOT-FOUND (tmux list-windows)"; echo "overall: UNVERIFIED"; return 2; }
   [ -n "$wins" ] || { echo "permstall.session: $sess NO-WINDOWS"; echo "overall: UNVERIFIED"; return 2; }
@@ -1648,6 +1648,29 @@ permstall() {
     pane="${sess}:${idx}"
     n_pane=$((n_pane+1))
     cap=$(tmux capture-pane -p -t "=$pane" 2>/dev/null | tail -40)
+    # 🔴 2026-08-09 [lucifer เสนอ · ผมยืนยันบน pane ตัวเอง] `(deleted)` ต้องเป็น **สัญญาณของตัวเอง**
+    #    ไม่ใช่รายละเอียดที่ซ่อนใน `exe=` ของ pane ที่ค้าง — เพราะ pane ที่รัน binary ซึ่ง
+    #    **ไม่มีอยู่บนดิสก์แล้ว คือ pane ที่ไม่มีใครรู้ว่ามันรันอะไรอยู่**
+    #    และมันเกิดกับ **pane ที่ทำงานปกติ** ด้วย ⇒ ต้องตรวจทุก pane ไม่ใช่เฉพาะที่ BLOCKED
+    #    `[verified 2026-08-09: ทั้ง 8 oracle pane ของฟลีต รวม pane ของผมเอง รัน
+    #      @anthropic-ai/.claude-code-DycUbYqO/bin/claude.exe (deleted) · staging dir หายแล้ว ·
+    #      package บนดิสก์ mtime 09:17 วันนี้ = **หลัง** ทุก pane เกิด ⇒ `claude --version`
+    #      ตอบ 2.1.226 แต่ไม่มี pane ไหนบนเครื่องนี้เป็น 2.1.226]`
+    #    🎯 scar ที่เราสอนกันทั้งคืน (*version บนดิสก์ ≠ version ใน pane*) **เป็นจริงกับตัวเราเอง
+    #      พร้อมกันทั้ง 8 คน ในเวลาที่เรากำลังคุยเรื่องนี้** — เราเล็งมันไปที่ worker เท่านั้น
+    #    ⚖️ ขอบเขต (lucifer ระบุเอง ผมไม่ขยาย): `(deleted)` + staging dir หาย + mtime หลัง start
+    #      พิสูจน์ว่า **ไฟล์ที่ pane รัน ไม่ใช่ไฟล์ที่อยู่บนดิสก์ตอนนี้** — **ไม่ได้**พิสูจน์ว่า
+    #      *เลขเวอร์ชัน*ต่างกัน · อ่าน inode ที่ถูกลบกลับไม่ได้
+    local _sp _sexe
+    _sp=$(tmux display-message -p -t "=$pane" '#{pane_pid}' 2>/dev/null)
+    _sexe=$([ -n "${_sp:-}" ] && _vc_engine_pid "$_sp" 2>/dev/null | cut -f2)
+    case "${_sexe:-}" in
+      *"(deleted)"*)
+        n_stale=$((n_stale+1))
+        printf '  ⏳ STALE-BIN %-34s รัน binary ที่ถูกแทนที่ไปแล้วบนดิสก์\n' "$name"
+        printf '      exe=%s\n' "$(printf '%s' "$_sexe" | sed 's|/home/user/.npm-global/lib/node_modules/||' | cut -c1-84)"
+        printf '      permstall.pane: %s STALE-BINARY\n' "$name" ;;
+    esac
     # ธงของ prompt ต่อ engine — จับ **ตัวคำถาม** ไม่ใช่ตัวเลือก เพราะตัวเลือก/ตัวเลข
     # เปลี่ยนตามเวอร์ชัน (บทเรียน update-dialog: ห้าม hardcode เลข)
     #
@@ -1730,7 +1753,12 @@ permstall() {
     fi
   done <<< "$wins"
   echo
-  printf 'permstall.count: panes=%s blocked=%s\n' "$n_pane" "$n_block"
+  printf 'permstall.count: panes=%s blocked=%s stale-binary=%s\n' "$n_pane" "$n_block" "$n_stale"
+  if [ "$n_stale" -gt 0 ]; then
+    printf '  ⏳ %s pane รัน binary ที่ไม่มีอยู่บนดิสก์แล้ว ⇒ `<engine> --version` **ตอบแทน pane เหล่านี้ไม่ได้**\n' "$n_stale"
+    printf '     พิสูจน์ได้แค่ว่า *ไฟล์ที่รันอยู่ ≠ ไฟล์บนดิสก์* — ไม่ได้พิสูจน์ว่าเลขเวอร์ชันต่างกัน\n'
+    printf '     (อ่าน inode ที่ถูกลบกลับไม่ได้) ⇒ restart เท่านั้นที่ทำให้ pane ตรงกับดิสก์\n'
+  fi
   echo 'permstall.scope: out-of-scope=agent-actually-working,prompt-older-than-scrollback,prompt-vocabulary-non-claude'
   echo '  ⚠️ "no-prompt-visible" ไม่ได้แปลว่า worker กำลังทำงาน — แปลว่า *ตอนนี้* ไม่มีคำถามบนจอ'
   echo '     prompt ที่เลื่อนพ้น scrollback ไปแล้ว มันมองไม่เห็น ⇒ วนตรวจ ไม่ใช่ตรวจครั้งเดียว'
