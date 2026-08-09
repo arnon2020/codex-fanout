@@ -78,6 +78,13 @@ for item in config.toml version.json installation_id models_cache.json; do
   [ -e "$SRC/$item" ] && [ ! -e "$DEST/$item" ] && cp "$SRC/$item" "$DEST/$item"
 done
 
+# ── 2026-08-09 · จุด seed: ล้าง trust ที่สืบทอดมาโดยไม่ตั้งใจ ────────────────
+# `config.toml` ที่ copy มา พก `[projects."<path>"]` ของทั้งฟลีตติดมาด้วย · อันที่เป็นเรื่อง
+# **ตอนนี้** คือ bare `[projects."/tmp"]` (มีอยู่จริง · mode 1777) — เหตุผลเต็ม ขอบเขต และ
+# หลักฐาน ARM A/B อยู่ในหัวไฟล์ `seed-hygiene.sh` **ที่เดียว ไม่ก๊อปมาไว้ที่นี่**
+# แหล่งเดียว ไม่ใช่ก๊อปสี่ที่ — ดูเหตุผลเต็มในหัวไฟล์ seed-hygiene.sh
+"$(dirname -- "${BASH_SOURCE[0]}")/seed-hygiene.sh" "$DEST/config.toml" || true
+
 # the whole point: skills/ is OURS, and each of the role's skills is linked in by name.
 # A stale link from a previous run whose skill has since been renamed must go, or the worker
 # keeps seeing a skill the charter no longer gives it.

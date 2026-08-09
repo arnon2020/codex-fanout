@@ -47,6 +47,11 @@ for i in $(seq 1 "$N"); do
   if [ -f "$dst/config.toml" ]; then
     sed -i '' 's/model_reasoning_effort = "low"/model_reasoning_effort = "xhigh"/' "$dst/config.toml" 2>/dev/null || \
     sed -i 's/model_reasoning_effort = "low"/model_reasoning_effort = "xhigh"/' "$dst/config.toml" 2>/dev/null || true
+
+# seed hygiene — แหล่งเดียว ดูเหตุผลในหัวไฟล์ ψ/teams/scripts/seed-hygiene.sh
+for _hy in "$(dirname -- "$0")/seed-hygiene.sh" "$(git rev-parse --show-toplevel 2>/dev/null)/ψ/teams/scripts/seed-hygiene.sh"; do
+  [ -x "$_hy" ] && { "$_hy" "${DST:-${dst:-}}/config.toml" || true; break; }
+done
   fi
 
   echo "✓ $dst (auth→pool/$i, own sqlite/locks)"

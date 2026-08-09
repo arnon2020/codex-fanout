@@ -1427,6 +1427,60 @@ _vc_perm_report() {
 "
 }
 
+# ── _vc_tier_report <role> <resolved-cmd> ───────────────────────────────────
+# 🎚️ **มิติที่สี่ — และมันไม่ใช่ความถูกต้อง มันคือ *ความเหมาะสมกับงาน***
+#    engine/model/permission/trust ตอบว่า *worker จะทำงานได้ไหม*
+#    **tier ตอบว่า จ่ายแพงเกินไปไหม และแรงพอไหม** — คนละคำถาม และไม่มีด่านไหนถามมันเลย
+#
+# `[verified 2026-08-09 · model-tier-census.py บน 10 layer file · 61 alias]`
+#    effort ที่ถูก pin 19 ตัว: **xhigh 9 · medium 8 · high 1 · low 1**
+#    และ **9 alias ไม่ pin ทั้ง model และ effort** ⇒ ขี่ ambient default ของ `config.toml`
+#    ⇒ **ทีมที่ทุก role ได้ tier เดียวกัน ไม่ใช่การตัดสินใจ มันคือ default ที่รั่วผ่านมา**
+#
+# ⚖️ **สิ่งที่เครื่องมือนี้จะไม่ทำ**: ไม่จัดอันดับว่า model ไหน "ดีกว่า" — ผมวัดไม่ได้
+#    และ claim แบบนั้นไม่มีหลักฐานรองรับในรีโปนี้ ⇒ **รายงานชื่อ model เฉย ๆ**
+#    ส่วน `model_reasoning_effort` **จัดอันดับได้** เพราะ codex นิยามลำดับไว้เอง
+#    (low < medium < high < xhigh) ⇒ อันนี้เทียบได้โดยไม่ต้องเดา
+#
+# 🔑 รูปที่มันจับ: **ทีม 7 role ที่ทุกคนได้ xhigh** อ่านแล้วเหมือนความรอบคอบ
+#    แต่มันแปลว่า **ไม่มีใครเลือกอะไรเลย** — role ที่แค่อ่านไฟล์แล้วรายงาน จ่ายเท่ากับ
+#    role ที่ออกแบบสถาปัตยกรรม · และ role ที่ยากจริงอาจได้ `low` โดยไม่มีใครเห็น
+_vc_tier_report() {
+  local role="$1" cmd="$2" model="" effort=""
+  model=$(printf '%s' "$cmd" | sed -n 's/.*--model[= ]\([^ ]*\).*/\1/p')
+  effort=$(printf '%s' "$cmd" | sed -n 's/.*model_reasoning_effort=\{0,1\}["=]\{0,2\}\([a-z]*\).*/\1/p')
+  [ -n "$effort" ] || effort=$(printf '%s' "$cmd" | sed -n 's/.*--effort[= ]\([a-z]*\).*/\1/p')
+  printf '    🎚️ tier     model=%s effort=%s\n' "${model:-ambient}" "${effort:-ambient}"
+  if [ -z "$model" ] && [ -z "$effort" ]; then
+    printf '               ⚠️ ไม่ pin ทั้งสองอย่าง ⇒ ขี่ค่าใน config.toml ของ home นั้น\n'
+    printf '                  ⇒ ใครแก้ config เมื่อไหร่ **ทีมเปลี่ยน tier เงียบ ๆ ทั้งทีม**\n'
+  fi
+  machine="${machine}enginecheck.tier: $role model=${model:-ambient} effort=${effort:-ambient}
+"
+}
+
+# ── _vc_tier_summary — ระดับ *ทีม* ไม่ใช่ระดับสมาชิก ────────────────────────
+# ข้อนี้ต้องดูทั้งทีมพร้อมกันถึงจะเห็น — สมาชิกทีละคนดูปกติหมด
+_vc_tier_summary() {
+  local m="$1" n_mem n_model n_effort n_ambient
+  n_mem=$(printf '%s\n' "$m" | grep -c '^enginecheck.tier: ')
+  [ "$n_mem" -ge 2 ] || return 0
+  n_model=$(printf '%s\n' "$m" | sed -n 's/^enginecheck.tier: [^ ]* model=\([^ ]*\).*/\1/p' | sort -u | grep -c .)
+  n_effort=$(printf '%s\n' "$m" | sed -n 's/^enginecheck.tier: .* effort=\(.*\)$/\1/p' | sort -u | grep -c .)
+  n_ambient=$(printf '%s\n' "$m" | grep -c 'model=ambient effort=ambient')
+  printf 'enginecheck.tiers: members=%s distinct-model=%s distinct-effort=%s all-ambient=%s\n' \
+    "$n_mem" "$n_model" "$n_effort" "$n_ambient"
+  if [ "$n_model" = "1" ] && [ "$n_effort" = "1" ]; then
+    printf '  🎚️ ทุก role ในทีมนี้ได้ **tier เดียวกันหมด** (%s สมาชิก)\n' "$n_mem"
+    printf '     นี่อาจถูกต้องถ้าตั้งใจ — แต่ถ้าไม่ได้ตั้งใจ มันคือ default ที่รั่วผ่านมา\n'
+    printf '     role ที่อ่านไฟล์แล้วรายงาน จ่ายเท่ากับ role ที่ออกแบบสถาปัตยกรรม\n'
+    printf '     ⇒ ตั้ง alias แยกต่อ tier แล้วให้ charter เลือกต่อ role (model อยู่ในสตริงคำสั่งเท่านั้น)\n'
+  fi
+  if [ "$n_ambient" -gt 0 ]; then
+    printf '  ⚠️ %s สมาชิกไม่ pin ทั้ง model และ effort ⇒ tier ของทีมขึ้นกับไฟล์ที่คนอื่นแก้ได้\n' "$n_ambient"
+  fi
+}
+
 # ── _vc_trust_report <role> <resolved-cmd> <member-dir> ─────────────────────
 # 🔴 คลาสเดียวกับ permission เป๊ะ — **ค้างตอน boot โดยที่ทุกด่านเขียว** แค่คนละนาที
 #    codex ถาม `Do you trust the contents of this directory?` เมื่อ **path ของสมาชิก**
@@ -1745,6 +1799,7 @@ PY
         machine="${machine}enginecheck.member: $role PASS engine=$engine resolved=$probe pinned=no
 "
         _vc_perm_report "$role" "$engine" "$probe"
+        _vc_tier_report "$role" "$probe"
       else
         printf '    ❌ FAIL    engine "%s" ไม่ได้ลงทะเบียนใน commands ⇒ ถูกทิ้งเงียบ ๆ\n' "$engine"
         if [ -n "$hijack" ]; then
@@ -1797,6 +1852,7 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
         # ต้องได้จำนวนเท่ากับจำนวนสมาชิกเสมอ ไม่งั้น "ไม่มีบรรทัด" จะอ่านได้สองความหมาย
         # (ไม่มีปัญหา vs ไม่ได้ตรวจ) — คลาสเดียวกับ `ตอบไม่ได้ ≠ ผ่าน`
         [ -n "$probe" ] && _vc_perm_report "$role" "$engine" "$probe"
+        [ -n "$probe" ] && _vc_tier_report "$role" "$probe"
         fail=1
       fi
     else
@@ -1808,6 +1864,7 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
       # เพราะ consumer ของ atlas grep ฟิลด์นั้นอยู่ — เพิ่มบรรทัด ไม่แก้รูปเดิม
       _vc_perm_report "$role" "$engine" "$cmd"
       _vc_trust_report "$role" "$cmd" "$mdir"
+      _vc_tier_report "$role" "$cmd"
       if [ -n "$model" ]; then
         case "$cmd" in
           *"--model $model"*|*"-m $model"*|*"--model=$model"*)
@@ -1836,6 +1893,7 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
   #    `^launch-identity:` `^gate.<name>:` ส่วนผมพ่น prose ไทย+emoji ย่อหน้าเข้า ไม่มี verdict
   #    ต่อสมาชิกที่ยึดคอลัมน์ 0 ⇒ เขาต้อง text-scrape ซึ่งคือความเปราะที่ anchored grep มีไว้เลี่ยง
   #    ⇒ พ่น machine block **ควบ** prose ไม่ใช่แทน (prose เป็นครึ่งที่ดีกว่าสำหรับคน — atlas)
+  _vc_tier_summary "$machine"
   printf '%s\n' "$machine"
   # รวมสิ่งที่ **ผันแปรจริง** ต่อรอบ — ว่างเมื่อไม่มี ⇒ กฎของ atlas เป็นเท็จได้จริง
   local unv=""
@@ -2649,6 +2707,29 @@ PY
     *) echo "   ✗ trust: อ่านไม่ได้แล้วตัดสินว่าผ่าน"; fail=1 ;;
   esac
   rm -rf "$_td"; machine=""
+  # 🎚️ tier: ต้องเตือนเมื่อทั้งทีมได้ tier เดียวกัน และ **ต้องเงียบเมื่อผสม**
+  #    ถ้าเตือนตลอด มันคือป้ายประกาศ ไม่ใช่ด่าน — คนอ่านสองรอบก็เลิกอ่าน
+  machine=""
+  _vc_tier_report a "codex --model gpt-5.6" >/dev/null
+  _vc_tier_report b "codex --model gpt-5.6" >/dev/null
+  case "$(_vc_tier_summary "$machine")" in
+    *"tier เดียวกันหมด"*) echo "   ✓ tier: ทั้งทีม tier เดียวกัน → เตือน" ;;
+    *) echo "   ✗ tier: ทั้งทีมเหมือนกันแต่ไม่เตือน"; fail=1 ;;
+  esac
+  machine=""
+  _vc_tier_report a "codex --model gpt-5.6" >/dev/null
+  _vc_tier_report b "codex --model gpt-5.6-mini" >/dev/null
+  case "$(_vc_tier_summary "$machine")" in
+    *"tier เดียวกันหมด"*) echo "   ✗ tier: tier ผสมแล้วยังเตือน — false alarm"; fail=1 ;;
+    *) echo "   ✓ tier: tier ผสม → เงียบ (ไม่ใช่ป้ายประกาศ)" ;;
+  esac
+  machine=""
+  _vc_tier_report a "codex" >/dev/null
+  case "$machine" in
+    *"model=ambient effort=ambient"*) echo "   ✓ tier: ไม่ pin อะไรเลย → ambient (ไม่เดาว่าได้อะไร)" ;;
+    *) echo "   ✗ tier: alias ที่ไม่ pin ถูกรายงานว่ามีค่า"; fail=1 ;;
+  esac
+  machine=""
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;

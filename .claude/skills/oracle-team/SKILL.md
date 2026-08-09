@@ -329,6 +329,53 @@ JSON
 > ⇒ 🪜 A **registered** alias is not a **working** alias. Add the row to Gate 0's question:
 > *does each member get the engine, the model, **and the permission mode** it needs?*
 
+> ## 🎚️ Gate 0's fourth question: does each role get a tier that FITS it?
+>
+> The other three ask *will the worker function*. This one asks *are you overpaying, and is the
+> hard role underpowered* — and until 2026-08-09 nothing in this file asked it at all.
+>
+> `[verified 2026-08-09 · scripts/model-tier-census.py over 10 layer files, 61 aliases]`
+> Of the 19 aliases that pin reasoning effort: **xhigh 9 · medium 8 · high 1 · low 1**. And
+> **9 aliases pin neither model nor effort**, so they ride whatever `config.toml` happens to say.
+>
+> ⇒ 🔑 **A team where every role got the same tier usually means nobody chose.** It reads like
+> diligence. It is the default leaking through — the role that reads files and reports pays what
+> the role that designs the architecture pays, and a genuinely hard role can sit on `low` with
+> nothing on screen to say so.
+>
+> `enginecheck` now prints `🎚️ tier model=… effort=…` per member and a team line:
+> ```
+> enginecheck.tiers: members=3 distinct-model=1 distinct-effort=1 all-ambient=0
+>   🎚️ ทุก role ในทีมนี้ได้ tier เดียวกันหมด (3 สมาชิก)
+> ```
+> It stays **silent when tiers are mixed** — a warning that always fires is a sign, not a gate.
+>
+> ### What is measured here, and what is judgment — do not blur them
+>
+> **Measured:** where a model can be expressed (only inside the alias command string, same rule
+> as `model:`); what each alias resolves to; `model_reasoning_effort` is an ordinal codex defines
+> itself (`low < medium < high < xhigh`), so effort **is** comparable.
+> **Not measured, and this file will not pretend otherwise:** that any model is "better" than
+> another. No benchmark was run here. Rank effort; report model names.
+>
+> ### A default worth overriding deliberately
+>
+> Pick by the **shape of the role's work**, not its seniority in the org chart:
+>
+> | the role's work is… | argues for | why |
+> |---|---|---|
+> | reading, grepping, summarising, reporting — answer is *in* the material | smaller model, lower effort | the hard part is retrieval, not reasoning; extra effort buys re-derivation you already have |
+> | mechanical transformation with a spec — rename, port, apply a known pattern | smaller model, low/medium | correctness is checkable by a test; failure is cheap and visible |
+> | cross-file reasoning, "why is this broken", design under constraints | larger model, high/xhigh | the failure mode is a *plausible wrong answer*, which no cheap check catches |
+> | adversarial review, verifying someone else's claim | larger model — and a **different family** if possible | a verifier that shares the producer's blind spot verifies nothing |
+>
+> ⚠️ **The tiering only pays off if the cheap roles are genuinely cheap work.** Dropping a role's
+> tier without narrowing its job produces worse output at lower cost, which is not a saving. If
+> you cannot say in one sentence what makes a role's work mechanical, it is not mechanical.
+>
+> ⚠️ **An `ambient` member is not "the default tier" — it is "whatever that home's config says
+> today".** Someone editing an unrelated `config.toml` silently retiers the team. Pin it.
+
 **Finding model names that actually work — one per engine, they are not interchangeable:**
 
 **First: see what is already registered.** On a machine with an existing fleet, most of the

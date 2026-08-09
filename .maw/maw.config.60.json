@@ -77,7 +77,22 @@
     "  the bare names to mean effort everywhere, and their charters need zero edits.",
     "  Why it mattered: moving the effort meaning to user-level would have booted 57 charters",
     "  SUCCESSFULLY on the wrong dimension — exit 0, no warning, and REGISTERED, so enginecheck",
-    "  and enginereg both pass. Visible at the status bar only. Silent-wrong beats null, badly."
+    "  and enginereg both pass. Visible at the status bar only. Silent-wrong beats null, badly.",
+    "",
+    "TIERS ADDED 2026-08-09 — codex-tier-light / -mid / -heavy.",
+    "  arnon: 'ยังไม่ใส่เรื่องการปรับเลือกโมเดลให้เหมาะกับ role ทำให้สิ้นเปลืองและไม่ได้ผลที่ดี'",
+    "  A charter cannot express a model, so a tier can only exist as an alias. Three is",
+    "  deliberate: fewer and roles get lumped, more and nobody picks. Every one carries the",
+    "  permission token, because a tier that stalls is not a cheaper tier.",
+    "  Pick by the SHAPE of the work, not the role's seniority:",
+    "    light  reading / grepping / summarising / mechanical edits with a spec",
+    "    mid    normal implementation against tests",
+    "    heavy  cross-file diagnosis, design under constraints, adversarial review",
+    "  [verified 2026-08-09] effort is an ordinal codex defines (low<medium<high<xhigh),",
+    "  so effort is comparable. Model QUALITY is NOT benchmarked here and no ranking of",
+    "  models is claimed -- names are reported, not rated.",
+    "  WARNING: dropping a role's tier without narrowing its job buys worse output, not",
+    "  savings. If you cannot say in one sentence why a role's work is mechanical, it is not."
   ],
   "commands": {
     "codex-sol": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access",
@@ -88,6 +103,9 @@
     "claude-haiku": "claude --model claude-haiku-4-5-20251001 --dangerously-skip-permissions",
     "opencode-glm": "opencode --model zai/glm-5.2 --auto",
     "sage-opencode-oracle": "opencode --model zai/glm-5.2 --auto",
-    "codex-role-coder": "CODEX_HOME=$HOME/.codex-fanout/coder BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access"
+    "codex-role-coder": "CODEX_HOME=$HOME/.codex-fanout/coder BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access",
+    "codex-tier-light": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-mini --config model_reasoning_effort=low --ask-for-approval never --sandbox danger-full-access",
+    "codex-tier-mid": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6 --config model_reasoning_effort=medium --ask-for-approval never --sandbox danger-full-access",
+    "codex-tier-heavy": "BASH_ENV=$HOME/.rtk-init.sh codex --model gpt-5.6-sol --config model_reasoning_effort=xhigh --ask-for-approval never --sandbox danger-full-access"
   }
 }
