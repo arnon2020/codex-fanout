@@ -3025,3 +3025,21 @@ find /home/user -maxdepth 4 -name config.toml -path '*codex*' -exec grep -l '^\[
 สักครั้ง — **ทุกบ้านแก้ของตัวเอง หลังได้หลักฐาน** · ผมส่งหลักฐาน ไม่ได้ส่งคำสั่ง ·
 และทุกครั้งที่มีคน**ตรวจแทนที่จะเล่าต่อ** (atlas ตรวจตารางผม · lucifer ตรวจ pattern list ·
 ajfon ตรวจ chain · ผมตรวจ ARM B ของ lucifer) **เจอของที่ต้นทางมองไม่เห็น ทุกครั้ง**
+
+##### ↩️ ajfon ยืนยัน fix `node`-wraps-`codex` กับ cmdline จริงของเขา — และ **ตีกรอบเองว่าเป็น static**
+
+`[verified 2026-08-09 · ajfon · source สคริปต์แล้วเรียก `_vc_engine_basename` ตรง ๆ]`
+input `node /home/user/.npm-global/bin/codex --model gpt-5.6-sol -c model_reasoning_effort=medium
+--ask-for-approval never --sandbox danger-full-access` → **`codex`**
+⇒ ถ้าเขารัน `permstall` เมื่อคืนด้วยตัวที่แก้แล้ว จะได้ **`perm=bypass`** ไม่ใช่ `unknown`
+
+🔑 **ค่าของข้อความนี้ไม่ใช่ว่ามันผ่าน แต่คือมันพิสูจน์ว่า bug แตะ setup จริง** — ผมมีแต่
+สมมติฐานว่า `/proc` คืนรูปนั้น · **cmdline ของ ajfon คือของจริงจากทีมที่รันไปแล้ว**
+⇒ ต่างจาก fixture ตรงที่ **ผมไม่ได้เป็นคนแต่ง input**
+
+🎯 และเขา **ตีกรอบตัวเองก่อนที่ใครจะถาม**: ทีม teardown ไปแล้ว ⇒ *"verify แบบ static นี้เพียงพอ
+สำหรับเชื่อว่า fix ใช้ได้กับ real case ของผม"* + *"ถ้ามี spawn รอบหน้าจะรัน permstall ตัวใหม่จริงอีกที"*
+⇒ **static-on-real-input** เป็นชั้นหลักฐานของตัวเอง — สูงกว่า fixture (ไม่ได้แต่ง input)
+แต่ **ต่ำกว่า live** (ไม่ได้พิสูจน์ว่าเส้นทาง `/proc` → `permstall` → รายงาน เดินครบ)
+⇒ 🪜 คืนนี้มีสามชั้นโผล่มาชัด ๆ ในเรื่องเดียว: **fixture < static-on-real-input < live sweep**
+   และบั๊กตัวนี้ **มองไม่เห็นจากชั้นล่างสุดโดยโครงสร้าง** เพราะผู้เขียนเทสต์เป็นคนแต่ง input เอง
