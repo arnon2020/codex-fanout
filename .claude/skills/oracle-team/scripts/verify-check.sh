@@ -1679,8 +1679,12 @@ permstall() {
         printf '      exe=%s\n' "$(printf '%s' "$_sexe" | sed 's|/home/user/.npm-global/lib/node_modules/||' | cut -c1-84)"
         printf '      ⚠️ นี่ **ไม่ได้แปลว่าเวอร์ชันล้าสมัย** — same-version replace เกิดขึ้นจริงบนเครื่องนี้\n'
         printf '         วัดเวอร์ชันที่รันอยู่แยกต่างหาก (claude): grep -o \x27"version":"[^"]*"\x27 <transcript.jsonl> | tail -1\n'
-        printf '         ⇒ **entry สุดท้าย** เท่านั้น — version เปลี่ยนกลางไฟล์ได้ตอน session resume ข้าม build\n'
-        printf '         ⇒ และมันบอก build **ตอนเขียน entry ล่าสุด** ไม่ใช่ "เดี๋ยวนี้"\n'
+        printf '         ⇒ กฎที่แม่น: อ่าน entry ที่เขียน **หลัง engine pid ปัจจุบันเกิด** —\n'
+        printf '            "entry สุดท้าย" เป็นแค่ heuristic ที่ใช้ได้เพราะมันมาจาก pid ที่ยังมีชีวิต\n'
+        printf '         ⇒ version เปลี่ยนกลางไฟล์ได้ — ไม่ใช่ process เดียวเปลี่ยน build แต่เป็น\n'
+        printf '            **คนละ process จาก resume เขียนลง session file เดียวกัน**\n'
+        printf '         ⇒ 🔑 process เปลี่ยน build ตัวเองไม่ได้ ⇒ ถ้า pid ยังมีชีวิต เลขนั้นคือ\n'
+        printf '            **build ที่รันเดี๋ยวนี้** และเปลี่ยนไม่ได้จนกว่าจะ restart\n'
         printf '      permstall.pane: %s REPLACED-BINARY\n' "$name" ;;
     esac
     # ธงของ prompt ต่อ engine — จับ **ตัวคำถาม** ไม่ใช่ตัวเลือก เพราะตัวเลือก/ตัวเลข
