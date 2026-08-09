@@ -1663,7 +1663,9 @@ permstall() {
     #      *เลขเวอร์ชัน*ต่างกัน · อ่าน inode ที่ถูกลบกลับไม่ได้
     local _sp _sexe
     _sp=$(tmux display-message -p -t "=$pane" '#{pane_pid}' 2>/dev/null)
-    _sexe=$([ -n "${_sp:-}" ] && _vc_engine_pid "$_sp" 2>/dev/null | cut -f2)
+    local _sres=""
+    [ -n "${_sp:-}" ] && _sres=$(_vc_engine_pid "$_sp" 2>/dev/null)
+    _sexe=$(printf '%s' "$_sres" | cut -f2)
     case "${_sexe:-}" in
       *"(deleted)"*)
         n_stale=$((n_stale+1))
@@ -1677,6 +1679,16 @@ permstall() {
         #      ซึ่งเป็นความล้มเหลวแบบเดียวกับ false alarm ที่เราไล่กันมาทั้งคืน
         printf '  ⏳ REPLACED-BIN %-31s ไฟล์ที่รันอยู่ **ไม่ใช่ไฟล์ที่อยู่บนดิสก์ตอนนี้**\n' "$name"
         printf '      exe=%s\n' "$(printf '%s' "$_sexe" | sed 's|/home/user/.npm-global/lib/node_modules/||' | cut -c1-84)"
+        # ช่องที่สาม [lucifer 2026-08-09] — **pid คือสิ่งที่ทำให้คำตอบเรื่อง version ยังไม่หมดอายุ**
+        # process เปลี่ยน image ตัวเองไม่ได้ ⇒ ตราบใดที่ pid นี้ยังมีชีวิต build ก็เปลี่ยนไม่ได้
+        # ⇒ พิมพ์ pid ออกมาเพื่อให้คนเอาไปผูกกับ transcript ได้ ไม่ต้องเดาว่า entry ไหนของใคร
+        # 🩹 หยิบ pid จาก **ผลเรียกเดียวกัน** — รอบแรกผมอ้าง `$_ep` ซึ่งเป็นตัวแปรของบล็อก
+        #    ข้างล่างที่ยังไม่ถูกกำหนดตรงนี้ ⇒ พิมพ์ `engine-pid=? alive=NO` ให้ pane ที่มีชีวิตอยู่
+        #    ⇒ **สัญญาณที่โกหกทิศ "ตาย" บน pane ที่ยังรัน** — เจอเพราะรันดู ไม่ใช่เพราะอ่านโค้ด
+        local _epid_s; _epid_s=$(printf '%s' "$_sres" | cut -f1)
+        printf '      engine-pid=%s alive=%s started=%s\n' "${_epid_s:-?}" \
+          "$([ -d "/proc/${_epid_s:-0}" ] && echo yes || echo NO)" \
+          "$(ps -o lstart= -p "${_epid_s:-0}" 2>/dev/null | cut -c5-16 | tr -s ' ')"
         printf '      ⚠️ นี่ **ไม่ได้แปลว่าเวอร์ชันล้าสมัย** — same-version replace เกิดขึ้นจริงบนเครื่องนี้\n'
         printf '         วัดเวอร์ชันที่รันอยู่แยกต่างหาก (claude): grep -o \x27"version":"[^"]*"\x27 <transcript.jsonl> | tail -1\n'
         printf '         ⇒ กฎที่แม่น: อ่าน entry ที่เขียน **หลัง engine pid ปัจจุบันเกิด** —\n'
