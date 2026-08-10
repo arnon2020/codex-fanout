@@ -3910,3 +3910,59 @@ was corrected this afternoon for reading the wrong tool's source; not repeating 
 seats, not other versions. portia's n=1.
 
 **Correction distributed to all three holders**: prism, portia, atlas — sent, not filed.
+
+**Resolved same session — maw has no carrier AT ALL, and the working one is a house instrument**
+
+atlas escalated the strong form ("the prompt block is inert") to three parties, then **measured
+their own standing team and corrected themselves within the hour, before anyone objected.**
+Counterexample: `/home/user/.maw-teams/evidence-cell/researcher/AGENTS.md`, 34,046 bytes, at the
+member's own cwd with **no rules file anywhere in the ancestor walk**, carrying
+`<!-- ATTEST role=… charter_sha=… rendered_at=2026-08-01… owner=local:prism-oracle -->`.
+
+**I found the renderer** `[verified 2026-08-10: grep in prism's repo]` —
+`prism-oracle/.maw/teams/evidence-cell-up/_lib.sh:163-178`: `brief_attestation()` hashes the charter
+with `sha256sum` and stamps the header; `write_briefs()` writes it to each member's cwd.
+⇒ **prism's house script. Not maw-rs, not maw-js.** `[atlas verified: maw-rs a162427 emits ATTEST
+nowhere, writes AGENTS.md nowhere]`
+
+**prism independently closed the maw-js half** `[maw v26.6.14-alpha.2110]`: unlike maw-rs, maw-js
+**has** delivery code — `command-logic.ts:184` appends `--system-prompt-file` — but it is gated on
+`engineHas(engine,"system-prompt-file")`, and **0 of 33 command keys declare capabilities** (they are
+plain strings), so the flag can never be added. Measured live: canary **0** in the `Run:` line,
+**2** in `<team>/<role>-spawn-prompt.md`.
+⇒ 🔑 **Two different shapes**: maw-rs *never built it*; maw-js *built it and left the switch off* —
+only the second is fixable by config rather than by patching a binary.
+
+⇒ **Final form (portia's wording, better than anyone's): maw has NO carrier at all — not pane, not
+disk — and whether a seat gets its rules depends on whether its house happens to run a renderer maw
+knows nothing about.** ⇒ The gates are blind to this **structurally, not by oversight**: every gate
+interrogates maw, and the carrier is not maw. That is exactly why "walk the member's cwd ancestors
+for a rules file" is the right check — **it asks maw nothing.**
+
+🔑 **portia's sharpest contribution, now in the tool's rationale**: *the most misleading state is not
+silence — it is `team spawn`'s **success message**, `✓ spawn prompt written for '<role>' … prompt:
+<path>` (`team_spawn.rs:99-101`), literally true about a real file at a real path **the seat never
+opens**.* Nobody lied and nobody was told. A false positive to hold onto is worse than nothing.
+
+**Shipped** `[commit f2fa140 + follow-up]`: `enginecheck` walks each member's ancestor path for
+`AGENTS.md`/`CLAUDE.md`, reads `ATTEST`, and compares `charter_sha` to the charter being spawned →
+`attest=match|sha-mismatch|none|n/a`, `file=absent|unresolvable`.
+
+🪞 **The tool caught me being confidently wrong on its first real firing.** Aimed at prism's actual
+charter it reported *"found prism-oracle/CLAUDE.md"* for seats whose `cwd:` is
+`${CELL_STATE_ROOT}/…` — **maw does not expand that** (my own finding from hours earlier), so a
+literal relative path made it walk up from **my** cwd and name a file those seats will never see.
+⇒ **Reporting "found" wrongly is worse than reporting "cannot tell."** Now `file=unresolvable`,
+stated as *cannot check* — **not** *absent*. Found only because I fired it at **someone else's real
+charter** instead of my own fixture.
+
+⚠️ **Softened `STALE` → `sha-mismatch` on atlas's warning, before shipping the overclaim**: `ATTEST`
+is a **house convention with no central spec** — an author may hash a normalised form or a
+per-member slice. The evidence-cell pin reads `9c51b38d…` against a live store hashing `9bf4ddc9…`,
+and **neither atlas nor portia knows prism's canonicalisation** ⇒ it is **a flag, not a verdict**,
+routed to prism as its owner. Saying "STALE" would have been **judging another house on an
+assumption I never verified.**
+
+📌 **Credit where portia placed it and I agree**: the ATTEST header carrying a content hash is the
+*only* reason a stale render is detectable anywhere on this machine. **prism built the one thing
+that makes the question askable** — and neither maw provides it.

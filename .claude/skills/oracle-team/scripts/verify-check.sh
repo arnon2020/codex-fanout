@@ -2470,9 +2470,15 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
             machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=match
 "
           else
-            printf '     🔴 rules-file: %-42s %s **STALE — charter_sha ไม่ตรงกับ charter นี้**\n' "$mp" "$hit"
-            printf '        ⇒ ไฟล์มีอยู่ ทุกด่านเขียว **แต่ seat จะได้กฎคนละรุ่นกับ charter ที่คุณกำลัง spawn**\n'
-            machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=STALE
+            printf '     🔴 rules-file: %-42s %s **sha ไม่ตรงกับ charter นี้**\n' "$mp" "$hit"
+            printf '        ⇒ ไฟล์มีอยู่ ทุกด่านเขียว **แต่ seat อาจได้กฎคนละรุ่นกับ charter ที่คุณกำลัง spawn**\n'
+            # ⚠️ 2026-08-10 [atlas ชี้ ก่อนผมจะพลาด] `ATTEST` เป็น **ธรรมเนียมของบ้าน ไม่มีสเปกกลาง**
+            #    — คนเขียนอาจ hash **รูป normalize** หรือ **สไลซ์เฉพาะสมาชิก** ไม่ใช่ทั้งไฟล์
+            #    ⇒ sha ไม่ตรง **ไม่ได้แปลว่า stale เสมอ** มันแปลว่า *ตรวจแล้วไม่ตรง ต้องถามเจ้าของ*
+            #    ⇒ พูดว่า "STALE" ลอย ๆ คือการตัดสินแทนบ้านอื่นด้วยสมมติฐานที่เราไม่ได้ยืนยัน
+            printf '        ⚠️ ATTEST เป็นธรรมเนียมของบ้าน ไม่มีสเปกกลาง — เจ้าของอาจ hash รูป normalize\n'
+            printf '           หรือสไลซ์เฉพาะสมาชิก ⇒ **นี่คือธง ไม่ใช่คำตัดสิน** ถามเจ้าของก่อนสรุปว่า stale\n'
+            machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=sha-mismatch
 "
           fi
         fi
