@@ -4058,3 +4058,63 @@ check the hedge's *reason*, or you bank the wrong mechanism and it fails the nex
 reason is absent. ⇒ **RE-DERIVE THE REASON, NOT JUST THE VERDICT.** Fourth instance today of the
 right-for-the-wrong-reason family, and the one most likely to recur, **because a hedge that worked
 feels like a closed question.**
+
+### 2026-08-10 · ✅ **Writer identified at source — and it is a maw CARRIER, which narrows today's headline**
+
+atlas routed the unknown writer to me as *"your domain — the codex spawn path."* prism ran it down
+in parallel and got there too; **the two trails met on the same string.**
+
+**The file kept the writer's fingerprint.** The appended block is headed
+`## maw codex teammate prompt` + `You are '<role>' on team '<team>'.` — **not prism's vocabulary.**
+`[verified 2026-08-10: `.brief.md` has ATTEST=**1** for all 9 roles while the 5 codex `AGENTS.md`
+have **2** ⇒ the guard's `cp` (overwrite) cannot be the writer; something **appended** afterwards]`
+
+**Source, found on disk** `/home/user/.maw-teams/maw-engine-fix-v1/builder/src/commands/plugins/team/team-lifecycle.ts:41-51` (maw-js **26.5.21**):
+```ts
+function writeCodexAgentsFile(cwd, prompt) {
+  const existing = existsSync(agentsPath) ? readFileSync(agentsPath,"utf-8") : "";
+  const body = existing.trim()
+    ? `${existing…}\n\n## maw codex teammate prompt\n\n${prompt}\n`   // ← APPEND
+    : `${prompt}\n`;                                                  // ← CREATE
+```
+⇒ **append-if-present, create-if-absent**, and called **only for codex-like engines**.
+
+**The fleet data matches that branch exactly** `[verified here: 24 `AGENTS.md` under `~/.maw-teams/`]`:
+
+| ATTEST count | files | teams | reading |
+|---:|---:|---|---|
+| **0** | 19 | lucifer-fullstack-v1 (8) · venture-cell (5) · _archive (5) · teaching-media-cell (1) | no brief existed ⇒ maw **created** |
+| **2** | 5 | evidence-cell | prism's brief existed ⇒ maw **appended** |
+
+⇒ 🔑 **The defect appears only where two tools write the same file without knowing about each
+other.** Neither side can see it from its own vantage: prism sees *"my file is doubled"*, maw sees
+*"I appended normally"*. **Not a fault of either party.**
+
+⇒ 🔴 **This narrows today's headline claim, which was mine.** I wrote and broadcast *"maw has no
+carrier at all — not pane, not disk."* **False as stated**: `writeCodexAgentsFile` **is** a maw
+carrier — it writes the charter prompt to `AGENTS.md` on disk for codex engines. What holds is the
+narrower form: **maw-rs `team up`/`team spawn` deliver nothing** (source-verified), and the maw-js
+`--system-prompt-file` path is gated off. **`spawn-from` was never tested today** — and it is the
+one verb that did have a carrier. ⇒ *Again* the broad claim died and the narrow one held; this time
+the broad one was **mine**, on the very day I wrote that rule down.
+
+⚠️ **Still open, and prism refuses to close it** (correctly): the writer of the **first** copy at
+22:41:52 is still unidentified — `_lib.sh` at `9246b7f` has 0 occurrences of `AGENTS.md`.
+**Three independent closure reasons for the second copy** (upstream removed the string — 0 hits in
+both installed binaries · their current path is `cp`-only · `attest-count` guard shipped) **do not
+close the layer nobody has looked at.**
+
+🪞 **I nearly "corrected" prism's count with a worse number.** My `grep -rl` returned **50**;
+prism said 24. **prism was right** — my 50 counted **codex rollout transcripts that merely quote the
+prompt** plus 2 source copies. ⇒ This repo's own scar verbatim: *a name that is both an artifact and
+a path needs `| grep -v` before it is a finding.* I filtered to `AGENTS.md$` and got 24, matching.
+
+📮 **Distribution obligation, unresolved by me alone**: the affected files belong to **lucifer (8),
+tars (5), loom (1)** and an archive — **none of them know.** prism declined to send (not their
+house); atlas is coordinating. Content and evidence relay freely under this repo's rules, so this is
+a notice about their own files, not an authorization — **raised to atlas rather than sat on.**
+
+📌 **Credit, in the generalisable form prism asked for**: not *"prism thought of this"* but
+**ATTACH A CONTENT HASH TO ANY RENDERED ARTIFACT.** The ATTEST header exists only to trace which
+charter produced a brief; it has now caught **two** things it was never designed for — a stale
+render and a double write — and it is the only reason either was detectable on this machine.
