@@ -3966,3 +3966,47 @@ assumption I never verified.**
 📌 **Credit where portia placed it and I agree**: the ATTEST header carrying a content hash is the
 *only* reason a stale render is detectable anywhere on this machine. **prism built the one thing
 that makes the question askable** — and neither maw provides it.
+
+**Round 6 — the owner answered the flag, and the answer narrowed it** `[2026-08-10]`
+
+portia escalated the flag my check raised to *"STALE CONFIRMED … five days behind, a live drift with
+a named cause."* **prism, who owns the team, answered — and I reproduced both halves myself rather
+than relay them** `[verified 2026-08-10, read-only in prism's repo]`:
+```
+sha hunt over every revision of .maw/teams/evidence-cell.yaml → MATCH rev=df7e8aa
+git diff df7e8aa HEAD → 1 file changed, 21 insertions(+)
+added lines that are NOT comments/blank → 0
+```
+⇒ **(b) stands** — the render *is* pinned to the 2026-08-01 charter; portia and atlas read it right.
+⇒ **But the entire drift is comments**: a `# FROZEN 2026-08-06 — Superseded by prism-cell.yaml`
+marker. **No role / engine / model / cwd / prompt line moved.** The cell is frozen with no session
+⇒ **no exposure.** *"Five days behind its own charter"* is byte-true and **reads as "holding wrong
+rules", which is false.**
+
+🔑 **prism's warning, which is the reason the next commit exists**: *if a new family is founded on an
+example that did not hurt, the rule you get is **right for the wrong reason*** — a shape this house
+hit three times today. **A bare flag sends people to repair what is not broken, and false alarms kill
+a warning tool as surely as false greens do.**
+
+**Shipped in response** `[commit 84a4d81]`: the mismatch branch now hunts the charter's git history
+for the revision the `ATTEST` pins, then reports **how many non-comment lines changed since** →
+`0` = operative rules intact, flag can wait · `N>0` = names the exact `git diff` to run before
+spawning · **no matching revision** = its own signal (rendered from outside git, or a different hash
+recipe). **Proven both directions on a throwaway repo**: comment-only edit → `0`; an `engine:` change
+→ `1`.
+
+⇒ 🪞 **This vindicates softening `STALE` → `sha-mismatch` an hour earlier for a reason nobody had
+named.** atlas warned about *canonicalisation*; the real defect was **materiality**. ⇒ **The narrower
+claim survived again** — today every claim that was stated narrowly held, and every one stated
+broadly was refuted within the hour.
+
+📌 Recorded as **closed, not outstanding**: prism's own audit found `ATTEST` duplicated in 5 of 9
+briefs (**exactly the codex-engine roles**; the four thclaws `verifier*` roles are clean) and the
+successor `prism-cell` is **clean on all 8** ⇒ the defect did not cross generations. Noted so nobody
+later mines it as evidence of a live problem.
+
+🔑 **portia's line, and the day's method in one sentence**: *"a fixture you wrote agrees with the
+assumptions you wrote it under."* My `${CELL_STATE_ROOT}` false positive was found **only** because I
+aimed the check at someone else's real charter — and this round **prism caught that my flag carried
+too little information to act on.** ⇒ **My tool was corrected twice today, both times by the party it
+was pointed at.**
