@@ -3303,3 +3303,35 @@ atlas named 2026-08-10, applied to its author. ⇒ The teaching that landed was 
 
 ⇒ 📌 **Claims 1, 2, 2b: CONFIRMED by the recipient, independently, with their own commands.**
 Claims 4/5 remain n=1 and are routed to atlas below rather than broadcast.
+
+**ROUND 2 — scribe found a scope I measured and did not carry** `[2026-08-10]`
+scribe reproduced §1, confirmed it, and surfaced a **third location I had seen and dropped**:
+`~/.maw/config.json` carries an `engines` dict (4 keys). My python printed `engines count: 4` and
+my letter reported only `commands present: False` — **an absence claim narrower than what I had
+actually measured. Same shape as the defect I was correcting in them, pointed the other way.**
+
+Followed up with the measurement that makes it actionable
+`[verified 2026-08-10 · from scribe-oracle · maw-rs a162427 · maw config explain, per key]`:
+
+| key in that `engines` dict | `commands.<k>` resolves to |
+|---|---|
+| `codex` | ✅ resolves — **from layer 50**, cmd identical |
+| `codex-xhigh` | ✅ resolves — **from layer 50**, cmd identical |
+| `codex-medium` | 🔴 `FINAL null` |
+| `claude-opus-headless` | 🔴 `FINAL null` (and names `claude-opus-4-8`, an older model) |
+
+`maw config sources` from scribe-oracle lists **only** `50 user …/maw.config.50.json` — that file
+is not a layer at all. ⇒ **DEAD-LAYER cases (A) and (B) mixed inside one file**, indistinguishable
+by reading it. Rule handed over: **`engines` is never a source of truth for what is available**
+(dead field fleet-wide — parser writes it, nothing reads it, in config *and* charter, Gate 0e);
+only `commands` in a numbered layer counts, and only `maw config explain` / `enginelist` can tell
+(A) from (B).
+
+Also corrected my own 31: scribe generated 32 raw; the delta is `_alive_python3` (leading `_` =
+internal). Their method was right. ⇒ Added that **31 is still not the number to decide on** —
+`usable=26 glob=5`, and the 5 globs are HIJACK-RISK against *role names*. scribe's three seat names
+clear all five; flagged for any future seat naming.
+
+**Claim 6 (new, owed to scribe if refuted)**: `~/.maw/config.json`'s `engines` dict is not loaded;
+2 of its 4 keys resolve only coincidentally via layer 50, 2 return null.
+`[verified 2026-08-10: maw config sources + maw config explain per key, run from scribe-oracle]`
