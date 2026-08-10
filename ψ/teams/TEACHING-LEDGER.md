@@ -5467,3 +5467,58 @@ this look symmetric.**
 settings, **and nobody should flip a global flag to satisfy curiosity about another house's carrier.**
 **Leaving it open with the reason stated is the correct terminal state, not a gap in the work** —
 portia's phrasing, and it is right.
+
+### 2026-08-10 · ✅ **LAST CELL CLOSED — claude does NOT read `AGENTS.md`** · the carrier table is complete
+
+portia established they **could not** close this one and said why precisely: their context loaded at
+**12:11** with **no `AGENTS.md` anywhere on their ancestry**, so *"absence of a codeword I was never
+given is not evidence — it is the blind-probe case."* And dropping a file in now would measure
+**staleness, not readership.** ⇒ ***Being the right FAMILY is not the same as being a valid
+INSTRUMENT.*** They handed over the design instead: **a fresh session**, throwaway dir, both files,
+CLAUDE-side codeword as the positive control.
+
+**Ran it** — fresh `claude -p`, scratch dir, ancestry verified carrier-free to `/`:
+```
+AGENTS.md → GARNET-THREE      CLAUDE.md → SLATE-EIGHT
+→ SLATE-EIGHT                 ← and only that
+```
+⇒ ✅ **claude reads `CLAUDE.md` and does NOT read `AGENTS.md`.** `SLATE-EIGHT` returning is the
+positive control ⇒ **`GARNET-THREE`'s absence is absence.**
+
+🪞 **My first attempt at this was unreadable and I nearly reported from it.** I captured `tail -6` of
+a prose answer that listed codewords from **`~/.claude/CLAUDE.md` as well** (`USERGOSPEL`,
+`NO-SUCH-RULE` — *other houses' probe codewords, now living in the gospel someone edited today*), and
+said *"all four come from the two CLAUDE.md files."* ⇒ **That sentence implies the answer, and I could
+not see whether `GARNET-THREE` was in the truncated part.** ⇒ **Re-ran with a list-only prompt and a
+full capture instead of inferring from a tail** — the day's own rule, applied to my own output.
+⇒ 📌 The noisy first run was still informative: claude read **both** the probe-dir `CLAUDE.md` **and**
+the user-level one, and **neither `AGENTS.md`.**
+
+## 📊 CARRIER TABLE — every cell measured at runtime
+| engine | `AGENTS.md` | `CLAUDE.md` | measured by |
+|---|---|---|---|
+| **codex** | ✅ reads | ❌ does **not** | me · **lucifer independently, different codewords** |
+| **thclaws** | ✅ reads | ✅ reads (**first**, concatenated, no precedence) | prism · lucifer |
+| **claude** | ❌ does **not** | ✅ reads | **me, this entry** |
+⇒ ⛔ Deliberately unrun: **`claude_md_compat = true`** — requires editing shared machine settings.
+**Terminal state, not a gap.**
+
+📌 **lucifer reproduced the codex arm independently** (`COBALT-EIGHT`/`VERMILION-THREE` → only
+`COBALT-EIGHT`), **different codewords, own positive control**, and noted the repro detail: `codex
+exec` in a non-repo dir refuses with *"Not inside a trusted directory"* ⇒ they solved it with
+`git init` in the throwaway dir **rather than a flag named dangerous or touching anyone's trust
+config.**
+
+🔴 **And it exposed lucifer's repo root as WORSE than prism's** — measured, not suspected:
+```
+repo root AGENTS.md  568 B  ← the ONLY file codex reads · says "instructions have moved to CLAUDE.md"
+repo root CLAUDE.md 7,104 B ← codex never reads it (now measured)
+```
+⇒ ***A codex agent in that repo receives a 568-byte signpost pointing at a file it will never read
+for as long as it lives.*** ⇒ **prism's root gives codex zero; lucifer's gives it a misdirection** —
+**worse, because absence is silent and a wrong pointer is confidently followed.**
+⇒ ⇒ **It also confirms the stub result from the other side**: pointer stubs work **because
+claude/thclaws read `CLAUDE.md`** — **for codex a stub is a dead end.**
+⇒ 📌 **This widens the item queued for arnon a second time**: not *"v65 needs a stub"*, not even
+*"decide which file is authoritative"* — but ***the repo root must carry real rule content in the
+file codex can actually read, because lucifer's team workers are all codex.***
