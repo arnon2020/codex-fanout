@@ -1590,6 +1590,60 @@ only job is to run one `codex exec …` to completion and report back. Use
 
 ---
 
+## Step 0a: Writing or editing a member — the seat only ever reads its charter
+
+<!-- unreviewed v1 — consult pending. Scope: this Step 0a block ONLY. Requested by atlas
+     2026-08-10 on the owner's redirect; rule text is atlas's and the owner's, placement and
+     wording here are mine and unreviewed. Does NOT extend the advisor-reviewed 2026-08-10
+     marker further down, which covers Gate 0's heading, its machine-block contract, and the
+     post-spawn verify step — those three, nothing else. -->
+
+> 🔴 **Every rule a worker must follow has to be in that worker's `prompt:` block, at the
+> moment the role is written. There is no second chance and no inheritance.**
+> `[Gate 5.3 · atlas-oracle T4546 §13 as corrected by §23]` A maw-team seat reads **only its
+> charter**: it never inherits an oracle's `CLAUDE.md`, and a role brief **does not survive
+> `maw team load`** — it is a render target, regenerated, so a rule hand-written there is
+> destroyed exactly when the seat starts reading it.
+>
+> ⇒ **Retrofitting existing homes does not propagate; the source does.** Editing N `AGENTS.md`
+> files reaches the agents alive today and does nothing for the seat spawned tomorrow. The
+> place a fleet-wide worker rule actually enters the world is **here — role-creation time**.
+>
+> ### Put this in every member's `prompt:` block
+>
+> ```yaml
+>   prompt: |
+>     …your role contract…
+>
+>     END EVERY TURN WITH SOMETHING IN FLIGHT. Before you stop, at least one must be true:
+>       1. you dispatched an agent AND it is consuming — check the pane; delivered ≠ consumed
+>       2. a script or background job is running
+>       3. a watcher is armed, so the next event wakes you
+>       4. the turn genuinely ends the program — and you SAY SO explicitly
+>     Prose is a report ON work, never a substitute FOR it. If your analysis produced no next
+>     action, that IS the finding: say it plainly rather than letting silence imply progress.
+>     Do not generate work by replying — when a counterpart says nothing is outstanding, the
+>     next action is the task, not a better acknowledgement.
+> ```
+>
+> **The reason travels with the rule, or it will be trimmed as boilerplate by the next person
+> who edits a charter**: the owner observed this failure in **two different agents in one
+> day** — a turn ends with an explanation and nothing running, the system goes idle while the
+> agent believes it is mid-task, and a human has to restart it by hand. Over-asking was the
+> *symptom*; **ending a turn on prose is the mechanism**. And the first attempt to fix it was
+> itself half-applied: written into one agent's own `CLAUDE.md`, a file no other agent reads.
+>
+> ⏳ **Exit condition** — retire this from charters when turns reliably end in flight without
+> it. It is a scaffold for a measured failure, not a permanent ceremony. Anything with an
+> exit condition must carry it, or it outlives its reason.
+>
+> ⚠️ **Coverage, stated rather than glossed** `[atlas, measured 2026-08-10 against
+> ~/.config/maw/maw.config.50.json]`: `~/.claude/CLAUDE.md` carries this rule and is read by
+> **Claude Code only — 11 command keys.** codex is **14, the largest bucket, and unreached**
+> (it reads `AGENTS.md` under its own `CODEX_HOME`, and the fleet has many homes); thclaws 4
+> and hermes 1 are also unreached. **A charter `prompt:` is the one channel that reaches a
+> worker regardless of engine** — which is the whole reason the rule belongs here.
+
 ## Step 0: Init — resolve charter dynamically
 
 ```bash

@@ -25,7 +25,16 @@ members:
       Report back via: maw hey 117-codex-fanout:codex-fanout "done/blocked — <details>"
       Never touch lead's checkout or other worktrees.
       PR -> alpha branch only, never main.
-
+      END EVERY TURN WITH SOMETHING IN FLIGHT. Before you stop, at least one must be true:
+      1. you dispatched an agent AND it is consuming — check the pane; delivered != consumed
+      2. a script or background job is running
+      3. a watcher is armed, so the next event wakes you
+      4. the turn genuinely ends the program — and you SAY SO explicitly
+      Prose is a report ON work, never a substitute FOR it. If your analysis produced no next
+      action, that IS the finding: say it plainly rather than letting silence imply progress.
+      Do not generate work by replying — when a counterpart says nothing is outstanding, the
+      next action is the task, not a better acknowledgement.
+      [scaffold for a measured failure — retire when turns reliably end in flight without it]
   - role: lead
     name: codex-fanout
     engine: claude
