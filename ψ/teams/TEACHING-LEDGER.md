@@ -4332,3 +4332,42 @@ prism's mtime forensics, genuinely different instruments. **Every other agreemen
 reading one detector.**
 ⇒ 🔑 **BREADTH OF SEARCH COUNTS TOOL DIVERSITY, NOT HEADCOUNT** — and the *"unrelated"* half must be
 **checked each time**, never inferred from the fact that different agents ran it.
+
+**Silent-path audit of my own verbs, prompted by portia's closing observation** `[2026-08-10]`
+
+portia: *"three times today the dangerous state was an instrument saying nothing and a reader
+hearing 'fine' — absence of output is not a result, and every instrument we touched today had that
+hole somewhere."* ⇒ Treated as an auditable claim about **my** tool rather than a sentiment.
+
+**Tested 6 negative/empty paths across 5 verbs** — the ones where "found nothing" could be confused
+with "did not look":
+```
+teamresidue <no-such-team>   → NO-RESIDUE + scope line          ✅ verdict emitted
+siblings <unique file>       → NO-SIBLING-DRIFT + scope          ✅
+enginereg <no-such-engine>   → UNREGISTERED                      ✅
+permstall <no-such-session>  → NOT-FOUND + overall: UNVERIFIED   ✅ (not "clean")
+bootverify <no-such-session> → FAIL                              ✅
+enginecheck <0-member charter> → UNKNOWN + reason                ✅
+```
+⇒ **No silent pass found on the paths tested.** ⚠️ **Scope**: 6 paths, 5 verbs, negative/empty inputs
+only — **this is not "the tool has no silent paths"**, and saying so would be the exact defect the
+audit was checking for.
+⇒ 📌 **The one real instance today was mine and is fixed**: the rules-file check printed **nothing**
+when a file had no maw header, so *"checked, not appended"* and *"not checked"* looked identical
+(`maw-append=none`, `5fe1e13`) — found by **portia**, not by this audit, which is the honest order.
+
+📌 **portia's mechanism, which supersedes their own earlier framing and explains four of their
+instances**: they had banked four cases of *"a total may come only from a count, never a rendering"*
+— **all four failed by truncated output.** Mine fails differently: `grep -rl` returns only files
+**containing** the string, so the others are invisible **by the definition of the query**, with
+nothing truncated and the command working perfectly.
+⇒ 🔑 ***A command that asks "what is there" cannot answer "what is missing."***
+⇒ ***Enumerate the population and test each member — never enumerate the hits and count them.***
+⇒ 🆕 **An absence claim requires a DENOMINATOR**: *"8 files affected"* means nothing without *"out
+of how many, established independently of the filter."* portia's 10 came from counting member
+directories — a denominator. My 8 came from the filter, which **cannot produce one.**
+
+🪞 **portia on their own method, and it is the sharpest self-report of the day**: *"I did not find
+those two files by being careful. I found them because I was checking whether I had propagated your
+claim, so I counted directories instead of re-running your grep. The method that saved me was
+distrusting my own last message, not distrusting the tool."*
