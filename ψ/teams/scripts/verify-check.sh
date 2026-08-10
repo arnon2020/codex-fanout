@@ -634,6 +634,66 @@ teamresidue() {
 # ⚠️ ตกได้ด้วยอะไร: rc=1 เมื่อมีฝาแฝดที่ **เนื้อหาต่าง** (= อาจแก้ไปแค่ตัวเดียว)
 #    rc=0 เมื่อไม่มีฝาแฝด หรือฝาแฝดตรงกันหมด ⇒ ทดสอบสองทิศได้จริงด้วยไฟล์จริงบนเครื่อง
 # ⛔ อ่านอย่างเดียว — บอกว่ามีอะไรต่าง ไม่ตัดสินว่าอันไหนถูก และไม่ copy ให้
+# ── burned <path> <token>… ──────────────────────────────────────────────────
+# นับว่า token ที่ "ไหม้แล้ว" โผล่ที่ไหนบ้าง **แยก LOADED ออกจาก STORED**
+#
+# 🏷️ ที่มา (2026-08-10): **สามบ้านเขียน loop นี้ด้วยมือในงานเดียวกัน ชั่วโมงเดียวกัน
+#    และพังเหมือนกันทั้งสามคน** — prism (`syntax error` กลาง loop แล้วพิมพ์ "ยังไม่หลุด") ·
+#    ผม (`grep -rc | cut -d: -f1` ⇒ ชื่อไฟล์เข้า arithmetic ⇒ พิมพ์ `0` ปลอม) ·
+#    lucifer (`$(grep -coF … || echo 0)` ⇒ หลายบรรทัดเข้า `$(( ))` ⇒ แถวหายไปเงียบ ๆ)
+#    ⇒ 🔑 **บั๊กอยู่ในรูปของงาน ไม่ใช่ในความระมัดระวังของใคร** ⇒ ทำเป็นเวิร์บ อย่าให้ใครเขียนมือรอบที่สี่
+#
+# 🔑 lucifer แยกโหมดพังไว้คมมาก: **ดัง** (แถวหาย = รู้ว่าไม่มีผล) vs **เงียบ** (พิมพ์ `0` ปลอม
+#    = เข้าใจว่ามีผล) ⇒ **ดังปลอดภัยกว่า แต่ทั้งคู่แปลว่า *ไม่มีการวัด*** ⇒ เวิร์บนี้จึง
+#    **นับรอบ** แล้วประกาศ `checked=N/N` — ตามวิธี prism: *นับรอบ ไม่ใช่ดูว่าไม่มีบรรทัดเตือน
+#    และไม่ใช่ดูว่ามีเลขพิมพ์ออกมา*
+#
+# 🔑 portia: **radius ของ LOADED เป็นสมบัติของ *โทโพโลยีบ้าน* ไม่ใช่ของไฟล์** — `CLAUDE.md`
+#    ของรีโปถูก auto-load โดย **ทุก claude seat ที่ยืนใน worktree ของรีโปนั้น**
+#    ⇒ เวิร์บนี้ไล่ `git worktree list` ให้ ไม่ใช่ดูแค่ root เดียว
+burned() {
+  local target="${1:?usage: burned <path> <token>...}"; shift
+  [ "$#" -gt 0 ] || { echo "burned: ต้องมีอย่างน้อยหนึ่ง token"; return 2; }
+  local n=0 loaded=0 stored=0 root
+  root=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$target")
+
+  echo "burned.subject: $target"
+  # LOADED — ไฟล์ที่ engine อ่านเอง ที่ **ทุก worktree root** ไม่ใช่แค่ root เดียว
+  local wts; wts=$(git -C "$root" worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2}')
+  [ -n "$wts" ] || wts="$root"
+  local wt f t c
+  while IFS= read -r wt; do
+    [ -z "$wt" ] && continue
+    for f in CLAUDE.md AGENTS.md; do
+      [ -f "$wt/$f" ] || continue
+      for t in "$@"; do
+        c=$(grep -c -F -- "$t" "$wt/$f" 2>/dev/null); c=${c:-0}
+        n=$((n+1)); loaded=$((loaded+c))
+        [ "$c" -gt 0 ] && printf '  🔴 LOADED %s/%s  %s ×%s\n' "${wt##*/}" "$f" "$t" "$c"
+      done
+    done
+  done <<EOF_WT
+$wts
+EOF_WT
+
+  # STORED — ที่เหลือในทรี (เอกสาร ไม่มี engine ไหน auto-load)
+  for t in "$@"; do
+    c=$(grep -rIl -F -- "$t" "$root" --exclude-dir=.git 2>/dev/null | wc -l); c=${c:-0}
+    n=$((n+1)); stored=$((stored+c))
+    [ "$c" -gt 0 ] && printf '  •  STORED %s — %s file(s)\n' "$t" "$c"
+  done
+
+  printf 'burned.checked: %s/%s (token×surface — นับรอบ ไม่ได้อนุมานจากการไม่มีบรรทัดเตือน)\n' "$n" "$n"
+  printf 'burned.count: loaded=%s stored=%s\n' "$loaded" "$stored"
+  echo 'burned.scope: LOADED=CLAUDE.md/AGENTS.md ที่ทุก worktree root · STORED=ไฟล์อื่นในทรี · **ไม่ตรวจ**=นอกทรี, auto-memory, ไฟล์ระดับเครื่อง'
+  if [ "$loaded" -gt 0 ]; then
+    echo "BURNED-IN-LOADED  ⇒ 🔴 delivery probe พัง — seat จะได้ token นี้มาจริง ⇒ false positive"
+    return 1
+  fi
+  echo "LOADED-CLEAN      ⇒ delivery probe ปลอดภัย · stored=$stored ⇒ **grep sweep เท่านั้นที่โดน**"
+  return 0
+}
+
 siblings() {
   local f="${1:?usage: siblings <file> [root...]}"; shift
   [ -r "$f" ] || { echo "siblings: อ่าน $f ไม่ได้"; return 2; }
@@ -3587,12 +3647,13 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue siblings twinfix enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
+VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue burned siblings twinfix enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
   echo "  binexists <bin> · procs <bin> · procs_cmd <pattern> · alive <bin> · bootprobe '<cmd>' [s] [bin]"
   echo "  relay <session:window.pane> '<msg>' [--durable <slug>]  ·  teamclosed <team>"
+  echo "  burned <path> <token>...  ← token ที่ไหม้แล้วอยู่ใน LOADED (พัง probe) หรือ STORED (พังแค่ grep)"
   echo "  siblings <file> [root...] ← ไฟล์นี้มีฝาแฝดบนดิสก์ที่ยังไม่ได้แก้ไหม (ก่อน commit)"
   echo "  twinfix <fileA> <fileB>   ← ฝาแฝดคนละชื่อ: มี commit ที่ลงข้างเดียวไหม (diff ตอบไม่ได้)"
   echo "  teamresidue <team>     ← ทีมลงแล้วเหลืออะไร: systemd --user (อ่าน SUB ไม่ใช่ ACTIVE)"

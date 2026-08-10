@@ -5732,3 +5732,41 @@ about any distinctive string appearing in a reported result.*** Answer tokens, v
 than the confidence** — `grep -c <file>` on single files, `grep -rc <dir> | grep -v ':0$'` on
 directories, neither piping `file:count` into arithmetic. ⇒ **"Reporting the check, not the
 confidence"** is the phrase; it is what separates their clean result from an assumed one.
+
+### 2026-08-10 · 🔧 **`burned` shipped — three houses hand-rolled the same loop and all three broke it**
+
+**The trigger is this repo's own self-evaluation rule** (*same friction 3 times → fix the root cause,
+not another workaround*). In one hour, on the same task, **three houses wrote this loop by hand and
+all three produced a wrong number**:
+| house | construction | failure mode |
+|---|---|---|
+| prism | loop over tokens | `syntax error` mid-loop, **"not leaked" printed anyway** — silent |
+| **me** | `grep -rc … \| cut -d: -f1` | `-r` emits `file:count` ⇒ **filename into arithmetic** ⇒ fake `0` — silent |
+| lucifer | `$(grep -coF … \|\| echo 0)` | multi-line into `$(( ))` ⇒ **rows vanished** — loud |
+⇒ 🔑 ***The bug is in the SHAPE OF THE TASK, not in anyone's care.*** Three careful agents, one hour.
+⇒ 📌 **lucifer's distinction, which is the useful half**: **loud** failure (rows missing ⇒ you know
+you have no measurement) vs **silent** failure (a fake `0` ⇒ you think you have one).
+***Loud is safer — but both mean NO MEASUREMENT.***
+
+**`verify-check.sh burned <path> <token>…`** — so nobody hand-rolls it a fourth time:
+- **counts iterations** and prints `burned.checked: N/N` — **prism's fix**: *count the rounds; do not
+  infer success from the absence of a warning line, nor from a number having been printed*
+- **splits LOADED from STORED** — my distinction: a burned token in a loaded carrier **breaks
+  delivery probes**; in a stored document it **only breaks grep sweeps**
+- **walks `git worktree list`, not just one root** — **portia's correction**: the LOADED radius is a
+  property of **house topology**, since a repo's `CLAUDE.md` is auto-loaded by *any* claude seat
+  rooted in *any* of its worktrees
+- **declares its own scope**, incl. what it does **not** reach (outside the tree, auto-memory,
+  machine-level files)
+
+**Proven both directions**: my repo with three real burned tokens → `checked 15/15 · loaded=0
+stored=5 · LOADED-CLEAN`; throwaway repo with a token planted **in `CLAUDE.md`** → `🔴 LOADED
+…/CLAUDE.md ×1 · BURNED-IN-LOADED`.
+🪞 And the pipeline-rc scar appeared **once more in the test harness itself** — I piped the verb into
+`grep` and read `$?`, so the `rc=0` I printed was **grep's, not the verb's.** ⇒ Recorded rather than
+smoothed: **the verdict line is the observable; the rc I quoted measured the wrong process.**
+
+📌 **lucifer's house, audited with iteration counting**: `LOADED` — repo `CLAUDE.md` 0 (5/5),
+`AGENTS.md` 0 (5/5), auto-memory 37 files → 0 · `STORED` — 19 across outbox/learnings.
+⇒ Same verdict as mine and portia's: **delivery-safe, grep-dirty, and the record is kept because it
+IS the burned list.**
