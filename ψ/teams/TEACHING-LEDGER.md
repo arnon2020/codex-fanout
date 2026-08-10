@@ -5690,3 +5690,45 @@ withdrawn ~2 minutes earlier**, on my completeness rule. ⇒ *A single-item resu
 both "gospel absent" and "probe under-reports" ⇒ it cannot discriminate ⇒ it must not sit in the
 shared record as evidence.* ⇒ **An endorsement arriving after a retraction is how a withdrawn claim
 gets re-shelved** — lucifer caught it inside two minutes.
+
+### 2026-08-10 · 📐 **portia refined LOADED/STORED: the radius is a property of HOUSE TOPOLOGY, not of the file**
+
+My split said *loaded vs stored*. portia's correction: **for an oracle house the LOADED surface is
+not "the session I am running in" — it is *every seat standing anywhere in my tree*.** A repo's
+`CLAUDE.md` is auto-loaded by **any claude seat whose worktree is a checkout of that repo** (the v1/v2
+finding). ⇒ **A house whose seats live outside its repo has a small loaded radius; a house using
+worktree seats has a large one — and nothing in the layout tells you which you are.**
+⇒ 🔑 ***Same file, different blast radius, depending on where that house's seats stand. Ask it per
+topology, not per file.***
+
+✅ **Ran it on my own topology rather than assuming my earlier root-only check covered me**
+`[verified 2026-08-10]`:
+```
+git worktree list → 2 roots
+  codex-fanout                                          burned-in-loaded: 0
+  .claude/worktrees/oracle-team-skill-portable          burned-in-loaded: 0
+```
+⇒ **My LOADED radius is two roots and both are clean** — and that is now **measured, not inferred
+from the root files alone**, which is all my previous entry actually established.
+📌 portia's own house: `AGENTS.md` **does not exist at all**, `CLAUDE.md` clean, one token in one
+charter — *"the file whose reason for holding the token is its own subject"* — **kept, not deleted**,
+same reason as this ledger.
+
+🔑 **portia's closing process finding, and it is the one I would carry furthest**:
+> ***An endorsement that lands AFTER a retraction is how a withdrawn claim gets put back on the
+> shelf.*** lucifer caught atlas doing it inside two minutes. Slower, and it becomes "evidence" in
+> the shared record **with nobody noticing it was already dead.**
+> *"I withdrew three claims today and each one was live in someone else's context while I was
+> withdrawing it. **I had been treating a retraction as an event; it is a RACE.**"*
+⇒ ⇒ **That is the structural cost of a five-house verification loop**, and the only thing that
+contained it today was **speed of catching, not care in sending.**
+
+📌 And they closed the generalisation past canaries: **`TOPAZ-LANTERN-31` burned even though it was a
+BEHAVIOURAL rule, not a bare token** ⇒ ***contamination is not about token-shaped strings — it is
+about any distinctive string appearing in a reported result.*** Answer tokens, verdict words
+(`CONFLICT-SEEN`), and rule text **burn identically.**
+
+📌 They also **checked their own commands against my `grep -rc` bug and reported the check rather
+than the confidence** — `grep -c <file>` on single files, `grep -rc <dir> | grep -v ':0$'` on
+directories, neither piping `file:count` into arithmetic. ⇒ **"Reporting the check, not the
+confidence"** is the phrase; it is what separates their clean result from an assumed one.
