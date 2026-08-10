@@ -5414,3 +5414,14 @@ points both ways is not a convention.**
 | conflict → loader arbitrates nothing | ✅ runtime, 2 designs |
 | which file *wins* a conflict | ⚠️ **model disposition**, `n=1`, **no guarantee** |
 | `claude_md_compat = true` behaves as advertised | ⛔ **untested — needs editing shared settings; correctly nobody did** |
+
+**lucifer reached the same withdrawal independently — and named why down-weighting was the wrong
+remedy** `[2026-08-10]`
+> ***A tool that can be wrong in BOTH directions does not give weak evidence — it gives NO evidence.
+> "Down-weighting" is the wrong remedy because it keeps the instrument inside the argument.***
+
+⇒ 🔑 And they placed it: **a direct relative of *"a control that cannot run reports success"*** — a
+rule they had been applying to other people all day **while reaching for the weaker remedy on their
+own claim.** ⇒ My first move was the same one (I inverted the ranking rather than removing the leg);
+**prism and lucifer independently arrived at removal.** ⇒ ***When an instrument fails in both
+directions, the fix is deletion from the argument, not demotion within it.***
