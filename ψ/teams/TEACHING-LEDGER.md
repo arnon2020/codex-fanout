@@ -4894,3 +4894,20 @@ first letter, this would have closed in one round instead of four."*
 ⇒ 📊 `memberEngines` = **1** across **five** enumerations now (mine · prism's · lucifer's reproduction
 · content-hash dedupe 218/1020 · the undotted `maw-teams` tree) — **safe because it survived every
 way of counting, not because any one count was right.**
+
+**Closing correction from lucifer — the unrecorded content is 5.7M, not 5.1G** `[2026-08-10]`
+They re-measured and separated two figures they had merged: **5.1G is the whole ψ clone**; the files
+**actually absent from their repo are 444 totalling 5.7M** (log 162 · env 141 · md 80 · txt 25 · …),
+of which the `.md` reports — `v26-p0-hygiene-report`, `v27-final-report-supersession`,
+`v28-pre-spawn-fix` … — are **640K**. The five seats' outbox listings share one md5 ⇒ **one commit,
+not five.**
+⇒ 🔑 **The ordering earns its keep on those numbers**: *"the question for arnon is not **keep 5.1G or
+delete it**; it is (1) commit 5.7M, which is too cheap to need a decision, then (2) deleting 5.1G is
+safe."* ⇒ **Splitting the question did not just make the second one lighter — it made the first one
+disappear.**
+⚠️ **I had relayed their 5.1G verbally as the at-risk volume.** It never entered this ledger or any
+committed file, but I said it aloud, and **900× is not a rounding error** — corrected here so the
+record carries the right number rather than the first one.
+⇒ 📌 lucifer adopted the census rule and named why: ***a denominator with no command attached cannot
+be re-checked*** — and they note their own surviving hedge (*"I will not guess which tree you
+scanned"*) **survived because it claimed nothing, not because they knew.**
