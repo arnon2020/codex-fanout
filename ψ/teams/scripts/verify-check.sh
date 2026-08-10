@@ -2460,6 +2460,21 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
           machine="${machine}enginecheck.rules-file: path=$mp file=absent attest=n/a
 "
         else
+          # 🔬 2026-08-10 [prism · guard ที่ไม่ต้องรู้กลไกเลย] brief ที่ถูกเขียนซ้อนจะมี ATTEST > 1
+          #    ที่มา: 5 ใน 9 ของ evidence-cell มี ATTEST 2 ครั้ง — **ทั้งหมดเป็น role ที่ engine เป็น codex**
+          #    mtime แฉว่าตัวซ้ำถูกเขียน **ทีหลัง ไล่ทีละตัว ห่างขึ้นเรื่อย ๆ** (+2s → +101s)
+          #    = ลายเซ็นของ **ลูป spawn** ไม่ใช่ลูป write_briefs (ซึ่งจบทั้ง 9 ใน 1–2 วินาที)
+          #    ⇒ และ `_lib.sh` ที่มีผลตอนนั้น (`9246b7f`) **ไม่มีคำว่า AGENTS.md เลย** ⇒ **ตัวเขียนไม่ทราบ**
+          #    ⇒ 🔑 พูดได้แค่ *"เส้นทางของเขาไม่ทำ"* **ไม่ใช่ *"ไม่มีอะไรทำ"*** ⇒ มันกลับมาได้
+          #    ⇒ guard นี้ตกได้จริงโดยไม่ต้องระบุตัวคนเขียน — ซึ่งคือเหตุผลที่มันถูกกว่าการรอหากลไก
+          local nat; nat=$(grep -c 'ATTEST role=' "$hit" 2>/dev/null)
+          if [ "${nat:-0}" -gt 1 ]; then
+            printf '     🔴 rules-file: %-42s %s **ATTEST ปรากฏ %s ครั้ง ⇒ brief ถูกเขียนซ้อน**\n' "$mp" "$hit" "$nat"
+            printf '        ⇒ ต้องได้ 1 เป๊ะ · ตัวเขียนซ้ำ **ยังระบุไม่ได้** (เส้นทาง render ที่รู้จักไม่ทำ)\n'
+            printf '        ⇒ seat อาจอ่านกฎสองชุดต่อกัน — ชุดหลังทับความหมายชุดแรกได้โดยไม่มีใครเห็น\n'
+            machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest-count=$nat
+"
+          fi
           local at; at=$(grep -m1 -o 'charter_sha=[0-9a-f]*' "$hit" 2>/dev/null | cut -d= -f2)
           if [ -z "$at" ]; then
             printf '     ⚠️  rules-file: %-42s พบ %s (ไม่มี ATTEST ⇒ เทียบกับ charter ไม่ได้)\n' "$mp" "$hit"
