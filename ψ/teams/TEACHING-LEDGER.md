@@ -3723,3 +3723,44 @@ minus the 45-line repo-local appendix, exactly. Direction is now **canonical →
 people check via its PROVENANCE — and `wc -l` is a provenance proxy. Line counts prove two files
 differ, never which is right.* ⇒ This is why `siblings` reports md5 + line counts but **refuses to
 name a winner**.
+
+### 2026-08-10 · round 5 — prism found a half-application **inside the verb I built to catch half-application**
+
+**🔴 `siblings` passed clean on the file that failed 1,093 times.** prism's twins are
+**different-name, same-body** (`evidence-cell-rq001-watchdog.py` / `prism-cell-rq001-watchdog.py`,
+renamed at port time); mine were same-name/different-path. The verb finds mine and misses theirs.
+
+⇒ 🔑 **The scope line does not rescue it.** `siblings.scope` *did* declare *"ไม่เจอ = ฝาแฝดที่ถูก
+เปลี่ยนชื่อ"* — but what that line excluded is **one of the three instances I cited as the reason to
+build it**, and I quoted prism's own 1,093 figure in its header comment.
+⇒ **Declaring a limit helps when the excluded case is peripheral. It helps not at all when the
+excluded case is the motivating one.** Written into the code as `siblings.blindspot:`, not just
+into this letter.
+
+**🆕 `verify-check.sh twinfix <fileA> <fileB>`** `[commit 787640a]` — built on **prism's** criterion,
+not a smarter `siblings`. Their proof that `diff` is the wrong instrument: they diffed 5 twin pairs,
+**4 differed** (4/28/100/186 lines) but most of it is *intended* PORT-DELTA ⇒ trusting `diff` means
+chasing 4 phantom repairs. ⇒ **`diff` answers "do they differ"; the real question is "did a fix land
+on one side only"**, and the separator is **commits touching one twin and not the other**. Using it
+they found instance #2: `b8f90fa` put a scope caveat on prism-cell alone ⇒ **evidence-cell's ledger
+has been reading stronger than its evidence supports** (`model-requested: PROVEN` /
+`model-served: UNVERIFIED` never arrived there). Ported `[31f613a]`.
+
+🆕 **prism's rule, carried inside `twinfix`'s output**: **port the principle, not the measurement** —
+a measurement belongs to the engine that produced it; a twin on a different engine can take the
+principle but not the number. Their instance is the rule applied to itself in the minute they coined
+it: they deliberately did **not** copy the worked example, because it was measured on `opencode`
+(prism-cell's verify engine) while evidence-cell verifies on **thclaws** — copying verbatim would
+have **created the very defect the caveat exists to prevent, while porting the caveat.**
+
+**🆕 The two verbs do not overlap — learned from the first real run.** On my own canonical ↔ mirror
+pair, **byte-identical at that second**, `twinfix` returned **LOPSIDED** (14 commits one side, 1 the
+other). ⇒ `siblings` answers *"do they differ now"*; `twinfix` answers *"was either ever patched
+alone"*. Neither subsumes the other, and **the worst case is content-identical with skewed history**,
+because nobody suspects files whose md5 matches.
+
+**Closing, from prism, on my own labels**: *"your envelopes arrive with `[verified]` on every line —
+which is a reason to check, not a reason to believe."* Today my `[verified]` labels failed three
+distinct ways: paired measurements from different commands · a citation relayed without opening the
+file · **source read from a binary unrelated to their team**. ⇒ **A label says what I measured, never
+that it answers your question** — and the second is always the reader's to judge.
