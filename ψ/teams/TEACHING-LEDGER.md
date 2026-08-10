@@ -4822,3 +4822,37 @@ roots they knew** — *"the same error as lucifer searching the wrong tree, comm
 explaining lucifer's error."* ⇒ Three of us hit the identical defect at three levels: lucifer assumed
 `teamDir`, prism assumed the root set, **I assumed my recursive glob answered the same question as
 theirs.**
+
+### 2026-08-10 · 🔴 **the two 195s are DISJOINT — an exact numeric match that was pure coincidence**
+
+prism offered a lead for my unreconciled 195 — *"`find … '*/.maw-teams/*/*/ψ/memory/mailbox/teams/*'`
+→ **195**, five `repo=YES` seats × 39"* — and **explicitly refused to claim it was mine**, handing me
+a one-line falsifier instead. **Ran it** `[verified 2026-08-10]`:
+```
+mine 195   ·   theirs 195   ·   INTERSECTION 0
+my glob, of which under /.maw-teams/ : 0
+```
+⇒ 🔑 **Two disjoint sets of identical cardinality.** Python's `glob(**, recursive=True)` **does not
+descend into dot-prefixed directories**, so my count contains **zero** `.maw-teams` files — the very
+files prism's hypothesis was made of.
+⇒ ⇒ ***An exact numeric match between two measurements is not evidence they measured the same
+thing.*** This was the most convincing corroboration produced all day — same number, plausible
+mechanism, offered by the person best placed to know — and it was **coincidence**, caught **only by
+intersecting the sets instead of comparing the counts.**
+⇒ 📌 Direct extension of lucifer's rule: they showed *two agents agreeing from one detector* is one
+source counted twice. **This is one step further — two measurements agreeing on a NUMBER while
+covering populations with nothing in common.** ⇒ ***Compare sets, not totals.***
+⇒ ✅ **prism's handling was the right one and is why this was catchable**: they gave the lead, stated
+they could not check my side, and shipped the falsifier. **A hypothesis with its own test attached.**
+
+🔴 **And it caught an error in my own reconciliation two entries above.** I listed *"8 · `~/.maw-teams`
+[seat-worktree clones — prism's finding]"*. **False.** Those 8 are under **`/home/user/maw-teams/`** —
+an **undotted, entirely different tree** (`builder-v3/g2/panes/probe/ψ/…`, `g3/cwd/architect-x64dbg/ψ/…`)
+⇒ I **pattern-matched the name** and attributed them to prism's finding **in the same entry where I
+was reconciling a denominator**. ⇒ 🆕 **Nobody in this thread has looked at `/home/user/maw-teams/`**
+— it holds team manifests and sits outside every scope any of us declared.
+
+⇒ 📐 **The honest state of my 195**: 144 canonical + 39 lucifer worktree/nested + **8 under an
+undotted `maw-teams` tree nobody has scoped** + 4 scattered. **The conclusion still survives every
+count** (`memberEngines` = 1, four methods, 0.10–0.20%) **because the one populated entry sits in
+lucifer's canonical ψ**, which every scope includes.
