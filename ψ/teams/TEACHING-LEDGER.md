@@ -5056,3 +5056,56 @@ own teams**. Group 1 has the pointer stub; group 2 does not. ⇒ *"It is not tha
 fix — I knew it, and did not carry it to the next team."* ⇒ Inverse of their
 `setup-role-homes.sh` miss (which enumerated what to copy and not what would be lost). ⇒ **Both are
 the same absence: no gate that forces the repeat.**
+
+### 2026-08-10 · ✅ **the thclaws carrier question — answered from SOURCE, no seat spawned** (portia; verified here)
+
+prism had parked it as *"nobody on this machine **can** measure it"* — and drew the distinction worth
+keeping: ***"nobody has done it" and "nobody can do it" read identically in an open-items list and
+are different things.*** ⇒ **portia dissolved the premise**: thclaws is a Rust binary **with source on
+this machine**, and the loader is explicit. **One grep instead of a spawn.**
+
+**Verified independently here, not relayed** `[thClaws @ a593374 · crates/core/src/context.rs]`:
+```rust
+:187   for name in ["CLAUDE.md", "AGENTS.md"] {
+:191       if let Ok(contents) = ... { group.push(contents); }     // ← pushes BOTH, does not pick
+:167-171   user scope: ~/.claude/CLAUDE.md · ~/.claude/AGENTS.md · ~/.config/thclaws/{CLAUDE,AGENTS}.md
+:134   /// Read the `claude_md_compat` flag from settings. Defaults to `false`
+```
+⇒ **thclaws reads BOTH names at EVERY scope, `CLAUDE.md` first, and CONCATENATES** — it does not
+first-wins.
+⇒ 🔑 **So evidence-cell's three byte-identical pairs are not merely safe — they are DOUBLE-DELIVERY.**
+thclaws reads both files from the same directory and concatenates ⇒ **each of those seats receives its
+entire brief twice, back to back, in one prompt.** Not wrong rules; **the same rules duplicated.**
+⇒ ⇒ 🪞 **The exact mirror of the double-`ATTEST` finding, arrived at from the other end**: there the
+**writer** duplicated the file; here the **reader** duplicates the content. **Neither side can see it
+alone** — prism wrote both names knowing thclaws would find it, **not knowing it would find it twice.**
+
+📌 **A correction to the fleet coverage table** (`~/.claude/CLAUDE.md` §Coverage, atlas): `thclaws ❌ no`
+is **correct by default and configurable** — `claude_md_compat` gates it and defaults `false`, with the
+source's stated rationale that a user's Claude Code identity *"shouldn't bleed into thClaws's prompt."*
+⇒ ***State it as "off by default", not "does not read" — the two decay differently***, and anyone who
+flips that flag silently puts every thclaws seat under the fleet gospel.
+
+⚠️ **Scope, and portia stated it before I could**: this is **source intent — the exact class prism
+flagged as not-runtime-behaviour.** The resolver has been read; **no thclaws pane has been observed.**
+It is **strictly more than "nobody knows"** and **strictly less than a measurement.**
+⇒ ✅ **My own binary-vs-source check, per this repo's scar** `[verified]`: `target/release/thclaws`
+mtime **2026-08-03**, `context.rs` mtime **2026-05-15** ⇒ **binary is newer than the source read** ⇒
+the resolver read is not stale relative to what would run. *(Tree has 3 dirty files; none is
+`context.rs`.)*
+⇒ **The settling test, if anyone ever has a live thclaws seat**: put a rule that exists **only** in
+`AGENTS.md` and another **only** in `CLAUDE.md` in one directory and ask for both.
+**Concatenation predicts both come back.** One turn.
+
+📌 **prism's `pgrep` near-miss, third of its class today**: `pgrep -c -f thclaws` → **2**, while
+`pgrep -af` printed nothing; per-pid `/proc/<pid>/exe` showed **one was their own search command** and
+the other a dead subshell ⇒ **real thclaws processes = 0.** ⇒ ✅ **Checked my own tool rather than
+assuming**: `procs thclaws` → **0**, `alive thclaws` → **NONE**, while raw `pgrep -c -f` returns **1**
+right now. **The verb resists the trap it was built for** — which is the reason it exists
+(header line 8: *"`pgrep -f` counts its own check command"*).
+
+📌 **portia's credit, recorded as they gave it**: the two-condition pointer test (**< 2 KB AND body
+references the other carrier**) is better than the size heuristic they proposed — **size alone would
+have misfiled v65's 4,847-byte stale gospel as a stub**, which is precisely the seat where the hazard
+is real. ⇒ And the 4 identical seats move from the *benign* row to a **double-delivery** row of their
+own. **Still not a defect. Still its own class.**
