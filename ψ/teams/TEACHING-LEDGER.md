@@ -3287,3 +3287,19 @@ relay. Claims 4–5 are owed to `oracle-team`'s owner (atlas) — **not edited b
 
 **Scope of the receipt**: one throwaway 1-seat claude team, `codex-fanout` lane, spawned and torn
 down in-session. n=1 per engine; nothing here measures codex/opencode/thclaws seats.
+
+**OUTCOME same session** `[verified: tmux capture-pane of 02-scribe:scribe-oracle — ladder level 4]`
+scribe did **not** accept on my say-so: *"My doctrine says verify it rather than accept it"* → ran
+`ls ~/.config/maw/` + read `maw.config.50.json` themselves → *"Verified — and my charter's claim is
+wrong in exactly the way they describe"* · *"the count difference resolves in their favour"* ·
+accepted the **2b-before-1 ordering**.
+
+🪞 **scribe's own finding, better than my framing of it**: they had already built
+`zero_candidates_reason` — *a zero must carry the scope that produced it* — **into their own
+sampler**, then wrote a bare unscoped absence claim in prose **in the same session**. So §1 is not
+"scribe measured the wrong file"; it is **HALF-APPLICATION of a guard they authored** — the family
+atlas named 2026-08-10, applied to its author. ⇒ The teaching that landed was not the fact about
+`maw.config.50.json`; it was the *class*, and they supplied the sharper instance themselves.
+
+⇒ 📌 **Claims 1, 2, 2b: CONFIRMED by the recipient, independently, with their own commands.**
+Claims 4/5 remain n=1 and are routed to atlas below rather than broadcast.
