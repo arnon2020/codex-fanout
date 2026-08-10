@@ -1962,8 +1962,15 @@ permstall() {
     #    **คำถาม + แถวตัวเลือกเลข ต้องอยู่ท้ายจอด้วยกัน** (prompt ของ claude มี `1. Yes` เสมอ)
     local tail15; tail15=$(printf '%s' "$cap" | tail -15)
     local qb qo
+    # 🩹 2026-08-10 [verified: live codex 0.147.0 approval prompt · atlas routed the gap · portia found it]
+    #    เดิมคำในนี้เป็น **คำศัพท์ของ claude ล้วน** ⇒ codex ถาม `Would you like to run the following
+    #    command?` ⇒ `qb` ว่าง ⇒ **AND ไม่ครบ ⇒ blocked=0 บนจอที่มี prompt เต็ม ๆ** (false negative)
+    #    ยืนยันด้วยการรัน `permstall` ใส่เพนที่กำลังถามจริง ไม่ใช่ด้วยการอ่าน regex:
+    #      ก่อนแก้ → `permstall.pane: codex no-prompt-visible` · blocked=0
+    #    ⚠️ **คง AND ไว้** (banner + แถวตัวเลือก) — มันคือกันชน false-positive จาก 2026-08-09
+    #      (worker ที่เขียนคำว่า `อนุญาต` ในผลงานตัวเอง ถูกรายงาน BLOCKED) · แก้เฉพาะ**คลังคำ**
     qb=$(printf '%s' "$tail15" | grep -m1 -E \
-      'Do you want to (proceed|create|make|edit|run)|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|ขออนุญาต' 2>/dev/null)
+      'Do you want to (proceed|create|make|edit|run)|Would you like to run the following command|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|ขออนุญาต' 2>/dev/null)
     qo=$(printf '%s' "$tail15" | grep -m1 -E '^[[:space:]]*[›>❯[:space:]]*[0-9]\.[[:space:]]' 2>/dev/null)
     if [ -n "$qb" ] && [ -n "$qo" ]; then q="$qb"; kind="permission"; fi
     if [ -z "$q" ]; then
@@ -2006,8 +2013,18 @@ permstall() {
             printf '      ⏳ binary ที่ pane นี้รันอยู่ **ถูกแทนที่ไปแล้วบนดิสก์** — pane เก่ากว่าเครื่อง\n' ;;
           esac
         fi
-        local pm; pm=$(_vc_permmode "$child" ${cbin:+"$cbin"})
+        # 🩹 2026-08-10 [verified: live codex probe — เอาต์พุตขัดแย้งกันเองในบล็อกเดียว]
+        #    `_vc_permmode` ดึง CODEX_HOME จาก **สตริงคำสั่ง** ⇒ ครอบเฉพาะ alias ที่เขียน
+        #    `CODEX_HOME=… codex …` ไว้เอง · ถ้า CODEX_HOME มาจาก **env ของ pane**
+        #    (`tmux -e`, `maw wake`) cmdline ไม่มีคำนั้น ⇒ fallback ไป `~/.codex`
+        #    ⇒ ผมได้ `perm=bypass … ⇒ ไม่ถาม` **พิมพ์ติดกับ `🔴 BLOCKED [permission]`
+        #      ของเพนที่กำลังถามอยู่จริง ๆ** — เอาต์พุตเถียงตัวเองห่างกัน 2 บรรทัด
+        #    ⇒ หลัง spawn แหล่งที่เชื่อได้คือ **environ ของโปรเซสจริง** ไม่ใช่สตริงที่เราเดา
+        local penv=""
+        [ -n "$cpid" ] && penv=$(tr '\0' '\n' < "/proc/$cpid/environ" 2>/dev/null | sed -n 's/^CODEX_HOME=//p' | head -1)
+        local pm; pm=$(_vc_permmode "${penv:+CODEX_HOME=$penv }$child" ${cbin:+"$cbin"})
         printf '      perm=%s  (%s)\n' "${pm%%|*}" "${pm#*|}"
+        [ -n "$penv" ] && printf '      perm.src=CODEX_HOME จาก /proc/%s/environ (ไม่ใช่จาก cmdline)\n' "$cpid"
       fi
       if [ "$kind" = "cli-dialog" ]; then
         printf '      ⛔ นี่คือจอของ **CLI เอง ไม่ใช่ของ agent** — ข้อความที่ส่งไปจะไม่ถูก submit\n'
@@ -2040,8 +2057,10 @@ permstall() {
   #      ตั้ง `approval_policy = "never"` ไว้ทั้งเครื่อง ⇒ จะทดสอบต้องแก้ของกลาง **ซึ่งไม่ทำ**
   #    ⇒ **ประกาศขอบเขตไว้ ดีกว่าปล่อยให้เข้าใจว่าครอบ** — ทีมที่ worker เป็น codex/opencode/
   #      thclaws ยังต้องอ่านจอเองจนกว่าจะมีคนเจอ prompt จริงของเครื่องยนต์นั้นแล้วส่งข้อความมา
-  echo '  🔴 ธงที่ใช้จับ prompt **พิสูจน์กับ claude เท่านั้น** — codex/opencode/thclaws ยัง [unverified]'
-  echo '     (พยายามทดสอบ codex แล้วสร้าง prompt ไม่ได้: config.toml ทั้งเครื่องตั้ง approval_policy=never)'
+  echo '  🟡 ธงที่ใช้จับ prompt: claude [verified] · codex [verified 2026-08-10 · v0.147.0 · 2 arm]'
+  echo '     · **opencode / thclaws ยัง [unverified]** — อย่าอ่าน blocked=0 บนสองตัวนั้นเป็นหลักฐาน'
+  echo '     codex ปิดได้เพราะ `-a untrusted` บน command line **ชนะ** approval_policy=never ใน config'
+  echo '     ⇒ ที่เคยเขียนว่า "สร้าง prompt ไม่ได้" ผิด — ผมติดที่ config เพราะไปแก้ config ไม่ใช่ใช้แฟลก'
   if [ "$n_block" -gt 0 ]; then
     echo "overall: BLOCKED panes=$n_block"
     echo '  แก้ไม่ได้ด้วยเครื่องมือนี้โดยเจตนา — การกด Yes คือการให้สิทธิ์แทนมนุษย์ของทีมนั้น'
