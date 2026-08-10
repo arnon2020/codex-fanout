@@ -2478,6 +2478,41 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
             #    ⇒ พูดว่า "STALE" ลอย ๆ คือการตัดสินแทนบ้านอื่นด้วยสมมติฐานที่เราไม่ได้ยืนยัน
             printf '        ⚠️ ATTEST เป็นธรรมเนียมของบ้าน ไม่มีสเปกกลาง — เจ้าของอาจ hash รูป normalize\n'
             printf '           หรือสไลซ์เฉพาะสมาชิก ⇒ **นี่คือธง ไม่ใช่คำตัดสิน** ถามเจ้าของก่อนสรุปว่า stale\n'
+            # 🔬 2026-08-10 [prism เตือน — และเขาถูก] "sha ไม่ตรง" บอกว่า **render มาจาก charter คนละ
+            #    revision** · มัน **ไม่ได้บอกว่าสิ่งที่เปลี่ยนนั้นสำคัญ**
+            #    เคสจริงวันนี้: evidence-cell drift = **1 commit `+21 −0` คอมเมนต์ล้วน** (ป้าย FROZEN)
+            #    **ไม่มี role/engine/model/cwd/prompt เปลี่ยนสักบรรทัด** `[ผมยืนยันเอง: git diff
+            #    df7e8aa HEAD | นับบรรทัด + ที่ไม่ใช่คอมเมนต์ = 0]`
+            #    ⇒ prism: *"ถ้าตระกูลใหม่ถูกตั้งบนตัวอย่างที่ไม่เจ็บ กฎที่ได้จะถูกด้วยเหตุผลที่ผิด"*
+            #    ⇒ ธงเปล่า ๆ ทำให้คนไล่ซ่อมของที่ไม่พัง — ซึ่งฆ่าเครื่องมือเตือนพอกับ false green
+            #    ⇒ จึงตามหา revision ที่ sha ตรง แล้วบอก **ว่าอะไรเปลี่ยนไปบ้าง** ให้ตัดสินได้ทันที
+            local crepo cdir crev="" cn=0
+            cdir=$(dirname "$charter")
+            crepo=$(git -C "$cdir" rev-parse --show-toplevel 2>/dev/null)
+            if [ -n "$crepo" ]; then
+              local rel; rel=$(realpath --relative-to="$crepo" "$charter" 2>/dev/null)
+              local r s
+              for r in $(git -C "$crepo" log --all --format=%H -- "$rel" 2>/dev/null | head -200); do
+                s=$(git -C "$crepo" show "$r:$rel" 2>/dev/null | sha256sum | cut -d' ' -f1)
+                [ "$s" = "$at" ] && { crev="$r"; break; }
+              done
+              if [ -n "$crev" ]; then
+                cn=$(git -C "$crepo" diff "$crev" HEAD -- "$rel" 2>/dev/null | grep '^+' | grep -v '^+++' \
+                     | grep -vcE '^\+[[:space:]]*#|^\+[[:space:]]*$')
+                printf '        🔎 render ตรงกับ revision %s — ตั้งแต่นั้น charter เปลี่ยน **%s บรรทัดที่ไม่ใช่คอมเมนต์**\n' "${crev:0:7}" "$cn"
+                if [ "${cn:-0}" -eq 0 ]; then
+                  printf '           ⇒ ✅ **เนื้อหาที่บังคับ seat ไม่เปลี่ยน** (คอมเมนต์ล้วน) — ธงนี้ไม่ต้องรีบซ่อม\n'
+                else
+                  printf '           ⇒ 🔴 มีบรรทัดที่ไม่ใช่คอมเมนต์เปลี่ยน — `git diff %s HEAD -- %s` ก่อน spawn\n' "${crev:0:7}" "$rel"
+                fi
+                machine="${machine}enginecheck.rules-file-drift: rev=${crev:0:7} noncomment-changed=$cn
+"
+              else
+                printf '        🔎 **ไม่มี revision ไหนใน git ที่ hash ตรงกับ ATTEST** ⇒ render มาจากไฟล์นอก git หรือคนละสูตร hash\n'
+                machine="${machine}enginecheck.rules-file-drift: rev=none-matched noncomment-changed=unknown
+"
+              fi
+            fi
             machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=sha-mismatch
 "
           fi
