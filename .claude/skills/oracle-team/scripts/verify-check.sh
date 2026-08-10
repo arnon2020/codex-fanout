@@ -658,6 +658,8 @@ EOF_SIB
   [ -n "$out" ] && printf '%s' "$out"
   echo "siblings.count: same=$same differ=$diff"
   echo "siblings.scope: ค้นตาม **ชื่อไฟล์เท่านั้น** ใน root ที่ลิสต์ · **ไม่เจอ**=ฝาแฝดที่ถูกเปลี่ยนชื่อ, อยู่นอก root, เนื้อหาซ้ำแต่คนละชื่อ"
+  echo "siblings.blindspot: 🔴 ฝาแฝดที่ **ถูก rename ตอน port** (เช่น <teamA>-x.py / <teamB>-x.py) ผ่านฉลุย"
+  echo "                    ⇒ นั่นคือ **เคสที่สร้างเวิร์บนี้ขึ้นมา** (prism 2026-08-10) — ใช้ \`twinfix A B\` แทน"
   if [ "$diff" -gt 0 ]; then
     echo "SIBLING-DRIFT $base  ⇒ มีฝาแฝด $diff ตัวที่เนื้อหาต่าง — **แก้ตัวเดียวจากหลายตัวหรือเปล่า**"
     echo "              ⇒ ไม่ได้แปลว่าต้องซิงก์ทุกตัว — บางตัวตั้งใจให้ต่าง (worktree เก่า, appendix)"
@@ -665,6 +667,51 @@ EOF_SIB
     return 1
   fi
   echo "NO-SIBLING-DRIFT $base"
+  return 0
+}
+
+# ── twinfix <fileA> <fileB> ─────────────────────────────────────────────────
+# ถามคำถามที่ `diff` ตอบไม่ได้: **มี fix ที่ลงข้างเดียวไหม**
+#
+# 🏷️ ที่มา (2026-08-10 · prism · หลังจาก `siblings` ของผม **จับเคสของเขาไม่ได้**):
+#    ฝาแฝดของผม = ชื่อเดียวกัน คนละ path ⇒ `siblings` เจอ
+#    ฝาแฝดของเขา = **คนละชื่อ เนื้อเดียวกัน** (`evidence-cell-rq001-watchdog.py` /
+#    `prism-cell-rq001-watchdog.py`) ⇒ `siblings` **ผ่านฉลุยกับไฟล์ที่ล้ม 1,093 ครั้ง**
+#    ⇒ 🪞 **half-application ของเวิร์บที่ผมเพิ่งสร้างเพื่อแก้ half-application** — และ
+#      เคสที่มันไม่ครอบ **คือหนึ่งในสามเคสที่ผมยกมาเป็นเหตุผลสร้างมัน**
+#      (การประกาศ scope ไว้ **ไม่ได้ช่วย** เมื่อสิ่งที่ถูกกันออกคือโจทย์ตั้งต้น)
+#
+# 🔑 prism พิสูจน์ว่า **`diff` เป็นเครื่องมือผิด**: เขา diff ฝาแฝด 5 คู่ → ต่างกัน 4 คู่
+#    (4/28/100/186 บรรทัด) **แต่ส่วนใหญ่คือ PORT-DELTA ที่ตั้งใจ** ⇒ ถ้าเชื่อ diff ต้องไล่ซ่อม 4 คู่
+#    ⇒ `diff` ตอบ *"ต่างไหม"* · คำถามจริงคือ *"มี fix ที่ลงข้างเดียวไหม"*
+#    ⇒ เกณฑ์ที่แยกได้จริงคือ **commit ที่แตะฝาแฝดข้างเดียว** — เขาใช้แล้วเจอตัวที่สอง
+#      (`b8f90fa` scope caveat ลง prism-cell ข้างเดียว · evidence-cell ไม่เคยได้ ⇒ ledger
+#      ของ cell นั้นอ่านแข็งกว่าที่มันรองรับมาตลอด)
+#
+# ⚠️ ตกได้ด้วยอะไร: rc=1 เมื่อมี commit ฝั่งเดียว · rc=0 เมื่อทุก commit แตะทั้งคู่
+# ⛔ อ่านอย่างเดียว · และ **ไม่ได้แปลว่าต้อง port ทุกอัน** — ดู `twinfix.caveat` ท้ายผล
+twinfix() {
+  local a="${1:?usage: twinfix <fileA> <fileB>}" b="${2:?usage: twinfix <fileA> <fileB>}"
+  local repo; repo=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "twinfix: cwd ไม่ใช่ git repo"; return 2; }
+  local la lb
+  la=$(git log --format=%h -- "$a" 2>/dev/null); lb=$(git log --format=%h -- "$b" 2>/dev/null)
+  [ -n "$la$lb" ] || { echo "twinfix: ไม่มีประวัติ git ของทั้งสองไฟล์ (ยัง untracked?)"; return 2; }
+  local onlyA onlyB
+  onlyA=$(comm -23 <(printf '%s\n' "$la" | sort -u) <(printf '%s\n' "$lb" | sort -u) | tr '\n' ' ')
+  onlyB=$(comm -13 <(printf '%s\n' "$la" | sort -u) <(printf '%s\n' "$lb" | sort -u) | tr '\n' ' ')
+  echo "twinfix.a: $a  commits=$(printf '%s\n' "$la" | grep -c .)"
+  echo "twinfix.b: $b  commits=$(printf '%s\n' "$lb" | grep -c .)"
+  echo "twinfix.onlyA: ${onlyA:-<none>}"
+  echo "twinfix.onlyB: ${onlyB:-<none>}"
+  echo "twinfix.scope: ตรวจ **ประวัติ git ของสอง path ที่คุณระบุเอง** · **ไม่ตรวจ**=เนื้อหา, ไฟล์ที่ยังไม่ commit, ฝาแฝดตัวที่สามที่ไม่ได้ระบุ"
+  if [ -n "$onlyA$onlyB" ]; then
+    echo "LOPSIDED  ⇒ มี commit ที่แตะฝาแฝดข้างเดียว — **อ่านมันทีละอัน** ก่อนสรุปว่าต้อง port"
+    echo "          ⇒ 🔑 prism 2026-08-10: **port หลักการ ไม่ port การวัด** — การวัดผูกกับ engine"
+    echo "             ที่วัดมัน · ฝาแฝดคนละ engine รับหลักการได้ **รับตัวเลขไม่ได้**"
+    echo "twinfix.caveat: commit ฝั่งเดียว ≠ defect เสมอ — PORT-DELTA ที่ตั้งใจก็โผล่ที่นี่"
+    return 1
+  fi
+  echo "BALANCED  ทุก commit แตะทั้งคู่"
   return 0
 }
 
@@ -3246,13 +3293,14 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue siblings enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
+VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue siblings twinfix enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
   echo "  binexists <bin> · procs <bin> · procs_cmd <pattern> · alive <bin> · bootprobe '<cmd>' [s] [bin]"
   echo "  relay <session:window.pane> '<msg>' [--durable <slug>]  ·  teamclosed <team>"
   echo "  siblings <file> [root...] ← ไฟล์นี้มีฝาแฝดบนดิสก์ที่ยังไม่ได้แก้ไหม (ก่อน commit)"
+  echo "  twinfix <fileA> <fileB>   ← ฝาแฝดคนละชื่อ: มี commit ที่ลงข้างเดียวไหม (diff ตอบไม่ได้)"
   echo "  teamresidue <team>     ← ทีมลงแล้วเหลืออะไร: systemd --user (อ่าน SUB ไม่ใช่ ACTIVE)"
   echo "                            + ~/.maw/fleet + git worktree — สามผิวที่ teamclosed ประกาศว่าไม่ตรวจ"
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
