@@ -1598,6 +1598,66 @@ _vc_trust_report() {
   fi
 }
 
+# ── placement <file> <region-anchor-regex> <token>... ───────────────────────
+# 🎯 **ตัวตรวจเชิงกลของ HALF-APPLICATION** — จนถึง 2026-08-10 คลาสนี้หาเจอได้ทางเดียวคือ
+#    **มีคนบังเอิญสังเกต** (perm=/trust= อธิบายครบในครึ่งบน หายเกลี้ยงจากครึ่งที่ agent เดิน ·
+#    เลข `3` hardcode ห่างจากย่อหน้าที่ห้าม hardcode แปดบรรทัด)
+#
+# 🔑 **หลักการ (atlas generalize จาก self-check ที่ผมยิงมือ แล้วขอเอาไปใช้เอง)**:
+#    นับ token **ทั้ง artifact** และ **ในภูมิภาคที่บังคับ** แล้ว **บังคับให้เท่ากัน**
+#    ⇒ นับในภูมิภาคอย่างเดียว พิสูจน์แค่ว่า **มีอยู่**
+#    ⇒ **ความเท่ากันเท่านั้นที่พิสูจน์ว่า *ไม่มีที่อื่น*** — และ "อยู่ที่อื่น" คือทั้งหมดของโรคนี้
+#
+# ⚠️ ตัวนี้เกิดเพราะ **ตัวตรวจของโรคนี้ ก็เป็น half-application เหมือนกัน**: ผมยิงเป็น
+#    bash one-liner สดในเทิร์นเดียว atlas ชมว่าเป็น invariant แล้วบอกว่าจะเอาไปใช้ —
+#    ซึ่งแปลว่ามันอยู่ในความจำของสองคน ไม่ได้อยู่ในเครื่องมือที่ใครก็รันได้
+#
+# ⚠️ `grep -cF` นับ **บรรทัดที่มี** ไม่ใช่จำนวนครั้ง — ทั้ง whole และ region ใช้หน่วยเดียวกัน
+#    จึงเทียบกันได้ · **ห้ามเทียบข้ามหน่วย** (บทเรียน delta ที่ถอนไป 2026-08-10)
+placement() {
+  local file="${1:?usage: placement <file> <region-anchor-regex> <token>...}"
+  local anchor="${2:?ต้องระบุ regex ของบรรทัดที่เริ่มภูมิภาคบังคับ}"
+  shift 2
+  [ $# -ge 1 ] || { echo "ต้องระบุอย่างน้อย 1 token"; return 2; }
+  [ -f "$file" ] || { echo "placement: ไม่มีไฟล์ $file"; return 2; }
+  local ln total
+  ln=$(grep -nE -- "$anchor" "$file" 2>/dev/null | head -1 | cut -d: -f1)
+  total=$(wc -l < "$file")
+  if [ -z "$ln" ]; then
+    echo "placement: หา anchor ไม่เจอ — /$anchor/ ⇒ **ตอบไม่ได้ ไม่ใช่ผ่าน**"
+    echo "overall: UNVERIFIED"; return 2
+  fi
+  printf 'placement.file: %s lines=%s
+' "$file" "$total"
+  printf 'placement.region: from=%s (/%s/) to=EOF  ⇒ %s บรรทัด · นอกภูมิภาค %s บรรทัด
+'     "$ln" "$anchor" "$((total-ln+1))" "$((ln-1))"
+  local bad=0 t whole region
+  for t in "$@"; do
+    whole=$(grep -cF -- "$t" "$file")
+    region=$(sed -n "${ln},\$p" "$file" | grep -cF -- "$t")
+    if [ "$region" -eq 0 ]; then
+      printf '  ❌ ABSENT      %-46s whole=%s region=0 ⇒ ไม่อยู่ในภูมิภาคที่บังคับเลย
+' "$t" "$whole"
+      bad=1
+    elif [ "$whole" -ne "$region" ]; then
+      printf '  ⚠️ LEAKED      %-46s whole=%s region=%s ⇒ **%s บรรทัดอยู่นอกภูมิภาค**
+'         "$t" "$whole" "$region" "$((whole-region))"
+      printf '                 นอกภูมิภาคที่บรรทัด: %s
+'         "$(head -n $((ln-1)) "$file" | grep -nF -- "$t" | cut -d: -f1 | tr '
+' ',' | sed 's/,$//')"
+      bad=1
+    else
+      printf '  ✅ PLACED      %-46s whole=%s region=%s (เท่ากัน)
+' "$t" "$whole" "$region"
+    fi
+  done
+  echo 'placement.scope: out-of-scope=ความหมาย,ลำดับ,ว่าผู้บริโภคอ่านจริงไหม'
+  echo '  ⚠️ ตัวนี้ตอบแค่ว่า *ข้อความอยู่ในภูมิภาคที่บังคับและไม่มีที่อื่น*'
+  echo '     มันไม่ได้ตอบว่าภูมิภาคนั้นคือที่ที่ผู้บริโภคเดินผ่านจริง — นั่นคือ Gate 5.3 ที่คนต้องตอบเอง'
+  [ "$bad" -eq 0 ] && { echo 'overall: PLACED'; return 0; }
+  echo 'overall: MISPLACED'; return 1
+}
+
 # ── permstall <session> ─────────────────────────────────────────────────────
 # 🔑 **ชั้นที่บันไดหลักฐานของเราไม่มี: ความพร้อมมันหมดอายุ**
 #
@@ -2976,6 +3036,28 @@ PY
   else
     echo "   – ข้าม engine_pid: ไม่ได้รันใน tmux (ไม่ใช่ผ่าน ไม่ใช่ตก)"
   fi
+  # 🎯 placement: ตัวตรวจเชิงกลของ HALF-APPLICATION — ต้องตกได้ **สามทิศ**
+  #    LEAKED (มีนอกภูมิภาค) · ABSENT (ไม่มีในภูมิภาค) · UNVERIFIED (หา anchor ไม่เจอ)
+  #    ถ้าตกไม่ได้สักทิศ มันคือป้ายประกาศ ไม่ใช่ด่าน
+  local _pf; _pf=$(mktemp)
+  printf 'prose half\nRULE-X here in prose\n## REGION\nRULE-X here in region\nRULE-Y only here\n' > "$_pf"
+  case "$(placement "$_pf" '^## REGION' 'RULE-X' 2>&1)" in
+    *LEAKED*MISPLACED*|*MISPLACED*) echo "   ✓ placement: token ที่อยู่นอกภูมิภาคด้วย → LEAKED/MISPLACED" ;;
+    *) echo "   ✗ placement: มีนอกภูมิภาคแต่ไม่จับ"; fail=1 ;;
+  esac
+  case "$(placement "$_pf" '^## REGION' 'RULE-Y' 2>&1)" in
+    *"overall: PLACED"*) echo "   ✓ placement: token ที่อยู่เฉพาะในภูมิภาค → PLACED (ไม่ false alarm)" ;;
+    *) echo "   ✗ placement: token ที่ถูกต้องถูกรายงานว่าผิด"; fail=1 ;;
+  esac
+  case "$(placement "$_pf" '^## REGION' 'RULE-Z' 2>&1)" in
+    *ABSENT*) echo "   ✓ placement: token ที่ไม่มีเลย → ABSENT" ;;
+    *) echo "   ✗ placement: ของที่ไม่มีถูกนับว่าผ่าน"; fail=1 ;;
+  esac
+  case "$(placement "$_pf" '^## NOPE' 'RULE-X' 2>&1)" in
+    *UNVERIFIED*) echo "   ✓ placement: หา anchor ไม่เจอ → UNVERIFIED (ตอบไม่ได้ ≠ ผ่าน)" ;;
+    *) echo "   ✗ placement: anchor หาย แล้วตัดสินว่าผ่าน"; fail=1 ;;
+  esac
+  rm -f "$_pf"
   # engine ที่ไม่รู้จัก ⇒ unknown ไม่ใช่ ok (กฎเดิมของไฟล์นี้: ตอบไม่ได้ ≠ ผ่าน)
   case "$(_vc_permmode 'some-future-cli --run')" in
     unknown\|*) echo "   ✓ engine ที่ไม่รู้จัก → unknown (ตอบไม่ได้ ≠ ผ่าน)" ;;
@@ -3030,7 +3112,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
+VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
@@ -3050,6 +3132,7 @@ verify_check_usage() {
   #      ในเซสชันนี้แล้วปล่อยผ่าน** เพราะมันอยู่ท้าย output ที่ผมกำลังหาอย่างอื่นอยู่
   #    ⇒ ใช้ single-quote สำหรับบรรทัดที่มี backtick เสมอ
   echo '  mawverb <team-subcommand>  ← `maw team <พิมพ์ผิด>` คืน rc=0 + usage ลง stdout'
+  echo "  placement <file> <region-anchor-regex> <token>...  ← กฎอยู่ในภูมิภาคที่บังคับ และไม่มีที่อื่น"
   echo "  selftest"
 }
 
