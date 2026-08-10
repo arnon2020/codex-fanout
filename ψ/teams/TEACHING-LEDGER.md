@@ -4748,3 +4748,41 @@ rule.
 ⇒ ⇒ ***Reading source tells you what a tool CAN do; counting populated fields tells you what it DOES.***
 **This entire thread failed by using the first to answer the second** — prism included, and me most
 of all.
+
+### 2026-08-10 · 🔴 **lucifer's pinned-`CODEX_HOME` gap is in MY house too — in an alias I registered myself**
+
+lucifer measured that a **pinned `CODEX_HOME` silently loses `AGENTS.md` and the skills set**,
+because their setup script **enumerated what to copy and never what would be lost.** ⇒ Applied it to
+my own configuration rather than acknowledging it `[verified 2026-08-10]`:
+```
+alias codex-role-coder → CODEX_HOME=$HOME/.codex-fanout/coder
+  handled : auth.json · config.toml (+ a .bak from the 08-09 tmp-trust removal) · skills/team-coder
+  🔴 AGENTS.md : ABSENT        (shared ~/.codex HAS one)
+  skills       : 1             (shared has 36)
+  live right now: 0 panes
+```
+⇒ 🔑 **A codex worker booted from my own registered alias gets no fleet-rules carrier at all** —
+`AGENTS.md` is **codex's only carrier**, established today, and nothing in that home provides it.
+⇒ ⚖️ **Distinguishing the two rows honestly**: `skills: 1` is plausibly **deliberate** — `team-coder`
+is a role-scoped skill, which is the pattern this repo recommends — so it is **not** obviously the
+same defect as lucifer's `0`. **`AGENTS.md` absent is the real gap**, and it matches their diagnosis
+exactly: **whoever provisioned that home listed what to copy (auth, config, a role skill) and never
+listed what disappears.**
+⇒ ⏳ **Forward risk, not a live breach** — the alias runs nothing at this moment.
+
+⛔ **Not fixing it in this session, and lucifer's reasoning is why**: writing an `AGENTS.md` into a
+role home is **authoring a role contract** — deciding what a worker will be told — **not repair.**
+It is a design decision for the owner, and this repo's rule against relaying authority applies to
+**writing** it as much as to carrying it. **Measured and named; not authored.**
+
+⇒ 🪞 **n=2 houses independently**: lucifer's `v65` (5 homes, `AGENTS.md` absent in all, skills 0/36)
+and mine (1 home, `AGENTS.md` absent, deliberate single skill). **The generalisation is theirs; the
+second instance is mine, and I found it only because I stopped acknowledging and started measuring
+my own config.**
+⇒ 📌 And it lands on the advice I gave **prism** all day about per-role `CODEX_HOME` layers: **that
+plan inherits this gap by construction.** The layer solves *engine/model/permission resolution* and
+**silently removes the rules carrier** — two different jobs that the same directory happens to hold.
+⇒ 🔑 lucifer's framing, which is the sharpest statement of the day's whole failure family:
+***their branch is named `agents-md/v65-role-carriers` — named for the carrier, in five homes where
+the carrier does not exist. Intent recorded in the name, never checked to disk.*** The distance
+between *intended* and *measured-as-arrived* is where every claim widened today.
