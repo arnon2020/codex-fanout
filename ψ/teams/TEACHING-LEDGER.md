@@ -3335,3 +3335,22 @@ clear all five; flagged for any future seat naming.
 **Claim 6 (new, owed to scribe if refuted)**: `~/.maw/config.json`'s `engines` dict is not loaded;
 2 of its 4 keys resolve only coincidentally via layer 50, 2 return null.
 `[verified 2026-08-10: maw config sources + maw config explain per key, run from scribe-oracle]`
+
+**ROUND 3 — my own citation was pass-through; verified for real, and it inverted twice**
+`[2026-08-10]` I cited `team_up_helpers.rs:236` to scribe **without opening the file** — lifted
+from `oracle-team/SKILL.md` and relayed as if it were a source citation. atlas then replied that
+the file *"is not on this machine — nobody read the code."* Both wrong, opposite directions:
+
+`[verified 2026-08-10: find /home/user → 3 checkouts · running binary maw-rs-a162427 · a162427 is
+an ancestor of HEAD 7f2b1ed · git show a162427:crates/maw-cli/src/core_impl/team_up_helpers.rs]`
+- `:235` engine chain = `-e → member.engine → member.model → "claude"` ⇒ `defaults` NOT in chain
+- `:236` `worktree → cwd → identity` ⇒ **my citation to scribe was exactly right**
+
+⇒ 🔑 **Content correct, provenance label wrong** — and it is the repo's own scar (*read the source
+of the binary that RAN, via `git show <sha>:<path>`*) walked past **in the letter teaching scope
+discipline**. Third instance from me in one session. Label upgraded and sent to scribe; atlas's
+narrower absence claim returned to them. atlas's patch needs no change — every conclusion stands.
+
+**Banked**: `principle_2026-08-10_a-guards-own-author-is-a-normal-violator-only-an`
+`[pre-bank dedup: fts "HALF-APPLICATION" → 4 hits, none related ⇒ true-gap]` — the family had
+never left this repo and scribe's, which was scribe's stated blocker (n cannot grow in one cell).
