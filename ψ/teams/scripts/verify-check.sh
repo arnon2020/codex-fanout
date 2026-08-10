@@ -2467,6 +2467,32 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
           #    ⇒ และ `_lib.sh` ที่มีผลตอนนั้น (`9246b7f`) **ไม่มีคำว่า AGENTS.md เลย** ⇒ **ตัวเขียนไม่ทราบ**
           #    ⇒ 🔑 พูดได้แค่ *"เส้นทางของเขาไม่ทำ"* **ไม่ใช่ *"ไม่มีอะไรทำ"*** ⇒ มันกลับมาได้
           #    ⇒ guard นี้ตกได้จริงโดยไม่ต้องระบุตัวคนเขียน — ซึ่งคือเหตุผลที่มันถูกกว่าการรอหากลไก
+          # 🔴 2026-08-10 [lucifer หักล้างการอนุมานของผม — และเขาถูก]
+          #    ผมใช้ `ATTEST role=` (ธรรมเนียมของ **บ้าน prism**) เป็น **existence test สากล**
+          #    แล้วสรุปว่า `0 ⇒ ไม่มีไฟล์อยู่ก่อน ⇒ maw CREATE ⇒ ไม่มีการเขียนซ้อน`
+          #    ⇒ **เท็จ** · ในบ้าน lucifer `0` แปลว่า **brief เขาไม่ได้ใช้ convention นี้**
+          #    ⇒ marker ตัวเดียวตอบ 0 ให้ทั้ง *"maw สร้าง"* และ *"บ้านนั้นเขียนเองคนละฟอร์แมต"*
+          #      — **สองสถานะที่ตรงข้ามกัน**
+          #    `[verified 2026-08-10 ผมวัดเอง: header ของ maw อยู่บรรทัด 33–61 ไม่ใช่บรรทัด 1
+          #     ⇒ มีเนื้อของ lucifer อยู่เหนือมันทั้ง 8 ไฟล์ · maw ต่อท้ายจริง **753 บรรทัด**
+          #     (5 ไฟล์ × 3 · **3 ไฟล์ × 246 = CLAUDE.md ทั้งก้อน**)]`
+          #    🪞 meta ที่ lucifer ชี้และแรงที่สุด: **atlas กับผมได้ข้อสรุปผิดอันเดียวกันโดยอิสระ
+          #      เพราะอ่านจาก detector ตัวเดียวกัน** ⇒ *"เห็นตรงกันสองแหล่ง" ไม่ยกระดับความน่าเชื่อ
+          #      ถ้าทั้งสองอ่านจากเครื่องมือเดียวกัน — มันคือ single point of failure ที่ถูกนับสองครั้ง*
+          #    ⇒ ทางแก้เชิงโครงสร้าง: ใช้ **สตริงของ maw เอง** ซึ่งไม่ขึ้นกับบ้านไหนเลย
+          local mawhdr; mawhdr=$(grep -n '## maw codex teammate prompt' "$hit" 2>/dev/null | head -1 | cut -d: -f1)
+          if [ -n "$mawhdr" ]; then
+            local above=$((mawhdr-1)) tl; tl=$(wc -l < "$hit")
+            if [ "$above" -gt 0 ]; then
+              printf '     🔴 rules-file: %-42s **maw ต่อท้ายไฟล์ที่มีอยู่แล้ว** — %s บรรทัดเหนือหัวข้อของ maw · ต่อท้าย %s บรรทัด\n' "$mp" "$above" "$((tl-mawhdr+1))"
+              printf '        ⇒ seat อ่านสองเอกสารต่อกัน · **ล้าง/archive ~/.maw-teams/<team>/ ก่อน recreate**\n'
+              machine="${machine}enginecheck.rules-file: path=$mp maw-append=yes lines-above=$above appended=$((tl-mawhdr+1))
+"
+            else
+              machine="${machine}enginecheck.rules-file: path=$mp maw-append=created lines-above=0
+"
+            fi
+          fi
           local nat; nat=$(grep -c 'ATTEST role=' "$hit" 2>/dev/null)
           if [ "${nat:-0}" -gt 1 ]; then
             printf '     🔴 rules-file: %-42s %s **ATTEST ปรากฏ %s ครั้ง ⇒ brief ถูกเขียนซ้อน**\n' "$mp" "$hit" "$nat"
