@@ -2003,8 +2003,14 @@ permstall() {
     #    ⚠️ **คง AND ไว้** (banner + แถวตัวเลือก) — มันคือกันชน false-positive จาก 2026-08-09
     #      (worker ที่เขียนคำว่า `อนุญาต` ในผลงานตัวเอง ถูกรายงาน BLOCKED) · แก้เฉพาะ**คลังคำ**
     qb=$(printf '%s' "$tail15" | grep -m1 -E \
-      'Do you want to (proceed|create|make|edit|run)|Would you like to run the following command|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|ขออนุญาต' 2>/dev/null)
-    qo=$(printf '%s' "$tail15" | grep -m1 -E '^[[:space:]]*[›>❯[:space:]]*[0-9]\.[[:space:]]' 2>/dev/null)
+      'Do you want to (proceed|create|make|edit|run)|Would you like to run the following command|Permission required|requires approval|Allow .* to |Grant .* permission|auto-approve\?|Approve this|ขออนุญาต' 2>/dev/null)
+    # 🩹 2026-08-10 [prism วัด opencode 1.18.15 · zai/glm-5.2 · ผมยืนยันซ้ำบนเพนจริงของตัวเอง]
+    #    **opencode ไม่มีแถวตัวเลือกเป็นตัวเลขเลย** — มันเป็น `Allow once / Allow always / Reject`
+    #    ⇒ ต่อให้เติม banner อย่างเดียว AND ก็ไม่มีวันครบ ⇒ **ต้องเติมทั้งสองฝั่ง**
+    #    ⇒ สามตระกูลไม่แชร์ token กันสักตัว: claude `Do you want to…`+Yes/No ·
+    #      codex `Would you like to run…`+`1. Yes, continue` · opencode `△ Permission required`+`Allow once`
+    qo=$(printf '%s' "$tail15" | grep -m1 -E \
+      '^[[:space:]]*[›>❯[:space:]]*[0-9]\.[[:space:]]|Allow once|Allow always' 2>/dev/null)
     if [ -n "$qb" ] && [ -n "$qo" ]; then q="$qb"; kind="permission"; fi
     if [ -z "$q" ]; then
       # 🔒 สองเงื่อนไข ไม่ใช่เงื่อนไขเดียว — บทเรียนจากด่าน `relay` เมื่อชั่วโมงก่อน:
