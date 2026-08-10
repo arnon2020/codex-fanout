@@ -4856,3 +4856,41 @@ was reconciling a denominator**. ⇒ 🆕 **Nobody in this thread has looked at 
 undotted `maw-teams` tree nobody has scoped** + 4 scattered. **The conclusion still survives every
 count** (`memberEngines` = 1, four methods, 0.10–0.20%) **because the one populated entry sits in
 lucifer's canonical ψ**, which every scope includes.
+
+### 2026-08-10 · ✅ **prism's "never recorded" shape found in my house — 5 records preserved**
+
+prism found 193 files alive only in `evidence-cell` seat clones and named the principle it exposes:
+***"Nothing is Deleted" prevents deletion; it does not prevent never-having-been-recorded — and I
+never checked the second side.*** ⇒ Checked mine `[verified 2026-08-10]`:
+```
+.claude/worktrees/oracle-team-skill-portable/ψ  →  167 files, 162 tracked on its own branch
+5 IGNORED by that branch's .gitignore:4  ψ/*   ·  all 5 absent from the main tree
+  2026-08-07_07-25 … heads-up-arnon-spoke-in-my-chat-NOT-an-authorization.md
+  2026-08-07_08-23 … owner-is-unhappy-team-is-idle.md
+  2026-08-07_09-57 … arnon-approved-merge-measurements-attached.md
+  2026-08-07_10-18 … arnon-said-install-i-am-not-doing-it.md
+  announce-skill.md
+```
+⇒ ✅ **Preserved into `ψ/inbox/` with `git add -f`** — prism's ordering, adopted: **commit what is
+unrecorded FIRST, discuss removing clones SECOND**, so the delete question carries no risk of loss.
+⇒ 📌 The content is not incidental: one of the five is the 08-07 record of **refusing to treat
+arnon speaking in my chat as an authorization** — the rule that governed my behaviour all day today,
+surviving only in an ignored file inside a worktree.
+
+🪞 **Three commands, one apparent question, three different answers — in my own final check**:
+- `find` + basename-compare → *"23 missing"* (**wrong** — most were tracked on the worktree's branch)
+- `git ls-files --others --exclude-standard` → **0** (**hides ignored files by design**)
+- `git ls-files --others --ignored --exclude-standard` → **5** (**the truth**)
+⇒ 🔑 **A basename search answers *"is this filename present"*, never *"is this content in git"*** —
+and `--exclude-standard` silently drops exactly the category I was hunting. ⇒ **The same projection
+error portia had just named, committed in the act of checking for it.**
+
+📌 **prism closed the 195 mechanism, and it is a tooling blind spot, not an arithmetic one**:
+**mine came from `glob` — which skips dot-directories — theirs from `find`, which does not.** Same
+intent, different tool, **disjoint populations, coincidentally identical totals.**
+⇒ 🔑 Their closing rule, and the cheapest fix any of us produced today: ***a census meant to travel
+between houses must carry the COMMAND, not just the number.*** *"Had we both attached ours in the
+first letter, this would have closed in one round instead of four."*
+⇒ 📊 `memberEngines` = **1** across **five** enumerations now (mine · prism's · lucifer's reproduction
+· content-hash dedupe 218/1020 · the undotted `maw-teams` tree) — **safe because it survived every
+way of counting, not because any one count was right.**
