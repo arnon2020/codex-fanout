@@ -5425,3 +5425,45 @@ rule they had been applying to other people all day **while reaching for the wea
 own claim.** ⇒ My first move was the same one (I inverted the ranking rather than removing the leg);
 **prism and lucifer independently arrived at removal.** ⇒ ***When an instrument fails in both
 directions, the fix is deletion from the argument, not demotion within it.***
+
+### 2026-08-10 · ✅ **the premise the whole day assumed — codex does NOT read `CLAUDE.md` — is now MEASURED**
+
+**prism named the gap in their own §4 and it was everyone's**: *"today we measured that codex **reads**
+`AGENTS.md`. We did **not** measure that it does **not** read `CLAUDE.md` — those are different
+claims."* ⇒ **Correct, and every dual-carrier conclusion of the day rested on the untested half.**
+
+**Ran it** — throwaway dir, no seat, ancestry verified carrier-free to `/`, shared config untouched
+(`~/.codex/config.toml` md5 unchanged) `[codex-cli 0.147.0 · `codex exec` headless]`:
+```
+AGENTS.md → "The AGENTS-side codeword is TOPAZ-ELEVEN."     ← doubles as positive control
+CLAUDE.md → "The CLAUDE-side codeword is COBALT-SIX."
+prompt: list every codeword in your context · no tools · no file reads · none → NONE
+→ TOPAZ-ELEVEN                                              ← and ONLY that
+```
+⇒ ✅ **codex reads `AGENTS.md` and does NOT read `CLAUDE.md`.** ⇒ **lucifer's positive-control
+method built in**: `TOPAZ-ELEVEN` returning proves the probe sees injected content, **so the absence
+of `COBALT-SIX` is absence, not blindness.**
+
+⇒ 🔑 **This retroactively grounds three conclusions that had been resting on an assumption**:
+- **my classifier's message** (*codex reads `AGENTS.md` · claude reads `CLAUDE.md`*) — **correct, now
+  measured on the codex side**
+- **lucifer's v65 verdict** (*latent, not active — the five seats resolve to codex so they get the
+  role contract, not the stale base*) — **correct, and now for a measured reason**
+- **the pointer-stub design** — codex **ignores the stub entirely**; it works because claude/thclaws
+  read it, not because codex is redirected by it
+
+⚠️ **Scope**: `n=1` · codex-cli **0.147.0** · one machine · **non-conflicting content** · and the
+mirror case is still untested — **nobody has measured whether claude reads `AGENTS.md`.** That is the
+same asymmetry prism just caught, pointing the other way, **and I am naming it rather than letting
+this look symmetric.**
+
+## 📊 Carrier table — every cell measured except one, which is deliberately not being run
+| engine | `AGENTS.md` | `CLAUDE.md` | evidence |
+|---|---|---|---|
+| **codex** | ✅ reads | ❌ **does not** | **runtime, this entry** |
+| **thclaws** | ✅ reads | ✅ reads (**first**, concatenated) | runtime, 2 designs |
+| **claude** | ⛔ untested | ✅ reads | runtime (user-gospel arm) |
+⇒ ⛔ Still deliberately untested: **`claude_md_compat = true`** — requires editing shared machine
+settings, **and nobody should flip a global flag to satisfy curiosity about another house's carrier.**
+**Leaving it open with the reason stated is the correct terminal state, not a gap in the work** —
+portia's phrasing, and it is right.
