@@ -882,7 +882,10 @@ print(v.strip())
 # 🏷️ ajfon 2026-08-06 (รอบ 4): สามข้อนี้เครื่องมือนี้วัดไม่ได้ไม่ว่ารันกี่ครั้ง ⇒ มันคือ
 #    **คำประกาศขอบเขต** ไม่ใช่ **ผลการวัดรอบนี้** ⇒ ต้องอยู่คนละ namespace กับสิ่งที่ผันแปร
 #    ไม่งั้นกฎที่ผูกกับ "มี UNVERIFIED ไหม" จะเป็นจริงตลอดกาลและแยกแยะอะไรไม่ได้
-VC_SCOPE_LINE='enginecheck.scope: out-of-scope=model-served,prompt-delivery,account-quota'
+# 🩹 2026-08-10 — `prompt-delivery` ออกจาก out-of-scope **บางส่วน**: ตอนนี้เราตอบได้ว่า
+#    *maw-rs ไม่มี carrier* (จาก source) แต่ **ยังไม่ได้ตรวจว่า seat นี้ได้รับกฎจริงไหม**
+#    ⇒ แยกสองคำถามให้ชัด ไม่งั้นบรรทัด scope จะขัดกับเช็คที่เพิ่งเพิ่มเข้ามาเอง
+VC_SCOPE_LINE='enginecheck.scope: out-of-scope=model-served,prompt-delivery-empirical,rules-file-on-seat-disk,account-quota'
 
 # ── enginelist [dir] ────────────────────────────────────────────────────────
 # "มี alias อะไรให้ใช้บ้างจากตรงนี้" — คำถามแรกของคนที่เข้ามาใน fleet ที่มีอยู่แล้ว
@@ -2397,6 +2400,33 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
   #    ต่อสมาชิกที่ยึดคอลัมน์ 0 ⇒ เขาต้อง text-scrape ซึ่งคือความเปราะที่ anchored grep มีไว้เลี่ยง
   #    ⇒ พ่น machine block **ควบ** prose ไม่ใช่แทน (prose เป็นครึ่งที่ดีกว่าสำหรับคน — atlas)
   _vc_tier_summary "$machine"
+
+  # 🔴 2026-08-10 — **prompt-delivery**: charter มี `prompt:` แต่ไม่มีเวิร์บไหนส่งมันเข้า pane
+  #    [portia วัด · atlas ทำซ้ำจาก artifact · ผมยืนยันที่ source ของไบนารีที่รันจริง]
+  #    clean-room ของ portia (worktree ไม่มี CLAUDE.md เหนือขึ้นไปเลย): canary ใน scrollback
+  #    8,000 บรรทัดหลังเทิร์นจบ = **0** · refusal string = 0 · ACK/signature/WAIT = 0
+  #    ⇒ v1/v2 เชื่อฟังเพราะ **`CLAUDE.md` ของเขาถูก checkout อยู่ที่ราก worktree** เท่านั้น
+  #      เอาไฟล์นั้นออก กฎหายหมด **ขณะที่ charter เหมือนเดิมทุกไบต์**
+  #    `[verified 2026-08-10 · git show a162427: — ไบนารีที่รันอยู่]`
+  #      • `team_up_apply.rs` — คำว่า `prompt` **ปรากฏ 0 ครั้งทั้งไฟล์**
+  #        argv = `wake <id> --no-attach --session <s> -e <engine> [--repo-path]` เท่านั้น
+  #      • `team_spawn.rs` อ่าน `prompt:` จริง **แต่เขียนลงไฟล์** `<vault>/<role>-spawn-prompt.md`
+  #        แล้ว `team_t5_controlled_maw_invocation` **ไม่อ้างถึงไฟล์นั้นเลย**
+  #    ⇒ 🔑 **ทั้งสองเวิร์บไม่ส่ง · `team spawn` แค่ *เขียนไฟล์ไว้*** — คือ scar ของผมเป๊ะ ๆ:
+  #      *"durable แปลว่าประวัติของผมไม่ลืม ไม่ได้แปลว่าเขามีไฟล์"* · seat ไม่เคยถูกบอกว่ามีไฟล์นี้
+  #    ⇒ ⚠️ gate ทั้งสี่ (enginecheck/bootverify/permstall/trust) **เขียวพร้อมกันได้** บน seat
+  #      ที่ไม่ได้รับกฎสักข้อ — ทุกด่านวัดว่า *โปรเซสถูกตัวไหม* ไม่มีด่านไหนวัดว่า *กฎถึงไหม*
+  local pcount=0
+  [ -r "$charter" ] && pcount=$(grep -cE '^[[:space:]]*prompt:[[:space:]]*\|?[[:space:]]*$' "$charter" 2>/dev/null)
+  if [ "${pcount:-0}" -gt 0 ]; then
+    printf '  🔴 prompt-delivery: charter ประกาศ prompt: %s บล็อก — **maw-rs ไม่ส่งเข้า pane ทั้ง `team up` และ `team spawn`**\n' "$pcount"
+    printf '     ⇒ กฎในบล็อกนั้นถึง seat **ก็ต่อเมื่อ** มีไฟล์กฎ (CLAUDE.md/AGENTS.md) อยู่บนดิสก์ที่ seat เดินถึงเอง\n'
+    printf '     ⇒ ตรวจก่อน spawn: ไล่ ancestor ของ cwd/worktree ของสมาชิก ว่ามี CLAUDE.md หรือ AGENTS.md จริงไหม\n'
+    printf '     [verified 2026-08-10 · maw-rs a162427 · team_up_apply.rs ไม่มีคำว่า prompt · team_spawn.rs เขียนไฟล์แต่ไม่ส่ง]\n'
+    printf '     [ขอบเขต: **maw-rs เท่านั้น** · ไม่ครอบ maw-js · ไม่ครอบ engine ที่อ่านไฟล์เองได้]\n'
+    machine="${machine}enginecheck.prompt-delivery: blocks=$pcount carrier=none verb=up,spawn binary=maw-rs-a162427
+"
+  fi
   printf '%s\n' "$machine"
   # รวมสิ่งที่ **ผันแปรจริง** ต่อรอบ — ว่างเมื่อไม่มี ⇒ กฎของ atlas เป็นเท็จได้จริง
   local unv=""
