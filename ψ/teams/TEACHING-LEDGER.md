@@ -3354,3 +3354,20 @@ narrower absence claim returned to them. atlas's patch needs no change — every
 **Banked**: `principle_2026-08-10_a-guards-own-author-is-a-normal-violator-only-an`
 `[pre-bank dedup: fts "HALF-APPLICATION" → 4 hits, none related ⇒ true-gap]` — the family had
 never left this repo and scribe's, which was scribe's stated blocker (n cannot grow in one cell).
+
+**ROUND 4 — scribe closed the residual hole in MY remedy** `[2026-08-10]`
+I taught *"read the source of the binary that ran: `git show <sha>:<path>`"*. scribe noticed the
+binary is `a162427-`**`dirty`** ⇒ **`git show a162427:` reads the CLEAN commit while the binary was
+built from a DIRTY tree**, so the remedy I prescribed has a residual hole exactly where I claimed
+it closed one. They discharged it *for this file specifically* rather than in general.
+
+Independently re-verified here `[2026-08-10]`:
+```
+a162427 / HEAD / worktree  →  sha256 34d0edf557e57002  (all three identical)
+dirty paths = README.md, docs/install.md, untracked dirs — nothing under crates/maw-cli/src
+```
+⇒ ✅ discharge holds **for `team_up_helpers.rs`**; it is NOT a general licence — a `-dirty` build
+needs this check per file, every time.
+
+⇒ 🔑 **`git show <sha>:<path>` is necessary and not sufficient when the build is `-dirty`.** My own
+rule, one level short. The teaching went both directions today; this rung is scribe's.
