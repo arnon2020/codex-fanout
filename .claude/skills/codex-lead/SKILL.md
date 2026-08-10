@@ -1,6 +1,6 @@
 ---
 name: codex-lead
-description: "Spawn + lead a codex coder team end-to-end — author/upgrade the charter, maw team up (with dry-run), heal the fresh-worktree omx boot pitfall, dispatch via maw hey with done-criteria, run the 15-20min peek loop, and ride the maw zai token-rotation pool. Use when the user says 'set up a codex team', 'spawn coders', 'add codex N', 'lead the team', 'dispatch to coders', or wants the lead/dispatch/peek workflow (not just spawning — see ting's /codex-fleet for spawn/arrange/heal mechanics)."
+description: "LEAD an already-standing codex coder team — author/upgrade the charter, dispatch via maw hey with done-criteria, run the 15-20min peek loop, heal the fresh-worktree omx boot pitfall, and ride the maw zai token-rotation pool. Use when the user says 'add codex N', 'lead the team', 'dispatch to coders', or wants the lead/dispatch/peek workflow. ⛔ Does NOT own spawning: 'set up a codex team' / 'spawn coders' / 'bring up the team' belong to `oracle-team`, which carries Gate 0 (engine · model · permission · trust) — this skill only points at it. See ting's /codex-fleet for spawn/arrange/heal mechanics."
 argument-hint: "up [N] | dispatch <task> | peek | scale N | down"
 ---
 
@@ -25,7 +25,11 @@ own-the-loop + report-to-lead contract. Copy a known-good charter (e.g. `volt-co
 
 <!-- advisor-reviewed 2026-08-10 — SCOPED to this §2 gate line and the two verify commands
      added to §3. Nothing else in this file was reviewed. This marker does NOT inherit the
-     oracle-team/SKILL.md marker of the same date; that one was scoped to that file. -->
+     oracle-team/SKILL.md marker of the same date; that one was scoped to that file.
+     ⚠️ The frontmatter `description` was ALSO edited on 2026-08-10, AFTER that review and
+     NOT covered by it — the spawn triggers were handed to `oracle-team`. That edit applies a
+     decision arnon already made on 2026-08-08 (oracle-team is PRIMARY for team lifecycle,
+     recorded in this repo's CLAUDE.md); it is not a new judgement, but it is unreviewed. -->
 
 > 🔴 **Gate 0 first — this section shipped without it and that was a real defect.**
 > `[found 2026-08-10 by auditing my own artifacts with Gate 5.3's method. Measured before
@@ -50,10 +54,12 @@ own-the-loop + report-to-lead contract. Copy a known-good charter (e.g. `volt-co
 > `[Gate 5.4 checked: `codex-lead` is project-local (`.claude/skills/`) and `oracle-team` is
 > installed globally, so the pointer resolves wherever this skill can load at all.]`
 >
-> ⚠️ **This skill and `oracle-team` both claim the triggers "set up a codex team" and
-> "spawn coders"** `[verified 2026-08-10: grep -cF, 1 each, both files]`. Two skills on one
-> trigger where only one carried the gate is worse than either alone — that is why this
-> instance mattered. Unresolved; flagged for the owner.
+> ✅ **Trigger collision RESOLVED the same day.** This skill and `oracle-team` both claimed
+> "set up a codex team" and "spawn coders" `[verified 2026-08-10: grep -cF, 1 each]`. Two
+> skills on one trigger where only one carried the gate is worse than either alone. The
+> frontmatter now hands those phrases to `oracle-team` and says so explicitly; this file keeps
+> lead / dispatch / peek. Applying a decision arnon already made 2026-08-08 — `oracle-team` is
+> PRIMARY for team lifecycle — not a new judgement.
 
 ```bash
 maw team up <team> --dry-run     # preview: live=skip, missing=would wake
@@ -86,8 +92,18 @@ Use maw verbs only — raw `tmux send-keys` is safety-hook blocked.
 | peek shows | heal |
 |---|---|
 | empty shell `❯` | `maw run <sess>:coder-N "OMX_AUTO_UPDATE=0 omx"` |
-| codex update menu (1.Update / 3.Skip…) | `maw send-text <sess>:coder-N "3"` |
+| codex update menu | 🔴 **read the number off THAT screen** — do not use a number from this table |
 | text stuck in composer | `maw send-enter <sess>:coder-N` |
+
+> 🕳️ **The update-menu row used to read `maw send-text "3"`, and that was a live hazard eight
+> lines below a paragraph telling you never to hardcode it.** `[verified 2026-08-08/09]` The
+> menu changes between versions: on codex 0.146.0 Skip was `2`; on 0.146.1 a third option
+> appeared and `3` writes a persistent preference into shared codex state; on 0.147.0 there is
+> **no update dialog at all** and a fresh worktree meets the **trust** dialog instead, whose
+> highlighted default is `1. Yes, continue`. So the index that is safe on one version grants
+> trust unread on another — and on 2026-08-08 a pane that took `1` ran `npm install -g` and
+> replaced the codex binary for **every agent on the machine**.
+> ⇒ Match the banner, then read the number off the pane you just matched. Never from a table.
 
 After omx is up, **re-send the contract**: `maw hey <sess>:coder-N "<coder prompt>"`, then peek
 that `Context …% left` dropped below 100% (= ingested). Clean boots show context already used.
