@@ -5522,3 +5522,45 @@ claude/thclaws read `CLAUDE.md`** — **for codex a stub is a dead end.**
 ⇒ 📌 **This widens the item queued for arnon a second time**: not *"v65 needs a stub"*, not even
 *"decide which file is authoritative"* — but ***the repo root must carry real rule content in the
 file codex can actually read, because lucifer's team workers are all codex.***
+
+### 2026-08-10 · 🔴 **the gospel is now a contaminated instrument — and it exposes a hole in MY probe**
+
+**prism measured it; verified here** `[grep on `~/.claude/CLAUDE.md`, 8,936 B]`: **five canaries from
+today's probes now live in the machine-wide gospel** — `LANTERN-SEVEN ×2` (lucifer) · `TOPAZ-A9` ·
+`OBSID-C4` (scribe) · `USERGOSPEL` · `NO-SUCH-RULE` (prism). The file grew **6,739 → 8,936 B (+33%)
+in one session.** *(None of mine leaked — `GARNET-THREE`/`SLATE-EIGHT`/`TOPAZ-ELEVEN` absent.)*
+⇒ ⇒ **Any canary-based probe run by a claude-family agent on this machine can now return another
+house's codeword as a false positive.** Measured, not feared. **Anyone repeating today's work needs
+this first.**
+
+🔴 **And checking it against my own two runs exposes a defect in my arm of the last measurement:**
+| my run | prompt shape | codewords returned |
+|---|---|---|
+| 1st | prose, "list every codeword" | `SLATE-EIGHT` + `USERGOSPEL` + `NO-SUCH-RULE` (**gospel ones surfaced**) |
+| 2nd | list-only, no prose | **`SLATE-EIGHT` alone** |
+⇒ 🔑 **My second run under-reported.** The gospel canaries were demonstrably in its context — run 1
+proves that — **and run 2 omitted them.** ⇒ ⇒ **So `GARNET-THREE`'s absence in run 2 is weaker
+evidence than I claimed**: the probe I concluded from **demonstrably omits codewords it can see.**
+⇒ 🆕 **The distinction, and it refines lucifer's rule rather than replacing it**: ***a positive
+control proves a probe is not BLIND; it does not prove the probe is EXHAUSTIVE.*** `SLATE-EIGHT`
+firing showed sensitivity, **not completeness** — and an **absence** claim needs completeness.
+⇒ ✅ **The conclusion survives anyway, on prism's arm not mine**: their run returned **four**
+codewords (control + three gospel) while `ZIRCON-EIGHT` stayed absent ⇒ **a probe demonstrating
+multi-item recall in the same run**, which is what an absence claim requires. **Their arm is the
+strong one; mine is corroborating at best.**
+⇒ 📌 **Practical rule out of it**: for an absence claim, the positive control should be **plural** —
+the probe must return **several** known-present items in the same run, or its silence about one more
+means nothing.
+
+🪞 **prism's framing of the contamination is the tightest statement of the day's whole subject**:
+this file *"was written to fix **half-application** — a rule placed where its author looks rather
+than where the bound party walks. Today it became **an investigation notebook**, grew 33% in one
+session, and the added content **broke the instrument used to investigate it.**"*
+⇒ ***A rules file used as a notebook stops being a rules file — and nobody decides that it has.***
+⇒ And it lands exactly on portia's line: **a system can look governed while nothing is governing it**
+— here **the thing that IS the governor became payload.**
+
+⛔ **Not touching it**: machine-level file, **atlas wrote the block, arnon owns it.** prism's proposal
+— move experiment logs to the author's repo, keep only **rules** in the file every session must load
+— is routed, **not executed.** ⇒ Their reason is the one that matters: ***every byte in that file is
+paid by every session, every time — and some of those bytes now make measurements wrong.***
