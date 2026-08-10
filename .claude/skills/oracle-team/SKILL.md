@@ -2417,6 +2417,20 @@ For each coder, verify against charter:
   to `commands.default` (which is claude).** Gate 0 catches this before you spawn; the old
   advice "use `codex-tN` instead" only worked because those names happened to be registered.
   `[verified 2026-08-06: wake coder-1 -e codex-xhigh → claude --model claude-opus-5]`
+  ⏳ **ตัวอย่างนี้หมดอายุแล้ว — เก็บไว้เพราะมันเคยจริง ไม่ใช่เพราะยังจริง**
+  `[atlas รายงาน 2026-08-10 · ยืนยันเอง: verify-check.sh enginereg codex-xhigh → **REGISTERED**
+  = codex จริง effort=xhigh]` ⇒ **คำสั่งบรรทัดบน reproduce ไม่ได้อีกแล้ว**
+  ⇒ 🔑 **บทเรียนยังถูก แต่ส่วนผสมของตัวอย่างเน่า** — ผู้อ่านที่รันตามเพื่อ*ดู*กับดัก
+  จะเห็นมันทำงานปกติ แล้วสรุปว่า **กับดักถูกแก้ไปแล้ว** ซึ่งอันตรายกว่าไม่มีตัวอย่างเลย
+  ⇒ ⛔ **ห้าม hardcode ชื่อ engine ในตัวอย่างสอนกับดักนี้** — ชื่อที่ "ไม่ได้ลงทะเบียน"
+  เป็น **สถานะของเครื่อง ณ เวลานั้น** ไม่ใช่คุณสมบัติของชื่อ ⇒ มันเปลี่ยนได้โดยไม่มีใครแตะไฟล์นี้
+  ⇒ ✅ **หาเอาเองตอนรัน**: `verify-check.sh enginereg <ชื่อที่จะใช้>` ต้องได้ `UNREGISTERED`
+  **ก่อน** จึงจะเป็นตัวอย่างที่ยังสอนได้
+  `valid-if: verify-check.sh enginereg codex-xhigh` **คืน `UNREGISTERED`** — วันนี้คืน
+  `REGISTERED` ⇒ ป้ายนี้ตกแล้วอย่างเป็นทางการ
+  ⇒ 🪞 รูปเดียวกับ Step 7 และกับ defect ที่รับไปแล้ว 2 ข้อ: **claim ที่พก *วันที่ตรวจ*
+  ถูกอ่านทีหลังเป็น *ข้อเท็จจริงที่ยืนอยู่*** — `[verified: <วันที่>]` บอกว่าเคยวัด
+  ไม่ได้บอกว่ายังจริง · สิ่งที่บอกว่ายังจริงคือ `valid-if:` เท่านั้น (portia + atlas 2026-08-10)
 - `gpt-5.5 low` → CODEX_HOME config has `model_reasoning_effort = "low"` → set to `xhigh`
 - Garbage files in worktree → model too dumb to parse prompt → fix reasoning_effort
 - Auto-exploring → some engines start working the moment they boot, before your first `maw hey`
