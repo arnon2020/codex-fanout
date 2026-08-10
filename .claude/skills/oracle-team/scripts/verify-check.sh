@@ -607,6 +607,67 @@ teamresidue() {
   return 0
 }
 
+# ── siblings <file> [root...] ───────────────────────────────────────────────
+# ถามก่อน commit: **ไฟล์ที่ผมเพิ่งแก้ มีฝาแฝดบนดิสก์ที่ผมไม่ได้แก้ไหม**
+#
+# 🏷️ ที่มา (2026-08-10 · prism ตั้งชื่อรูปนี้ · สามอินสแตนซ์อิสระในวันเดียว):
+#    prism  — patch `9de4fd9` แก้ watchdog **ไฟล์เดียวจากสองไฟล์ที่เหมือนกัน**
+#             evidence-cell ได้ · prism-cell ไม่ได้ ⇒ **failed 1,093 ครั้ง 4 วัน โดยไม่มีใครรู้**
+#    ผมเอง  — `verify-check.sh` มี **5 ก๊อป** · `oracle-team/SKILL.md` มี **5 ก๊อป** และ finding
+#             ของผมเองไปอยู่ก๊อปที่ deploy แล้วไม่กลับบ้าน (portia จับ)
+#    atlas  — เขียนกฎ end-turn ลง `atlas-oracle/CLAUDE.md` ซึ่งไม่มี agent อื่นอ่าน
+#    ⇒ **สามคน สามเครื่องมือ วันเดียว** — prism: *"ไม่ใช่เรื่องบังเอิญแล้ว"*
+#
+# 🔑 ต่างจาก `copy-drift-check.sh` (holmes) ตรงที่ **อันนั้นเทียบก๊อปที่คุณรู้ว่ามี**
+#    อันนี้ **ไปหาก๊อปที่คุณไม่รู้ว่ามี** — ซึ่งคือทั้งหมดของ defect นี้: ถ้าคุณรู้ว่ามันมี
+#    คุณคงแก้ไปแล้ว · `placement` ถามว่ากฎอยู่ในภูมิภาคที่บังคับไหม · อันนี้ถามว่า
+#    **ภูมิภาคที่บังคับมีกี่ที่**
+#
+# ⚠️ ตกได้ด้วยอะไร: rc=1 เมื่อมีฝาแฝดที่ **เนื้อหาต่าง** (= อาจแก้ไปแค่ตัวเดียว)
+#    rc=0 เมื่อไม่มีฝาแฝด หรือฝาแฝดตรงกันหมด ⇒ ทดสอบสองทิศได้จริงด้วยไฟล์จริงบนเครื่อง
+# ⛔ อ่านอย่างเดียว — บอกว่ามีอะไรต่าง ไม่ตัดสินว่าอันไหนถูก และไม่ copy ให้
+siblings() {
+  local f="${1:?usage: siblings <file> [root...]}"; shift
+  [ -r "$f" ] || { echo "siblings: อ่าน $f ไม่ได้"; return 2; }
+  local base me roots
+  base=$(basename "$f"); me=$(md5sum < "$f" | cut -d' ' -f1)
+  if [ "$#" -gt 0 ]; then roots="$*"; else
+    local reporoot; reporoot=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    roots="$reporoot $HOME/.claude $HOME/.codex $HOME/.config"
+  fi
+  echo "siblings.subject: $f  md5=${me:0:10}  lines=$(wc -l < "$f")"
+  echo "siblings.roots: $roots"
+
+  local hits same=0 diff=0 out=""
+  hits=$(find $roots -type f -name "$base" \
+           -not -path '*/node_modules/*' -not -path '*/.git/*' 2>/dev/null | sort -u)
+  local h hm
+  while IFS= read -r h; do
+    [ -z "$h" ] && continue
+    [ "$(readlink -f "$h")" = "$(readlink -f "$f")" ] && continue
+    hm=$(md5sum < "$h" | cut -d' ' -f1)
+    if [ "$hm" = "$me" ]; then
+      same=$((same+1)); out="$out$(printf 'siblings.same: ✓ %s\n' "$h")"$'\n'
+    else
+      diff=$((diff+1))
+      out="$out$(printf 'siblings.DIFF: 🔴 %s  md5=%s lines=%s\n' "$h" "${hm:0:10}" "$(wc -l < "$h")")"$'\n'
+    fi
+  done <<EOF_SIB
+$hits
+EOF_SIB
+  [ -n "$out" ] && printf '%s' "$out"
+  echo "siblings.count: same=$same differ=$diff"
+  echo "siblings.scope: ค้นตาม **ชื่อไฟล์เท่านั้น** ใน root ที่ลิสต์ · **ไม่เจอ**=ฝาแฝดที่ถูกเปลี่ยนชื่อ, อยู่นอก root, เนื้อหาซ้ำแต่คนละชื่อ"
+  if [ "$diff" -gt 0 ]; then
+    echo "SIBLING-DRIFT $base  ⇒ มีฝาแฝด $diff ตัวที่เนื้อหาต่าง — **แก้ตัวเดียวจากหลายตัวหรือเปล่า**"
+    echo "              ⇒ ไม่ได้แปลว่าต้องซิงก์ทุกตัว — บางตัวตั้งใจให้ต่าง (worktree เก่า, appendix)"
+    echo "              ⇒ แปลว่า **ต้องตัดสินใจอย่างรู้ตัว** ไม่ใช่ไม่รู้ว่ามันมีอยู่"
+    return 1
+  fi
+  echo "NO-SIBLING-DRIFT $base"
+  return 0
+}
+
 # ── enginereg <engine-name> ─────────────────────────────────────────────────
 # "engine name นี้ลงทะเบียนไว้จริงไหม" — คำถามเดียวที่ตัดสินว่า charter จะได้ engine ที่ขอ
 #
@@ -3185,12 +3246,13 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
+VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue siblings enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
   echo "  binexists <bin> · procs <bin> · procs_cmd <pattern> · alive <bin> · bootprobe '<cmd>' [s] [bin]"
   echo "  relay <session:window.pane> '<msg>' [--durable <slug>]  ·  teamclosed <team>"
+  echo "  siblings <file> [root...] ← ไฟล์นี้มีฝาแฝดบนดิสก์ที่ยังไม่ได้แก้ไหม (ก่อน commit)"
   echo "  teamresidue <team>     ← ทีมลงแล้วเหลืออะไร: systemd --user (อ่าน SUB ไม่ใช่ ACTIVE)"
   echo "                            + ~/.maw/fleet + git worktree — สามผิวที่ teamclosed ประกาศว่าไม่ตรวจ"
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
