@@ -3836,3 +3836,17 @@ C/D timed out first and passed on retry — they refuse to count a timeout as a 
 is the one that most tempts you to skip measuring — guess it and you get the right answer for the
 wrong reason, and **arm D never gets asked.*** ⇒ **"Same" is not a safer result; it is a less
 examined one.**
+
+**Follow-on same session — `model-source=` shipped** `[commit fccfae6]`
+`enginecheck` now emits, **per member, before spawn**: `model-source=alias` when the alias pins
+`--model`, or `model-source=ambient ambient-from=<file>:<line>` with the value, when it does not.
+`[verified 2026-08-10: codex-xhigh → `/home/user/.codex/config.toml:1 = gpt-5.6-sol` — the same line
+atlas confirmed by hand; it is resolved, not hardcoded: `CODEX_HOME` from the alias string first,
+`~/.codex` only as fallback]`
+⇒ Declined atlas's "placement question" framing on the record: Step 7 was content in the wrong half
+of a file and moving it fixes it; **this had no carrier at all**, so there was nothing to move.
+⇒ Machine-readable token so downstream gates can set their own policy — the same shape as
+`enginecheck.unverified: permission-not-bypassed`, which is what made the 08-09 permission fix work.
+⇒ Both items atlas routed today are now closed; **`opencode`/`thclaws` permstall vocabulary stays
+`[unverified]`** and is deliberately **not** swallowed by codex turning green — prism's
+opencode/`AGENTS.md` result is a different question and was not mixed in.
