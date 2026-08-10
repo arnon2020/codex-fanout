@@ -23,6 +23,38 @@ own-the-loop + report-to-lead contract. Copy a known-good charter (e.g. `volt-co
 
 ## 2. Spawn
 
+<!-- advisor-reviewed 2026-08-10 — SCOPED to this §2 gate line and the two verify commands
+     added to §3. Nothing else in this file was reviewed. This marker does NOT inherit the
+     oracle-team/SKILL.md marker of the same date; that one was scoped to that file. -->
+
+> 🔴 **Gate 0 first — this section shipped without it and that was a real defect.**
+> `[found 2026-08-10 by auditing my own artifacts with Gate 5.3's method. Measured before
+> the fix, `grep -cF` over this whole file: `perm=` 0 · `trust:` 0 · `bootverify` 0 ·
+> `permstall` 0. The three `oracle-team` references this file already had were all to
+> `codex-setup.ts`, a script path — **none of them to the gate**. So an agent following this
+> skill spawned a team having never met the permission dimension.]`
+>
+> ```bash
+> VC=~/.claude/skills/oracle-team/scripts/verify-check.sh
+> bash "$VC" enginecheck <team>        # Gate 0 — see oracle-team/SKILL.md for the full gate
+> ```
+> **Do not spawn on `overall: PASS` alone.** Read three more lines first:
+> `perm= ask|allowlist|unknown` → that member boots clean and stops at its **first write**,
+> asking a human who is not watching. `trust: untrusted` → that codex pane sits on
+> `Do you trust the contents of this directory?` at boot; trust matches the **exact path**,
+> a trusted ancestor does not help.
+>
+> ⚠️ **Pointer, not a copy — deliberately.** The perm/trust tables live in `oracle-team` and
+> are not duplicated here. A second copy drifts, which is the failure this repo paid for with
+> `verify-check.sh` in three copies and a pattern list fixed in one of them.
+> `[Gate 5.4 checked: `codex-lead` is project-local (`.claude/skills/`) and `oracle-team` is
+> installed globally, so the pointer resolves wherever this skill can load at all.]`
+>
+> ⚠️ **This skill and `oracle-team` both claim the triggers "set up a codex team" and
+> "spawn coders"** `[verified 2026-08-10: grep -cF, 1 each, both files]`. Two skills on one
+> trigger where only one carried the gate is worse than either alone — that is why this
+> instance mattered. Unresolved; flagged for the owner.
+
 ```bash
 maw team up <team> --dry-run     # preview: live=skip, missing=would wake
 maw team up <team>               # spawn — wakes only missing members
@@ -34,6 +66,22 @@ A fresh worktree has no `.envrc` → `OMX_AUTO_UPDATE=0` doesn't take → omx se
 drops to a **shell** (`❯`) or a codex **update menu** instead of the omx prompt, and the
 standing contract is LOST (sent to the shell, not omx). **Always peek after spawn.**
 Use maw verbs only — raw `tmux send-keys` is safety-hook blocked.
+
+> 🔑 **This section already knew about the dialog class and still never checked for it.** It
+> names the codex **update menu** as a boot pitfall and heals it with `maw run` — while
+> `bootverify` and `permstall`, which exist to *detect* exactly that, appeared **0 times in
+> this file**. Knowing about a failure and having a step that looks for it are different
+> things; that gap is the whole reason this audit found this file.
+>
+> ```bash
+> bash "$VC" bootverify <session>   # right process AND whose screen — before sending anything
+> bash "$VC" permstall  <session>   # anyone sitting on a question? rc=1 if yes · --watch 60 to leave running
+> ```
+> `permstall` separates `[permission]` (grant it, or restart with a bypass token in the alias)
+> from `[cli-dialog]` (**read the option number off that screen** — never hardcode it; the menu
+> changes between versions and the index that was catastrophic on one is required on the next).
+> ⏱️ Keep it running for the life of the team: everything else here measures at **t=0**, and a
+> new engine version can land at any hour.
 
 | peek shows | heal |
 |---|---|
