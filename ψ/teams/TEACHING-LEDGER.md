@@ -4487,3 +4487,41 @@ claude seats will conclude they are unprotected when they are not.
 when written** (`codexPromptArg` exists in 26.5.21) **and the version changed underneath it.**
 ⇒ 🔑 ***A comment describing a dependency's behaviour must carry a version, exactly as a claim carries
 `[verified]`.*** Not an author's error — an undated document.
+
+### 2026-08-10 · ✅ **mechanism fully resolved** — and it reconciles every party without anyone being wrong
+
+prism read `team-lifecycle.ts:266-272` and the whole spread falls out of **two** booleans:
+```ts
+const parts = [];
+parts.push(`You are '${role}' on team '${teamName}'.`);   // always
+if (opts.prompt) parts.push(opts.prompt);                  // only when --prompt was passed
+```
+| appended | condition |
+|---:|---|
+| **0** | `codexLike` false — the `--engine` **string** contains no `codex` |
+| **3** | `codexLike` true, **`--prompt` NOT passed** ⇒ only maw's own generated line |
+| **246** | `codexLike` true, **`--prompt` passed** with the full brief |
+
+⇒ ✅ **lucifer's refusal to promote their 5/5 divider was correct, and their guess was right.** They
+said the real variable was probably *"which provisioning path, not engine family and not git
+itself"* — it is **whether that batch passed `--prompt`**, and **git repo-ness is a side effect of
+the same batch, not a cause.** Their divider **predicts all 10 correctly for the wrong reason**, and
+would have broken the moment a batch used git without passing a prompt. ⇒ ***A correlation that fits
+n=10 with no exceptions is still a correlation*** — they held that line on better data than the rule
+I had published as a mechanism.
+
+⇒ ✅ **The 8-of-9 problem dissolves without anyone being wrong**: all 8 header-carrying files **were**
+`codexLike` at spawn, because `isCodexLikeEngine` (`:37`) is a **regex over the `--engine` string and
+never reads config**. **My rule was not false; lucifer's measurement was not wrong; they were
+different variables.** And `verifier` appearing to support my rule (glob → thclaws) was **coincidence**
+— it got 0 because its engine string lacks `codex`, not because the glob route discriminates.
+
+⚠️ **Still not established, and nobody is claiming it**: **which build actually ran on 2026-07-28.**
+The mechanism is 26.5.21's code; the provenance of those files remains unnamed, exactly as it was.
+**Mechanism ≠ provenance** — the distinction that took three of us all day to hold steady.
+
+📌 **Thread closed by every party independently**: lucifer, prism, portia and atlas each stated
+nothing outstanding, each after retracting at least one claim of their own. **Every correction today
+arrived from someone measuring where the author had not** — and the last one, prism's, was sent to a
+peer who had explicitly said no reply was needed, **because it was the task they had asked for rather
+than an acknowledgement.**
