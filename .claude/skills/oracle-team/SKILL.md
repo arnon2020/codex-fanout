@@ -1681,7 +1681,29 @@ Parse the subcommand from `$ARGUMENTS`:
 
 Idempotent: skip live, relaunch dead, create missing.
 
-### Gate 0: bind engine + model, then prove it (MANDATORY, before preflight)
+### Gate 0: bind engine + model + **permission** + **trust**, then prove all four (MANDATORY, before preflight)
+
+<!-- advisor-reviewed 2026-08-10 — SCOPED, deliberately not blanket.
+     Reviewed: (a) this Gate 0 heading, (b) the machine-block contract further down in this
+     same Gate 0 subsection, (c) the post-spawn step added to Verb `up`. Those three edits.
+     The other ~2,200 lines were NOT part of this review and carry whatever they carried
+     before. A blanket marker here would be the exact false-marker move persist_check.sh
+     warns about, in a file whose own subject is checks that pass without testing. -->
+
+> 🔴 **This heading read "engine + model" until 2026-08-10, and that was the whole defect.**
+> arnon asked why agents keep using this file to stand teams up and forget permission every
+> single time. Measured before answering: **`perm=` and `trust=` appeared ZERO times in the
+> executable half of this document** (from `Step 0: Init` onward), while both are explained
+> in full in the prose half above. **The knowledge was in the file and not in the path.** An
+> agent that jumps straight to `Verb: up` — which is exactly what you do when standing a team
+> up — never walked past it.
+>
+> ⇒ 🪜 **Followability is a separate axis from correctness.** Auditing what a document *says*
+> will never find an instruction nobody walks past. Check placement against the route a
+> reader actually takes, not against the table of contents.
+> ⇒ atlas named the family the same day: **HALF-APPLICATION** — a correct technique applied
+> to one half of its domain, where the reasoning is right and its *scope of application* is
+> short. `[scribe-oracle banked it as D13, 2026-08-10]`
 
 > Path-agnostic — everything below computes from YOUR repo and YOUR team. Nothing here
 > depends on another oracle's files or scripts. `[verified 2026-08-06 · maw-rs 325db65 ·
@@ -1857,11 +1879,46 @@ Both emit **anchored machine keys at column 0** alongside the human output, so a
 
 ```
 enginecheck.member: <role> PASS|FAIL|UNVERIFIED engine=<name> resolved=<cmd> [pinned=no]
+enginecheck.perm:   <role> bypass|bypass-weak|allowlist|ask|unknown engine=<name>
+enginecheck.trust:  <role> trusted|untrusted|unknown home=<CODEX_HOME>   ← codex members only
+enginecheck.tier:   <role> model=<name|ambient> effort=<level|ambient>
+enginecheck.tiers:  members=<n> distinct-model=<n> distinct-effort=<n> all-ambient=<n>   ← ≥2 members only
 enginecheck.engine: <name> PASS|FAIL|UNVERIFIED resolved=<cmd> scope=resolved|dir-absent [answered-from=<path>]
 enginecheck.scope: out-of-scope=model-served,prompt-delivery,account-quota
 enginecheck.unverified: [<comma-list>]          ← EMPTY when this run had no variable gaps
 overall: PASS|FAIL|UNVERIFIED requires-post-boot-verification=true
 ```
+
+Real output, pasted from a run rather than typed — `enginecheck ψ/teams/seam-probe.yaml`,
+`[2026-08-10]`:
+
+```
+enginecheck.perm: seam-1 bypass engine=codex-role-coder
+enginecheck.trust: seam-1 trusted home=/home/user/.codex-fanout/coder
+enginecheck.tier: seam-1 model=gpt-5.6-sol effort=ambient
+enginecheck.member: seam-1 PASS engine=codex-role-coder resolved=CODEX_HOME=$HOME/.codex-fanout/coder … codex --model gpt-5.6-sol --ask-for-approval never --sandbox danger-full-access
+enginecheck.unverified:
+overall: PASS requires-post-boot-verification=true
+```
+(no `tiers:` line — that one needs ≥2 members.)
+
+> ## 🔴 `overall: PASS` does NOT mean "safe to spawn". Read three more lines first.
+>
+> | line you see | spawn? |
+> |---|---|
+> | `perm: <role> ask` | **not until you can say in one sentence why ask-mode is right for this role.** It is legitimate for a read-only probe or a supervised team — that is why the tool WARNs instead of failing. For anything that writes, that member boots clean, passes every gate, and stops at its **first write** asking a human who is not watching |
+> | `perm: <role> allowlist` or `unknown` | **no.** An allowlist is a different mechanism, not a bypass; `unknown` means the check could not answer, and could-not-answer is not a pass |
+> | `perm: <role> bypass-weak` | only knowingly — `opencode --auto` approves what is *not explicitly denied*, so a deny-list still stalls it |
+> | `trust: <role> untrusted` | **no.** That codex pane will sit on `Do you trust the contents of this directory?` at boot. Trust matches the **exact path**; a trusted ancestor does not help |
+> | `tiers: distinct-model=1 distinct-effort=1` with >1 member | usually means **nobody chose.** The role that greps files is paying what the role that designs the architecture pays |
+>
+> For gates that grep instead of read: `enginecheck.unverified:` carries
+> `permission-not-bypassed` and `codex-trust-dialog-expected`.
+>
+> 🕳️ **The `scope:` line above is what used to hide all of this.** It named model-served,
+> prompt-delivery and account-quota — and never the word *permission*. So the gap was not
+> known-open; it was **unnamed**, and nobody searches for what has no name. ⇒ Audit a scope
+> line for **absent nouns**, not only for wrong entries.
 Every line is emitted on every run, in that order, with `overall:` last. `enginecheck.member:`
 repeats once per member in roster mode and is absent in `engineone`; `enginecheck.engine:`
 is the reverse.
@@ -2129,6 +2186,38 @@ maw team up "$TEAM"
 ```
 
 ### Verify step (MANDATORY after spawn)
+
+> 🔴 **Two commands belong at the top of this step and were missing until 2026-08-10.** The
+> polling loop below answers *"has the banner rendered"*. It does not answer *"is this pane
+> the agent's, or the CLI's own dialog"*, and it does not answer *"is a member sitting on a
+> question right now"*. Both were documented elsewhere in this file and **neither was on the
+> path anyone walks when standing a team up** — which is why teams kept being built with
+> members frozen at a prompt.
+>
+> ```bash
+> VC=~/.claude/skills/oracle-team/scripts/verify-check.sh
+>
+> bash "$VC" bootverify "$SESSION"    # right process AND whose screen is it — before you send anything
+> bash "$VC" permstall  "$SESSION"    # is any member sitting on a question — rc=1 if yes
+> ```
+>
+> `bootverify` separates *the right process is running* from *the agent can receive a turn*.
+> A CLI parked on its own update or trust dialog is indistinguishable from a ready agent
+> through every cheaper check, and a blind Enter there presses whatever is highlighted — on
+> one version that is `Update now`, which ran `npm install -g` and replaced the binary for
+> every agent on the machine.
+>
+> `permstall` reports two kinds, because the remedies are opposite:
+> `[permission]` → grant it, or restart with a bypass token in the alias.
+> `[cli-dialog]` → **read the option number off that screen**; never hardcode it, the menu
+> changes between versions and the index that was catastrophic on one is required on the next.
+> It also flags `REPLACED-BIN` — a pane whose running binary no longer exists on disk, which
+> means `<engine> --version` cannot answer for it.
+>
+> ⏱️ **Then keep running `permstall` for the life of the team, not once here.** Everything
+> else in this step is a t=0 measurement, and a new engine version can land at any hour: the
+> member spawned after lunch meets a dialog the morning's member never saw.
+> `permstall "$SESSION" --watch 60` prints only on state change, so it can be left running.
 
 Poll each coder until its banner is real, then check. **Do not use a fixed sleep** — measured
 boot-to-real-banner ran ~25s to ~35s (n=3, one machine, one codex version), and an earlier
