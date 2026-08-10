@@ -2466,13 +2466,40 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
         done
         # รายงาน **ทุก** carrier ที่เจอ ไม่ใช่ตัวแรก — และเตือนเมื่อมีมากกว่าหนึ่ง
         if [ "$(printf '%s' "$hits" | wc -w)" -gt 1 ]; then
-          printf '     🔴 rules-file: %-42s **carrier มากกว่าหนึ่งตัวในไดเรกทอรีเดียว**\n' "$mp"
-          for h in $hits; do printf '                    · %s (%s bytes)\n' "$h" "$(wc -c < "$h" 2>/dev/null)"; done
-          printf '        ⇒ ตัวที่ *ตอบ* ขึ้นกับ engine family: **codex อ่าน AGENTS.md · claude อ่าน CLAUDE.md**\n'
-          printf '        ⇒ การแปลง family แล้วไม่ลบของเดิม = ของเก่ายังอยู่และ **ยังตอบให้ family เดิม**\n'
-          printf '        ⇒ 🔑 **carrier ที่ค้าง อันตรายกว่า carrier ที่หายไป เพราะมันตอบ** [scribe 2026-08-10]\n'
-          machine="${machine}enginecheck.rules-file: path=$mp carriers=$(printf '%s' "$hits" | wc -w) ambiguous=yes
+          # 🔴 2026-08-10 [portia จับ **10 นาทีหลังผม ship**] เวอร์ชันแรกของบล็อกนี้เตือนว่า
+          #    "มี carrier สองตัว" ทุกครั้งที่เจอสองไฟล์ ⇒ **false alarm กับ 5 seat ของ lucifer**
+          #    ซึ่ง `CLAUDE.md` ของเขาเป็น **stub 306 bytes ที่ชี้ไปหา `AGENTS.md`** โดยตั้งใจ
+          #    (compatibility shim ให้ skill เก่าที่ detect oracle root ด้วย CLAUDE.md + ψ/)
+          #    ⇒ **ไม่ใช่ไฟล์กฎที่แข่งกัน** — claude ที่อ่านมันจะถูก *ชี้ทางถูก* ไม่ใช่ถูกหลอก
+          #    ⇒ 🔑 **false alarm ฆ่าเครื่องมือเตือนได้พอกับ false green** — ประโยคของผมเองเมื่อบ่ายนี้
+          #    ⇒ ⇒ portia: ***detector คืนตัวเลข ไม่ได้คืนความหมาย*** — ต้องรายงานว่าแต่ละไฟล์ *คืออะไร*
+          #      และ tell ก็อยู่ในเอาต์พุตผมเองอยู่แล้ว: **13KB เทียบกับ 306 bytes**
+          local ncar=0 clsline=""
+          for h in $hits; do
+            local base other sz cls
+            base=$(basename "$h"); sz=$(wc -c < "$h" 2>/dev/null)
+            case "$base" in AGENTS.md) other=CLAUDE.md ;; *) other=AGENTS.md ;; esac
+            # pointer = ตัวเล็ก **และ** เนื้อในอ้างถึง carrier อีกตัว (สองเงื่อนไข ไม่ใช่ขนาดอย่างเดียว)
+            if [ "${sz:-0}" -lt 2048 ] && grep -q "$other" "$h" 2>/dev/null; then
+              cls="pointer→$other"
+            else
+              cls="carrier"; ncar=$((ncar+1))
+            fi
+            printf '                    · %-52s %6s bytes  [%s]\n' "$h" "$sz" "$cls"
+            clsline="$clsline $base=$cls"
+          done
+          if [ "$ncar" -gt 1 ]; then
+            printf '     🔴 rules-file: %-42s **ไฟล์กฎที่แข่งกันมากกว่าหนึ่งตัว**\n' "$mp"
+            printf '        ⇒ ตัวที่ *ตอบ* ขึ้นกับ engine family: **codex อ่าน AGENTS.md · claude อ่าน CLAUDE.md**\n'
+            printf '        ⇒ แปลง family แล้วไม่ลบของเดิม = ของเก่ายังอยู่และ **ยังตอบให้ family เดิม**\n'
+            printf '        ⇒ 🔑 **carrier ที่ค้าง อันตรายกว่า carrier ที่หายไป เพราะมันตอบ** [scribe 2026-08-10]\n'
+            machine="${machine}enginecheck.rules-file: path=$mp carriers=$ncar ambiguous=yes${clsline}
 "
+          else
+            printf '     ✅ rules-file: %-42s สองไฟล์ แต่มี carrier จริงตัวเดียว (อีกตัวเป็น pointer)\n' "$mp"
+            machine="${machine}enginecheck.rules-file: path=$mp carriers=$ncar ambiguous=no${clsline}
+"
+          fi
         fi
         if [ -z "$hit" ]; then
           printf '     🔴 rules-file: %-42s **ไม่พบ AGENTS.md/CLAUDE.md ตลอด ancestor** ⇒ seat นี้จะไม่ได้กฎเลย\n' "$mp"

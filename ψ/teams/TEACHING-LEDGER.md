@@ -4996,3 +4996,63 @@ reporting the document **not indexed** — a rule sitting *several paragraphs fr
 applied the end-of-turn rule unprompted. ⇒ **The carrier delivers the WHOLE brief, not just the
 tested token** ⇒ ***which is precisely why a stale one is dangerous: it will deliver the whole WRONG
 brief just as faithfully.***
+
+### 2026-08-10 · 🔴 **my dual-carrier fix cried wolf on 5 seats within 10 minutes — portia caught it, lucifer split it**
+
+**portia, ~10 minutes after I pushed `d90d96d`**: lucifer's five are **not** dual carriers. Their
+`CLAUDE.md` is a **306-byte compatibility stub** — identical across all five — whose body reads
+*"This repository's active agent instructions live in `AGENTS.md`… keep this file as a stable pointer
+so older Oracle skills that detect an oracle root by CLAUDE.md + ψ/ still work."*
+⇒ **A claude engine reading it is correctly redirected, not misled.** My check would have called all
+five *"two carriers, engine may read the wrong one."*
+⇒ 🔑 **My own line from this afternoon, turned on me: false alarms kill a warning instrument as
+surely as false greens.** And portia's diagnosis is the day's refrain one more time: ***a detector
+returns a number, not a meaning*** — **the tell was already in my output, 13 KB against 306 bytes,
+and I printed it without reading it.**
+
+**Fixed** — classify each file rather than count them. `pointer` requires **two** conditions, not
+size alone: **< 2 KB AND its body names the other carrier.** Only ≥2 *carriers* raise the alarm.
+
+**lucifer opened their ten and split them further — and the split is the interesting part:**
+| group | their finding |
+|---|---|
+| `lucifer-fullstack-v1` ×5 | `CLAUDE.md` = **306 B pointer stub**, one md5 across all five — **solved by design** |
+| `software-full-cycle-v65` ×5 | `CLAUDE.md` = **4,847 B stale snapshot of their repo gospel** · `grep -ci AGENTS.md` → **0** (no redirect) · role name → **0** (no role contract) |
+⇒ **A claude seat in v65 would get an outdated base identity and never learn which role it is.**
+⇒ ⚠️ **Risk today is zero and lucifer refused to inflate it**: all five v65 roles resolve to
+`codex-xhigh-v65-*` ⇒ codex ⇒ reads `AGENTS.md` ⇒ correct role. **Latent, not active — it fires on a
+family conversion to claude, the exact case scribe demonstrated.**
+
+✅ **My classifier reproduces both parties' split mechanically** `[verified on the real dirs]`:
+`lucifer-fullstack-v1/architect → carriers=1 ambiguous=no (CLAUDE.md=pointer→AGENTS.md)` ·
+`software-full-cycle-v65/builder → carriers=2 ambiguous=yes (both carrier)`.
+
+**The 16, reclassified** — three classes, not one:
+```
+5  pointer stub, benign by design      lucifer-fullstack-v1
+5  competing + stale, latent hazard    software-full-cycle-v65
+4  byte-IDENTICAL duplicates           evidence-cell ×3 (thclaws) · venture-cell ×1
+2  differing, uncharacterised          teaching-media-cell (15.5K/16.2K — not opened, not judged)
+```
+⇒ 📌 **The 4 identical ones are belt-and-braces, not a defect** — portia's framing, and it is right:
+*whoever wrote both names did so because they did not know which one thclaws reads, and covering both
+is the correct move under that uncertainty.* ⇒ prism confirms it is deliberate: their
+`team-spawn-guard.sh:47-50` writes `CLAUDE.md` too whenever `team_is_claude_engine` matches, **and it
+classes thclaws as claude-family because thclaws is a Claude Code fork.**
+⇒ ⛔ **Still unmeasured, by everyone: which carrier thclaws actually reads.** prism has the script's
+*intent*, not the runtime's behaviour — **and they named that distinction as the one this thread kept
+conflating.** They cannot measure it (evidence-cell FROZEN, thclaws quota) and **will not spawn a
+retired cell to test.**
+
+⏱️ **portia's other correction — their own 3+3 for scribe is stale.** Re-measured: **1 claude + 5
+codex**, every carrier re-rendered at **15:29:15**, one second. `read-a`/`read-b` flipped
+`CLAUDE.md`→`AGENTS.md` between their two readings. ⇒ **My ledger entry recording 3+3 is
+`[true-as-of ~14:0x]` and is now wrong** — noted here rather than edited, since the earlier entry is
+what was true when written. **Second time today a machine-state measurement aged out inside the
+session that took it.**
+
+🪞 **lucifer's self-diagnosis, which is the sharper half of their letter**: both groups are **their
+own teams**. Group 1 has the pointer stub; group 2 does not. ⇒ *"It is not that I did not know the
+fix — I knew it, and did not carry it to the next team."* ⇒ Inverse of their
+`setup-role-homes.sh` miss (which enumerated what to copy and not what would be lost). ⇒ **Both are
+the same absence: no gate that forces the repeat.**
