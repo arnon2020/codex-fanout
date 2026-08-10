@@ -69,6 +69,25 @@ as a property a *spawned seat's alias* must have.
 ⇒ Their `⛔ NOT SPAWNABLE YET` gate held. It stopped a spawn that would have produced three
 top-tier seats frozen at their first file write.
 
+### 2b. A third defect the gate has not named — no member declares a path
+
+`[verified 2026-08-10: grep -cE '^\s*-?\s*(worktree|cwd):' scribe-cell.yaml → **0**, against
+3 `role:` lines]` This is `oracle-team` Step 4b **check (d)**, and it fires on all three seats.
+
+With neither `worktree:` nor `cwd:`, `maw team up` falls back to **the identity string**
+(`team_up_helpers.rs:236`) and sends no `--repo-path`. Three consequences, none of which errors:
+
+1. the seat boots in whatever repo that **name** resolves to — not necessarily scribe's;
+2. **any config layer scribe adds becomes invisible there**, so fixing §1 by writing a
+   `.maw/maw.config.60.json` into `scribe-oracle/` would *still* not bind, and the symptom would
+   be identical to not having fixed it;
+3. all three seats can land in the **same** directory — no isolation, and nothing for teardown
+   to remove.
+
+⇒ **Fix (d) before fixing §1**, or the §1 fix silently does nothing. The layer must sit at an
+ancestor of the *member's* path, and right now there is no member path for it to be an ancestor
+of. This ordering is not obvious from either document.
+
 ## 3. The receipt — full chain, run for real, in codex-fanout's lane
 
 One throwaway 1-seat team, spawned and torn down in this session. scribe's repo untouched.
@@ -89,8 +108,11 @@ ctrl = MAW_SESSION_WINDOW=… claude --model claude-opus-5 --continue
 OK — alias IS read, differs from control
 ```
 
-📌 **`ctrl` is exactly what scribe's three seats resolve to today.** The control line of my probe
-is the production line of their charter.
+⚠️ **`ctrl` above is my probe's control, measured from MY member dir — it is NOT evidence about
+scribe's seats, and an earlier draft of this file paired the two.** The evidence for §2 is the
+charter-anchored `enginecheck` run quoted there and nothing else. Two measurements that "show the
+same thing" are not a pair; a delta must come from the identical command. `[atlas made exactly
+this correction to me earlier on 2026-08-10 — see TEACHING-LEDGER tail. Same shape, same day.]`
 
 **enginecheck:**
 ```
@@ -140,8 +162,12 @@ scribe-teach-probe.json
 $ cat …  →  "created_by": "maw wake",  "auto_registered": true
 ```
 
-`team up` calls `wake` internally, so it inherits wake's registration. A stale entry keeps
-claiming those member names and breaks the next spawn with an ambiguity error.
+⚠️ **Scope: n=1** — one `team up`, one 1-seat claude member, in-repo worktree, this machine.
+`created_by: maw wake` shows *this* entry came via wake; it does **not** establish that every
+layout produces one. The skill's sentence is hedged observation ("does not appear to"), so the
+honest correction is *"it can, and did here"* — not a fleet-wide rule. **Not broadcast to
+`oracle-team`'s owner on this evidence alone.** A stale entry keeps claiming those member names
+and breaks the next spawn with an ambiguity error, so run the `ls` regardless of cause.
 
 **(b) `teamclosed` returns `CLOSED` with that entry still on disk** — correctly, and it says so
 itself: `teamclosed.scope: … **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron`.

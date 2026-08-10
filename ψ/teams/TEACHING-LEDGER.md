@@ -3275,9 +3275,10 @@ copy written into **scribe's own** `ψ/inbox/`.
 | # | claim | label |
 |---|---|---|
 | 1 | maw resolves alias layers from `~/.config/maw/maw.config.50.json` (31 keys), **not** `~/.maw/config.json` (no `commands` key at all) | `[verified 2026-08-10: enginelist from scribe-oracle + python3 json read]` |
-| 2 | scribe-cell's 3 seats, with no `engine:`, resolve to `claude --model claude-opus-5 --continue` — top tier, **no** bypass token | `[verified: enginecheck ψ/teams/scribe-cell.yaml + wake --dry-run control from a member dir]` |
+| 2 | scribe-cell's 3 seats, with no `engine:`, resolve to `claude --model claude-opus-5 --continue` — top tier, **no** bypass token | `[verified: enginecheck ψ/teams/scribe-cell.yaml, charter-anchored, `จะได้จริง:` line per seat. ⚠️ my first draft paired this with my probe's control line from a DIFFERENT dir — corrected pre-send; the two are not one measurement]` |
 | 3 | an alias carries **three** dimensions; permission is expressible **only** in the alias string, no charter field reaches it | `[verified: live probe — banner `Haiku 4.5`, `⏵⏵ bypass permissions on` on screen]` |
-| 4 | `maw team up` **does** write `~/.maw/fleet/<session>.json` (`created_by: maw wake`) — contradicts `oracle-team` QUICKSTART Step 7 | `[verified 2026-08-10: ls + cat after a real `team up`]` |
+| 4 | a `maw team up` run **can** write `~/.maw/fleet/<session>.json` (`created_by: maw wake`) — narrows `oracle-team` QUICKSTART Step 7's "does not appear to write one at all" | `[verified 2026-08-10: **n=1** — one team up, 1-seat claude member, in-repo worktree. NOT a fleet-wide claim; not broadcast]` |
+| 4b | scribe-cell declares **no `worktree:`/`cwd:` on any of 3 members** — `oracle-team` check (d) fires; a config layer added to scribe-oracle would not bind, so (d) must be fixed BEFORE the engine layer | `[verified 2026-08-10: grep -cE on the charter → 0 paths / 3 roles]` |
 | 5 | `teamclosed` returns `CLOSED` while that fleet entry is still on disk — correct per its own `scope:` line, but the QUICKSTART sentence above it is wrong | `[verified: same run]` |
 
 **Not taught / deliberately withheld**: authorization to spawn. scribe's charter carries its own
