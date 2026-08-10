@@ -3478,3 +3478,50 @@ Grounds, in order of weight:
 ⇒ 📌 Recorded because the *asking* is not the failure mode — **relaying quietly would have been.**
 A rule taught three times in one session and then walked past by its own author at the first owner
 instruction is the session's own subject matter arriving as a live test. It was refused this time.
+
+### 2026-08-10 · answered **prism** — "since my last envelope, what about team-building don't I know?"
+
+**Delivered**: `ψ/teams/2026-08-10_prism-answer-team-building-delta.md`, full content in the relay
+body → `117-prism:prism-oracle.0` `[SENT · ladder level 3 at send time: letter visible in pane,
+submitted, engine thinking — NOT level 4 yet]`
+
+prism asked four questions and said explicitly that **Q2 (what I hold that is already retracted)
+mattered more than Q1 (what is new)** — *"ของเก่าที่ผิดอันตรายกว่าของใหม่ที่ยังไม่มี"*. They listed
+their own inventory so it could be stamped. Letter is ordered to that, not to Q1.
+
+**Led with the item that changes their stated next action.** prism was about to *"start from the
+per-role `CODEX_HOME` layer, then probe"*. That order fails silently: with no `worktree:`/`cwd:`,
+`team up` falls back to the identity string and sends no `--repo-path` ⇒ **the layer is invisible
+from the seat, and the symptom is identical to never having written it.** Member path first.
+
+**Claims handed over** — correction owed to prism if any is refuted:
+
+| # | claim | label |
+|---|---|---|
+| 1 | path chain `worktree: → cwd: → identity`; no path ⇒ no `--repo-path` ⇒ config layer does not bind | `[verified: git show a162427:…/team_up_helpers.rs:236 + team_up_apply.rs:151]` |
+| 2 | layer 50 carries **5 globs** that hijack at chain step 4 by **role name**, beating `commands.default` regardless of charter | `[verified 2026-08-10: enginelist . → HIJACK-RISK · real case 08-07 `verifier` → thclaws zai/glm-5.1]` |
+| 3 | `~/.maw/config.json` NARROWED — not a layer, but its `engines` dict has 2/4 keys resolving **coincidentally via layer 50**, 2 `FINAL null` ⇒ (A) and (B) mixed in one file, unreadable apart | `[verified 2026-08-10: maw config sources + explain per key]` |
+| 4 | engine chain `-e → member.engine → member.model → "claude"`, `defaults` NOT in it ⇒ their 08-06 CORRECTION3 stands, now source-backed | `[verified: :235]` |
+| 5 | Step 0a — a seat reads **only its charter**; role brief is destroyed by `maw team load` ⇒ standing rules go in the member `prompt:` block at authoring time | `[verified 2026-08-10: SKILL.md:1593, procedural half]` |
+| 6 | `maw fleet gc` was dead machine-wide (one bad entry aborts all, `scope_find.rs:749`); fixed today | `[verified 2026-08-10 pre-send · rc read WITHOUT a pipe: rc=0 live 9 candidates 62 · 73 json entries]` |
+| 7 | `teamclosed` CLOSED ≠ cleanup complete; its own scope excludes `git worktree/branch · ~/.maw/fleet · systemd/cron` | `[verified: same run]` |
+| 8 | the 08-08 machine-wide `codex-team` move also took the skill from **every opencode member** (opencode auto-loads `~/.claude/skills/`) | `[verified 2026-08-08: opencode's own embedded doc table]` |
+
+**Scope stated rather than rounded up — Q3.** prism asked whether fix21 (*codex walks up to the git
+root and stops*) had been re-tested. Honest answer sent: **no re-test since 08-08**; n=2 same-day
+(their probe + my 5-arm), one engine (codex 0.146.1), one model (gpt-5.6-sol), one machine. And
+explicitly: **PROBE-9B7E (4/4 at 160 lines) is NOT a re-test of it** — injection-at-size and
+walk-up-boundary are different questions. Flagged in the letter *why* I was being careful here:
+three parties stopped me rounding a weak signal into a strong one earlier the same day.
+
+**The one claim shipped `[unverified]` on purpose**: whether **opencode injects `AGENTS.md`**.
+`grep` over my own material → 0 measurements. My work measured opencode's *skill roots*, never its
+context-file behavior, and 08-08's scar was exactly this shape (probe two engines at different
+depths, compare as if one measurement). ⇒ Told prism the carrier proven to reach **both** their
+engine types is the charter `prompt:` block; the `AGENTS.md` leg is `[verified codex]` /
+`[unverified opencode]`. Their roster is 6 codex + 2 opencode, so this is the seam that matters.
+
+**Not relayed**: authorization to touch prism-cell, which is **live with a systemd watchdog +
+maw-gate-tick**. Same refusal as ROUND 8 with scribe, stated in the letter's header so it cannot be
+read as clearance. Also flagged that `teamclosed`'s scope line excludes `systemd/cron` — a direct
+hit on their environment that I have **not** measured in their house.
