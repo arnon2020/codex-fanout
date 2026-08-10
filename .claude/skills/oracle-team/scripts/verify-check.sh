@@ -534,6 +534,79 @@ teamclosed() {
   return 0
 }
 
+# ── teamresidue <team> ──────────────────────────────────────────────────────
+# ตอบคำถามที่ `teamclosed` **ประกาศเองว่าไม่ตอบ**: ทีมลงแล้ว เหลืออะไรทิ้งไว้
+#
+# 🏷️ ที่มา (2026-08-10 · prism รายงาน · ผมยืนยันเองด้วย systemctl --user):
+#    บรรทัด `teamclosed.scope: … **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet, systemd/cron`
+#    มีมาตั้งแต่วันที่เขียน `teamclosed` และคอมเมนต์ในไฟล์นี้เอง (บรรทัด ~526) ก็เขียนไว้ว่า
+#    *"external state (prism: systemd timer ยิงใส่ cell ที่ตายแล้วทุก 5 นาที)"*
+#    ⇒ **ช่องนี้ถูกตั้งชื่อไว้ตลอด แต่ไม่เคยมีโค้ดเดินไปถึง** — HALF-APPLICATION ในเครื่องมือ
+#    ของผมเอง: เหตุผลอยู่ในครึ่งคอมเมนต์ ไม่อยู่ในครึ่งที่รัน (รูปเดียวกับ perm=/trust= ใน
+#    oracle-team ที่ผมไปจับของคนอื่นเมื่อเช้า)
+#
+# 🔑 สิ่งที่ prism สอนและเป็นหัวใจของเวิร์บนี้ — **อ่านคอลัมน์ SUB ไม่ใช่ ACTIVE**
+#    `[verified 2026-08-10: prism-cell-rq001-watchdog.service = failed 1,093 ครั้ง ตั้งแต่ 08-06
+#     · timer ของมัน ACTIVE=active SUB=waiting · เป็น unit เดียวที่ failed ทั้งเครื่อง]`
+#    timer ที่ `active/waiting` กับ service ที่ `failed` **จากภายนอกดูเหมือน "ระบบทำงานอยู่" เท่ากัน**
+#    ⇒ `failed` ของ service **ไม่ดังที่ไหนเลย** ถ้าไม่มีใครถาม
+#
+# ⚠️ ตกได้ด้วยอะไร (ถามทุกครั้ง ไม่งั้นมันคือ echo ไม่ใช่ check):
+#    rc=1 เมื่อเจอ residue จริง · rc=0 เมื่อสะอาด ⇒ ทีมที่เพิ่งยุบแล้วยังมี timer ค้าง **ต้องได้ rc=1**
+#    selftest ข้อ 5g ยิงทั้งสองทิศด้วยชื่อทีมที่ไม่มีจริง (ต้องสะอาด) และด้วย pattern ที่แมตช์ยูนิตจริง
+# ⛔ อ่านอย่างเดียว — ไม่ stop ไม่ disable ไม่ลบ · ของแบบนี้เป็นของบ้านเจ้าของทีม
+teamresidue() {
+  local t="${1:?usage: teamresidue <team-name>}" found=0 unreachable=""
+
+  # 1) systemd --user — ผิวที่ teamclosed ประกาศว่าไม่ตรวจ
+  if command -v systemctl >/dev/null 2>&1; then
+    local units
+    units=$(systemctl --user list-units --all --no-legend --plain 2>/dev/null \
+            | grep -E -- "(^|[^a-zA-Z0-9_-])${t}([^a-zA-Z0-9_-]|$)|maw-gate-tick-${t}" || true)
+    if [ -n "$units" ]; then
+      # อ่าน SUB (คอลัมน์ 4) ไม่ใช่ ACTIVE (คอลัมน์ 3) — บทเรียนของ prism
+      printf '%s\n' "$units" | while read -r unit load active sub _rest; do
+        case "$sub" in
+          failed)  printf 'teamresidue.systemd: 🔴 %s SUB=%s (ACTIVE=%s) — service ล้มเงียบ ไม่ดังที่ไหน\n' "$unit" "$sub" "$active" ;;
+          waiting|running) printf 'teamresidue.systemd: ⚠️  %s SUB=%s (ACTIVE=%s) — ยังยิงอยู่\n' "$unit" "$sub" "$active" ;;
+          *)       printf 'teamresidue.systemd: •  %s SUB=%s (ACTIVE=%s)\n' "$unit" "$sub" "$active" ;;
+        esac
+      done
+      found=1
+    fi
+  else
+    unreachable="$unreachable systemd(ไม่มี systemctl)"
+  fi
+
+  # 2) ~/.maw/fleet — entry ค้างยึดชื่อ member ไว้ ⇒ spawn ครั้งหน้าล้มด้วย ambiguity
+  local fleet
+  fleet=$(ls ~/.maw/fleet/ 2>/dev/null | grep -i -- "$t" || true)
+  if [ -n "$fleet" ]; then
+    printf 'teamresidue.fleet: 🔴 %s\n' "$fleet"
+    echo   'teamresidue.fleet: ⇒ tmux kill-session ไม่ลบไฟล์นี้ · entry ค้างยังตอบชื่อ member เดิม'
+    found=1
+  fi
+
+  # 3) git worktree/branch — ผิวที่สามที่ teamclosed ประกาศว่าไม่ตรวจ
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    local wt
+    wt=$(git worktree list 2>/dev/null | grep -i -- "$t" || true)
+    [ -n "$wt" ] && { printf 'teamresidue.worktree: 🔴 %s\n' "$wt"; found=1; }
+  else
+    unreachable="$unreachable git(cwd ไม่ใช่ repo)"
+  fi
+
+  echo "teamresidue.scope: ตรวจ=systemd --user,~/.maw/fleet,git worktree · **ไม่ตรวจ**=cron, timer ของ user อื่น, state นอกเครื่อง"
+  [ -n "$unreachable" ] && echo "teamresidue.unreachable:$unreachable ⇒ ผลนี้ไม่ใช่ 'สะอาด' มันคือ 'ไม่ได้ดู'"
+  if [ "$found" = 1 ]; then
+    echo "RESIDUE   $t  ⇒ teardown ยังไม่จบ — **teamclosed CLOSED ตอบคนละคำถาม** (session หาย ≠ เก็บกวาดครบ)"
+    echo "          ⛔ เวิร์บนี้ไม่แตะอะไรเลย — ถ้าเป็นทีมบ้านอื่น ส่งหลักฐานให้เจ้าของตัดสิน"
+    return 1
+  fi
+  echo "NO-RESIDUE $t  ในสามผิวที่ระบุข้างบน"
+  return 0
+}
+
 # ── enginereg <engine-name> ─────────────────────────────────────────────────
 # "engine name นี้ลงทะเบียนไว้จริงไหม" — คำถามเดียวที่ตัดสินว่า charter จะได้ engine ที่ขอ
 #
@@ -3112,12 +3185,14 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then return 0 2>/dev/null || true; fi
 #    ⇒ คนที่ค้นหา verb จากตัวเครื่องมือเอง จะได้ลิสต์ที่**ไม่มีตัวที่เอกสารบอกให้ใช้**
 #    ⇒ แหล่งความจริงเดียว + selftest 9) บังคับให้ทั้งสองตรงกันตลอดไป
 #    (นี่คือรูปเดียวกับ `maw tmux --help` ที่ลิสต์มือแล้วตก `kill` — เราเพิ่งโดนมาเอง)
-VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
+VERIFY_CHECK_VERBS="placement binexists procs procs_cmd alive bootprobe bootverify permstall unstick relay teamclosed teamresidue enginereg enginelist engineone enginecheck modelprobe mawverb selftest"
 
 verify_check_usage() {
   printf 'fn: %s\n' "$(printf '%s' "$VERIFY_CHECK_VERBS" | tr ' ' '|')"
   echo "  binexists <bin> · procs <bin> · procs_cmd <pattern> · alive <bin> · bootprobe '<cmd>' [s] [bin]"
   echo "  relay <session:window.pane> '<msg>' [--durable <slug>]  ·  teamclosed <team>"
+  echo "  teamresidue <team>     ← ทีมลงแล้วเหลืออะไร: systemd --user (อ่าน SUB ไม่ใช่ ACTIVE)"
+  echo "                            + ~/.maw/fleet + git worktree — สามผิวที่ teamclosed ประกาศว่าไม่ตรวจ"
   echo "  enginereg <engine> [dir] · enginelist [dir] · engineone <role> <engine> [dir]"
   echo "  enginecheck <charter|team>  ·  modelprobe <alias> <dir>   ⚠ ใช้ quota จริง"
   echo "  bootverify <session>   ← หลัง spawn: pane boot ตรง engine ไหม + จอเป็นของ agent หรือ installer"
