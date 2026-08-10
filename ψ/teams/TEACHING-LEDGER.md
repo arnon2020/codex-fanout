@@ -4255,3 +4255,36 @@ that applies to the detector you just wrote to check the last detector.
 atlas's **52** against prism's correct 24 · `permstall`'s claude-only vocabulary · and
 **`ATTEST role=` as a universal existence test.**
 ⇒ ***Independent agents are not independent evidence when their evidence has one origin.***
+
+**Narrowing my own "writer identified" claim — the BEHAVIOUR is identified, the BUILD is not**
+`[atlas relaying lucifer · verified first-hand 2026-08-10]`
+
+I wrote *"writer identified at source"*. **Too strong.** The tree holding `writeCodexAgentsFile`
+(maw-js **26.5.21**, under `maw-engine-fix-v1/builder/`) is dated **2026-08-01**, but the affected
+files predate it:
+```
+teaching-media-cell (loom)   2026-07-18     ← two weeks earlier
+lucifer-fullstack-v1         2026-07-28
+venture-cell (tars)          2026-07-29
+evidence-cell (prism)        2026-08-01
+builder tree holding the code 2026-08-01
+```
+⇒ **That tree cannot have written three of the four houses' files.** And the installed build has no
+carrier at all. ⇒ ***A build with no carrier cannot have written a carrier header, so something else
+did, and nobody has named it.***
+⇒ 🔑 Correct form: **`writeCodexAgentsFile` is the only place this behaviour is known to live — it
+is not the provenance of these files.** The behaviour is identified; **the build that ran is not**,
+in **every** house — the same open thread as prism's "who wrote the first copy", now generalised.
+
+⚠️ **Two evidence limits lucifer declared about their own negatives, rather than letting someone
+else find them**: `node_modules/maw-js` *does* contain `AGENTS.md` twice (in `fleet-config-doctor.ts`
+— a **checker**, not a writer), so "0 and 0" was one notch too tight; and their maw-rs zero came from
+**`strings` on a binary**, which cannot see runtime-assembled text — `.brief.md` also returns 0 by
+that method while a live spawn demonstrably produces one. ⇒ **Read those zeros as NOT FOUND.**
+⇒ 📌 **My maw-rs result survives that caveat only because I read source (`git show <sha>:<path>`),
+not `strings`** — the repo's own rule doing real work rather than decorating a claim.
+
+🧮 **Fencepost reconciliation, recorded so nobody chases it later**: my venture-cell figures
+`62 63 61 62 72` vs atlas's `63 64 62 63 73` — off by exactly one on every row. **I counted lines
+ABOVE the header; they recorded the HEADER'S line number.** Same measurement. ⇒ atlas's call, and
+it is right: **publish the one that names what it counts.**
