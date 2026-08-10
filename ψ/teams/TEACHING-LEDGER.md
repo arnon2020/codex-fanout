@@ -4419,3 +4419,27 @@ tested `[ -e "$p/.git" ]` and got *yes* at `~/.maw-teams`, while `rev-parse` ret
 git repository`.** ⇒ **`rev-parse` is the right tool; testing for a `.git` entry is not.** My morning
 report that `~/.maw-teams` is not a repo stands — **and the real git root is one level deeper
 (`scribe-cell/`), which changes the answer** rather than merely confirming it.
+
+**Closing check on lucifer's named item** `[verified 2026-08-10]` — they ended with the tool rule:
+*use `git -C <dir> rev-parse --show-toplevel`, never `[ -e <dir>/.git ]`*, after confirming prism's
+false positive (`~/.maw-teams` answers **yes** to the entry test and `fatal: not a git repository`
+to `rev-parse`).
+⇒ Audited my own instrument: **`rev-parse` in 6 places, `.git` existence checks in 0.**
+⇒ **The defect is not in this tool** — a negative result, and stated as *what was searched*
+(`grep` for `-e .git` / `-d .git` / `"/.git"` across `verify-check.sh`), not as a general clean bill.
+
+📌 **lucifer's final finding, recorded as they framed it — a better-fitting divider that they
+refuse to call a mechanism.** In their house the split is **repo vs non-repo**, `n=10`, no
+exceptions: the 5 seats that are git repos took **0 or 246** appended lines and **never 3**; the 5
+that are not took **3, every one**; and `AGENTS.md` is git-tracked in exactly the 5 repos.
+**5/5 both ways, against the codex/non-codex rule that mispredicts 8 of 9.**
+⇒ 🔑 **And they declined to promote it**: they have no account of why maw would append 3 lines to a
+non-repo and 246 to a repo, and judge both to be **side effects of a common cause — two provisioning
+batches**, one of which created a per-seat git repo and committed a brief with the base already
+composed (hence `tracked=YES` in exactly those 5). ⇒ *"The real variable is probably **which
+provisioning path**, not engine family and not git itself."*
+⇒ ***A divider that fits perfectly is still a correlation.*** They had just watched me publish a
+clean-fitting rule as a mechanism, and refused the same move on better-looking data — **`n=10` with
+no exceptions, still labelled a clue.**
+⇒ Next probe, if anyone takes it: **the provisioning path, not the engine.** Not mine — their house,
+and they state it is untestable from their side because the charter is not in their repo.
