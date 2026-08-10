@@ -885,7 +885,7 @@ print(v.strip())
 # 🩹 2026-08-10 — `prompt-delivery` ออกจาก out-of-scope **บางส่วน**: ตอนนี้เราตอบได้ว่า
 #    *maw-rs ไม่มี carrier* (จาก source) แต่ **ยังไม่ได้ตรวจว่า seat นี้ได้รับกฎจริงไหม**
 #    ⇒ แยกสองคำถามให้ชัด ไม่งั้นบรรทัด scope จะขัดกับเช็คที่เพิ่งเพิ่มเข้ามาเอง
-VC_SCOPE_LINE='enginecheck.scope: out-of-scope=model-served,prompt-delivery-empirical,rules-file-on-seat-disk,account-quota'
+VC_SCOPE_LINE='enginecheck.scope: out-of-scope=model-served,prompt-delivery-empirical,rules-file-CONTENT,engine-actually-reads-it,account-quota'
 
 # ── enginelist [dir] ────────────────────────────────────────────────────────
 # "มี alias อะไรให้ใช้บ้างจากตรงนี้" — คำถามแรกของคนที่เข้ามาใน fleet ที่มีอยู่แล้ว
@@ -2419,12 +2419,71 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
   local pcount=0
   [ -r "$charter" ] && pcount=$(grep -cE '^[[:space:]]*prompt:[[:space:]]*\|?[[:space:]]*$' "$charter" 2>/dev/null)
   if [ "${pcount:-0}" -gt 0 ]; then
-    printf '  🔴 prompt-delivery: charter ประกาศ prompt: %s บล็อก — **maw-rs ไม่ส่งเข้า pane ทั้ง `team up` และ `team spawn`**\n' "$pcount"
-    printf '     ⇒ กฎในบล็อกนั้นถึง seat **ก็ต่อเมื่อ** มีไฟล์กฎ (CLAUDE.md/AGENTS.md) อยู่บนดิสก์ที่ seat เดินถึงเอง\n'
-    printf '     ⇒ ตรวจก่อน spawn: ไล่ ancestor ของ cwd/worktree ของสมาชิก ว่ามี CLAUDE.md หรือ AGENTS.md จริงไหม\n'
-    printf '     [verified 2026-08-10 · maw-rs a162427 · team_up_apply.rs ไม่มีคำว่า prompt · team_spawn.rs เขียนไฟล์แต่ไม่ส่ง]\n'
-    printf '     [ขอบเขต: **maw-rs เท่านั้น** · ไม่ครอบ maw-js · ไม่ครอบ engine ที่อ่านไฟล์เองได้]\n'
-    machine="${machine}enginecheck.prompt-delivery: blocks=$pcount carrier=none verb=up,spawn binary=maw-rs-a162427
+    printf '  🔴 prompt-delivery: charter ประกาศ prompt: %s บล็อก — **ไม่มี maw เวิร์บไหนส่งเข้า pane**\n' "$pcount"
+    printf '     maw-rs a162427 : **ไม่มีโค้ดส่งเลย** (`prompt` 0 ครั้งใน team_up_apply.rs · team_spawn เขียนไฟล์แล้วไม่อ้างถึง)\n'
+    printf '     maw-js 2110    : **มีโค้ดส่ง แต่ปิดตาย** — `--system-prompt-file` ขึ้นกับ engineHas(capabilities)\n'
+    printf '                      และ commands.* เป็นสตริงล้วน ⇒ 0/33 คีย์ประกาศ capabilities [prism วัด 2026-08-10]\n'
+    printf '     ⇒ 🔑 carrier จริงคือ **ไฟล์กฎบนดิสก์ที่ seat เดินถึงเอง** — และมันมาจาก **สคริปต์ render ของทีม
+        ไม่ใช่จาก maw** (เช่น `_lib.sh write_briefs()` ของ prism เขียน AGENTS.md ที่ cwd ของสมาชิก)\n'
+    # 🔬 2026-08-10 [atlas เสนอหลังเจอ counterexample ในบ้านตัวเอง แล้ว **แก้ escalation ของตัวเอง**]
+    #    evidence-cell มี AGENTS.md ที่ cwd ของสมาชิก ทั้งที่ ancestor ไม่มีไฟล์กฎเลย
+    #    ⇒ **มี render step อยู่จริง และมันทิ้ง ATTEST header ที่ตรวจได้**:
+    #      `<!-- ATTEST role=… team=… charter_sha=<sha256 ของ charter> rendered_at=… -->`
+    #    ⇒ ด่านที่แรงกว่า "มีไฟล์กฎไหม" คือ **"charter_sha ตรงกับ charter ที่กำลังจะ spawn ไหม"**
+    #      — render ค้างเก่าคือ failure mode ที่ไม่มีอาการ (ไฟล์มีอยู่ ทุกด่านเขียว กฎคนละรุ่น)
+    local csha; csha=$(sha256sum "$charter" 2>/dev/null | awk '{print $1}')
+    local mpaths; mpaths=$(grep -E '^[[:space:]]*-?[[:space:]]*(worktree|cwd):' "$charter" 2>/dev/null | sed 's/.*: *//' | tr -d '"'"'"'')
+    if [ -n "$mpaths" ]; then
+      local mp d hit
+      while IFS= read -r mp; do
+        # `lifecycle.worktree: true` ไม่ใช่ path — บูลีนหลุดเข้ามาเป็นแถว `path=true` ตอนทดสอบครั้งแรก
+        case "$mp" in ""|true|false|yes|no) continue ;; esac
+        # 🔴 2026-08-10 [จับได้ตอนยิงใส่ charter จริงของ prism] path ที่มี `${VAR}` **ไม่ถูก maw ขยาย**
+        #    ถ้าปล่อยผ่าน มันจะถูกอ่านเป็น path สัมพัทธ์ แล้ว **เดินขึ้นจาก cwd ของคนรันคำสั่ง**
+        #    ⇒ ผมได้ `พบ prism-oracle/CLAUDE.md` ให้ seat ที่ไม่มีวันเห็นไฟล์นั้น
+        #    ⇒ **"บอกว่าเจอ" ผิด แย่กว่า "บอกว่าไม่รู้"** — ตอบไม่ได้ ต้องพูดว่าตอบไม่ได้
+        case "$mp" in
+          *'$'*)
+            printf '     ⚠️  rules-file: %-42s **resolve ไม่ได้ — path มีตัวแปรที่ maw ไม่ขยาย** ⇒ ตรวจไม่ได้ (ไม่ใช่ "ไม่มี")\n' "$mp"
+            machine="${machine}enginecheck.rules-file: path=$mp file=unresolvable attest=n/a
+"
+            continue ;;
+        esac
+        case "$mp" in /*) d="$mp" ;; *) d="$(pwd)/$mp" ;; esac
+        hit=""
+        while [ "$d" != "/" ] && [ -n "$d" ]; do
+          for n in AGENTS.md CLAUDE.md; do [ -f "$d/$n" ] && { hit="$d/$n"; break 2; }; done
+          d=$(dirname "$d")
+        done
+        if [ -z "$hit" ]; then
+          printf '     🔴 rules-file: %-42s **ไม่พบ AGENTS.md/CLAUDE.md ตลอด ancestor** ⇒ seat นี้จะไม่ได้กฎเลย\n' "$mp"
+          machine="${machine}enginecheck.rules-file: path=$mp file=absent attest=n/a
+"
+        else
+          local at; at=$(grep -m1 -o 'charter_sha=[0-9a-f]*' "$hit" 2>/dev/null | cut -d= -f2)
+          if [ -z "$at" ]; then
+            printf '     ⚠️  rules-file: %-42s พบ %s (ไม่มี ATTEST ⇒ เทียบกับ charter ไม่ได้)\n' "$mp" "$hit"
+            machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=none
+"
+          elif [ "$at" = "$csha" ]; then
+            printf '     ✅ rules-file: %-42s %s **charter_sha ตรง**\n' "$mp" "$hit"
+            machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=match
+"
+          else
+            printf '     🔴 rules-file: %-42s %s **STALE — charter_sha ไม่ตรงกับ charter นี้**\n' "$mp" "$hit"
+            printf '        ⇒ ไฟล์มีอยู่ ทุกด่านเขียว **แต่ seat จะได้กฎคนละรุ่นกับ charter ที่คุณกำลัง spawn**\n'
+            machine="${machine}enginecheck.rules-file: path=$mp file=$hit attest=STALE
+"
+          fi
+        fi
+      done <<EOF_MP
+$mpaths
+EOF_MP
+    else
+      printf '     ⚠️  ตรวจ rules-file ไม่ได้: charter ไม่ประกาศ worktree:/cwd: สักตัว\n'
+    fi
+    printf '     [ขอบเขต: ตรวจว่า *ไฟล์กฎมีอยู่และ sha ตรง* — **ไม่ได้ตรวจว่า engine อ่านมันจริง** และไม่ได้ตรวจเนื้อใน]\n'
+    machine="${machine}enginecheck.prompt-delivery: blocks=$pcount pane-delivery=none verb=up,spawn binary=maw-rs-a162427 maw-js-gate=capabilities-empty
 "
   fi
   printf '%s\n' "$machine"

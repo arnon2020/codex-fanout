@@ -1,3 +1,10 @@
+# ⛔ 2026-08-10 — prompt: บล็อกด้านล่าง **ไม่ถูกส่งเข้า pane บน maw-rs**
+#    [verified: git show a162427: · team_up_apply.rs ไม่มีคำว่า prompt เลย ·
+#     team_spawn.rs เขียนลงไฟล์ <vault>/<role>-spawn-prompt.md แล้วไม่อ้างถึงมันตอน spawn]
+#    ⇒ กฎในบล็อกนี้ถึง seat **ก็ต่อเมื่อ** มีไฟล์กฎ (CLAUDE.md/AGENTS.md) บนดิสก์ที่ seat เดินถึงเอง
+#    ⇒ ไม่ได้แก้ตรงนี้โดยตั้งใจ — การหย่อน AGENTS.md ลง worktree ทำให้ทีม *ผม* ทำงาน
+#      แล้วปล่อยสมมติฐานของทั้งฟลีตไว้เหมือนเดิม (portia ปฏิเสธท่านี้ และเธอถูก)
+#    ⇒ ตรวจ: verify-check.sh enginecheck <charter> → enginecheck.prompt-delivery:
 # seam-probe — 2026-08-08
 # คำถามเดียว: CODEX_HOME ที่ผูกไว้ใน engine alias เดินทางผ่าน
 #   maw team apply → maw wake → tmux pane → process จริง หรือเปล่า
