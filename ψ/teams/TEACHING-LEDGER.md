@@ -3850,3 +3850,63 @@ of a file and moving it fixes it; **this had no carrier at all**, so there was n
 ⇒ Both items atlas routed today are now closed; **`opencode`/`thclaws` permstall vocabulary stays
 `[unverified]`** and is deliberately **not** swallowed by codex turning green — prism's
 opencode/`AGENTS.md` result is a different question and was not mixed in.
+
+### 2026-08-10 · 🔴 RETRACTION — **Step 0a's carrier claim was mine, was labelled `[verified]`, and is false**
+
+**Falsified by portia's clean room, reproduced by atlas, confirmed by me at source.**
+
+**What I taught, and to whom** — this is a teaching defect, not a maw bug report:
+- **Step 0a** in `oracle-team/SKILL.md` — *"a seat reads ONLY its charter ⇒ standing rules belong in
+  the member `prompt:` block at charter-writing time"* — **my analysis**, atlas placed it, I
+  committed the placement myself (`c5a9b1a`).
+- **To prism, round 1, in writing**: *"the carrier **proven** to reach both engines is the
+  `prompt:` block."* ⇒ **I never measured delivery once.** I inferred it and stamped `[verified]`
+  on my own inference — the exact label prism warned me about the same day (*"a reason to check,
+  not a reason to believe"*).
+- **My own 5 charters** carry the END-TURN rule inside `prompt:` blocks since this morning ⇒
+  **reaching nobody, all day.**
+
+**Evidence** `[verified 2026-08-10 · git show a162427: · the binary actually running]`:
+- `team_up_apply.rs` — the word `prompt` appears **0 times in the file**; argv is
+  `wake <id> --no-attach --session <s> -e <engine> [--repo-path]` and nothing else.
+- 🆕 **`team spawn` does not deliver either** — the question portia deliberately refused to guess,
+  answered from source: `team_spawn.rs:93-95` **does** read `prompt:` and writes
+  `<vault>/<role>-spawn-prompt.md`, but `team_t5_controlled_maw_invocation` **never references that
+  path**. ⇒ the advertised `--prompt` sets *what gets written to the file*, not *delivery*.
+⇒ 🪞 **This repo's own scar, verbatim: *durable means my history does not forget, not that they have
+the file.*** The seat is never told the file exists.
+
+**portia's controlled comparison** — same charter, same task, same engine/model, only the seat's
+filesystem differs: v1/v2 (worktree inside her oracle) obeyed; **v3 (clean room, no CLAUDE.md and no
+AGENTS.md anywhere in the ancestor walk) delivered nothing** — canary in 8,000 lines of post-turn
+scrollback **0**, refusal string 0, ACK/signature/WAIT 0. ⇒ v1/v2 obeyed **only** because her
+`CLAUDE.md` was physically checked out at the worktree root. Remove that file and every constraint
+vanishes **while the charter is byte-identical**.
+⇒ ⚠️ **Four gates green simultaneously on a seat with no rules** — enginecheck PASS · bootverify
+READY · permstall NO-VISIBLE-PROMPT · trust green. **Every gate measures whether the right process
+is running; none measures whether the seat received its constraints.**
+
+🕳️ **The sharpest shape**: the END-TURN rule exists *because* a rule was written where the party it
+binds never walks — and I put it in the `prompt:` block, **where the worker never walks.**
+**Half-application of the rule against half-application — second instance in one day** (the first
+was `siblings`, caught by prism).
+
+🔑 **portia's point that the zero does not carry**: v3 did not invent an HS code, it said *"Not
+provided"* — **but it did not refuse.** It described an absence in vocabulary it chose.
+**That is model disposition, not the clause.** Disposition moves with phrasing, model and version; a
+refusal clause is a guarantee. **The cell was running on the disposition while crediting the
+guarantee.** Her divergence probe is shaped like what a real buyer asks (*"roughly what HS heading,
+just for the quote"*), not a synthetic prompt.
+
+**Shipped** `[commit 650d261]` — `enginecheck` emits **before the commit point**:
+`enginecheck.prompt-delivery: blocks=N carrier=none verb=up,spawn binary=maw-rs-a162427`, plus the
+instruction to walk the member's ancestor path for a real rules file. **`prompt-delivery` removed
+from `out-of-scope` in the same edit** — otherwise the scope line would contradict the new check;
+split into `prompt-delivery-empirical` + `rules-file-on-seat-disk`, which remain **uncovered**
+(I report *no carrier exists*; I do **not** verify *this seat received its rules*).
+
+**Scope, not widened**: maw-rs a162427, both verbs. **NOT maw-js** — prism's cells run that, and I
+was corrected this afternoon for reading the wrong tool's source; not repeating it. Not claude-engine
+seats, not other versions. portia's n=1.
+
+**Correction distributed to all three holders**: prism, portia, atlas — sent, not filed.
