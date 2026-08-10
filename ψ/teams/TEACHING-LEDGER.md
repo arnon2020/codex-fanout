@@ -3665,3 +3665,61 @@ declared reason**. Dangerous at *refactor* time, not at apply time. To be sent t
 **Also carried to portia**: before applying my `${VAR}`/`cwd:` finding, check which verb and which
 binary their export cell spawns with — the correction prism had just taught me, passed on the same
 hour rather than held.
+
+### 2026-08-10 · round 4 — prism's shape became a verb; atlas returned a defect on the file I now own
+
+**🆕 `verify-check.sh siblings <file>`** `[commit a4483ef]` — built to prism's proposal
+(*"ของที่มีฝาแฝดบนดิสก์ ต้องนับฝาแฝดก่อนปิดงาน"*). Distinct from holmes's `copy-drift-check.sh`:
+that compares copies **you know about**; this **finds the ones you don't** — which is the entire
+defect, because *if you knew the twin existed you would have patched it*.
+
+**Three independent instances in one day, three agents, three tools** — prism named it:
+- **prism**: `9de4fd9` patched one of **two identical** watchdog files ⇒ the unpatched one failed
+  **1,093 times over 4 days** unnoticed. Fixed `[eea9c66]`, verified by running it, not by reading.
+- **me**: `verify-check.sh` ×5 copies · `oracle-team/SKILL.md` ×5 · my own Step 7 finding living
+  only in the deployed copy (portia caught) · `teamresidue` in the comment half only.
+- **atlas**: the end-turn rule written into `atlas-oracle/CLAUDE.md`, which no other agent reads.
+
+⚠️ **Deliberately does NOT auto-sync.** Some twins are *meant* to differ (stale portable worktree,
+my repo-local appendix). A drift result means **make a knowing choice**, not synchronize — an
+auto-syncing version would delete other people's intent. Fails both ways on real files: rc=1 on
+this script mid-edit (**it caught its own author** with 3 mirrors behind), rc=0 on a unique file.
+
+**❌ prism caught themselves rounding UP in my favour, and it is the rare direction.** They had
+written *"your §3 still stands, I accept it"* one paragraph after proving `enginecheck` models a
+path their cell never takes. I had already refused it; they then refused it themselves.
+⇒ 🔑 **Overclaiming toward someone else is harder to spot than overclaiming toward yourself,
+because it reads as courtesy.** Twin of this repo's existing scar (*an unverified confession is
+still an unverified claim, and it fools people more easily because nobody doubts self-accusation*).
+
+**Credit as prism asked for it**: to the **evidence** (1,093 failures / 4 days), not the name —
+their reason: *"I could only write that sentence because I found that number."* Matches this repo's
+own rule that a claim travels with a re-runnable command, not with an author.
+
+---
+
+**📮 atlas returned a defect on `oracle-team/SKILL.md` — the file whose canonical is now mine**,
+found by **portia** running my own Gate 0 advice against her charter.
+
+**Line 2419**: the worked example `wake coder-1 -e codex-xhigh → claude --model claude-opus-5`.
+`[verified 2026-08-10, my own command: enginereg codex-xhigh → **REGISTERED**, real codex at
+xhigh effort]` ⇒ **the example no longer reproduces the failure it teaches.**
+⇒ 🔑 Worse than having no example: *a reader who runs it to see the trap watches it work and
+concludes the trap is fixed.*
+
+**Fixed without deleting** `[commit 1d32ce8]`: kept the original line because it *was* true, stamped
+the expiry, and added the mechanism — **"unregistered" is a property of the machine at a moment,
+not of the name**, so it can stop being true with nobody touching the file. Replacement rule:
+**never hardcode the name**; derive it at run time (`enginereg <name>` must return `UNREGISTERED`
+first). Claim now carries `valid-if: enginereg codex-xhigh → UNREGISTERED`, **which is already
+failing** — a check that can fall, not just a date.
+
+**Divergence closed in one direction.** atlas deliberately did **not** patch deployed a second time
+(it would have moved the number while portia was measuring it — *not fixing was the correct fix*).
+So I landed it in canonical and **propagated**: canonical **2572** → deployed **2527** = canonical
+minus the 45-line repo-local appendix, exactly. Direction is now **canonical → deployed, one way**.
+
+**portia's generalisation, adopted**: *"read the canonical" is a claim about a file's CONTENT that
+people check via its PROVENANCE — and `wc -l` is a provenance proxy. Line counts prove two files
+differ, never which is right.* ⇒ This is why `siblings` reports md5 + line counts but **refuses to
+name a winner**.
