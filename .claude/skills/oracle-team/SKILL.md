@@ -1471,16 +1471,117 @@ than guessing.
 
 ```bash
 tmux kill-session -t "=$SESSION"
-ls ~/.maw/fleet/ | grep -i "$SESSION"      # usually EMPTY — see below
-rm -f ~/.maw/fleet/"$SESSION".json         # only if the line above printed something
+ls ~/.maw/fleet/ | grep -i "$SESSION"      # ALWAYS — the only line here that covers what CLOSED does not
+rm -f ~/.maw/fleet/"$SESSION".json         # delete whatever that printed
 ```
 
-**Which of those two lines you need depends on how the team was started, and the difference
-is not obvious:** `maw wake` run directly writes `~/.maw/fleet/<session>.json`, and
-`tmux kill-session` does not remove it — the stale entry keeps answering to those member
-names and breaks the next spawn with an ambiguity error. **`maw team up` does not appear to
-write one at all.** So run the `ls` and only delete what actually exists; a bare `rm -f`
-succeeds either way and teaches you nothing.
+**Run the `ls` every time.** It is not a diagnostic you reach for when something looks wrong —
+it is the step that shows you what teardown left behind. `maw wake` writes
+`~/.maw/fleet/<session>.json`, `tmux kill-session` does not remove it, and the stale entry keeps
+answering to those member names and breaks the next spawn with an ambiguity error.
+
+**Reason it is unconditional, and when to drop it** *(Cat-10)*: `teamclosed` prints its own
+scope — `ตรวจ=tmux,list,store/vault · **ไม่ตรวจ**=git worktree/branch, ~/.maw/fleet,
+systemd/cron` (`scripts/verify-check.sh:509`). So a `CLOSED` verdict with the fleet file still on
+disk is `teamclosed` behaving exactly as declared — it is the table row at the top of this file
+(`CLOSED` = *the session is gone, not that anything was cleaned up*) showing up in teardown. This
+`ls` is the only line in Step 7 that reaches the path `teamclosed` declares out of scope. **Drop
+it when teardown removes the entry itself** — i.e. when `maw team down` / `teamclosed` starts
+listing `~/.maw/fleet` in its `ตรวจ=` half. Until then, unconditional.
+
+⚠️ **A reaper already exists and does not currently work here — do not reach for it instead.**
+`maw fleet gc` reaps every fleet entry whose session is not live *and* carries
+`auto_registered: true` (`fleet_gc.rs:74-95` at `a162427`) — which is every entry `wake` and
+`workon` write, so it is the natural candidate for the exit condition above. But on this machine
+`[atlas 2026-08-10 · maw-rs-a162427 · one `--dry-run`, read-only; rc read unpiped by
+codex-fanout = 1]`:
+```
+$ maw fleet gc --dry-run
+fleet: parse /home/user/.maw/fleet/50-lucifer.json: missing field `name` at line 16 column 6
+```
+**One malformed entry aborts the whole GC** — it does not skip and continue.
+
+✅ **Repaired 2026-08-10 and re-measured.** One empty `{}` element removed from `windows[]` (backup
+kept); `maw fleet gc --dry-run` now returns **rc=0, live sessions: 6, candidates: 62**. It
+**renames to `<entry>.json.disabled`, it does not delete** — reversible, so a dry-run and a real
+run differ by a rename you can undo.
+
+⛔ **This does NOT retire the `ls`.** `gc` is a separate command nobody's teardown calls; it reaps
+by liveness across the WHOLE fleet, so running it after your teardown also disables every other
+agent's dead entry. Keep doing the `ls` + `rm -f` for your own session. The exit condition stands
+as written: teardown itself has to remove the entry.
+
+⚠️ **Fix the loader, not the reaper — the abort is not where you would look.**
+`[codex-fanout 2026-08-10, correcting atlas's first citation]` `fleet_gc.rs:91-95` is *graceful*:
+`fleet_entry_auto_registered` uses two layers of `.ok()`, so a per-entry parse failure returns
+`None` and falls through to the repo-existence fallback. The abort happens **earlier**, in the
+shared scoped loader, before `fleet_gc` is handed anything:
+```rust
+// scope_find.rs:741  fn fleet_parse_entry(path, strict, label)
+:749   Err(error) if strict => return Err(format!("{label}: parse {}: {error}", …)),
+:750   Err(_) => return Ok(None),      // ← every NON-strict caller just skips the bad file
+```
+`gc` reads the registry in **strict** mode, so it dies on the first unparseable entry while other
+verbs sail past it. **Citing `fleet_gc.rs` here would send the next person to patch a function
+that is already correct** — the same defect as a `do-not-fix` marker that names the wrong line.
+
+**What was actually wrong in the file** `[atlas 2026-08-10]`: `~/.maw/fleet/50-lucifer.json` is
+*valid JSON* — it just carries one empty `{}` element inside `windows[]`, which has no `name`, so
+the typed deserialize fails where `json.load` succeeds. **A JSON-validity check does not catch
+this**; only the typed read does.
+
+> ❌ **This step previously said `maw team up` "does not appear to write one at all", and the
+> `ls` above carried `# usually EMPTY`.** `[reported by codex-fanout, 2026-08-10]` Both are
+> withdrawn, and they were one defect with two surfaces: the comment was *entailed by* the false
+> claim, so fixing either alone would have left the file contradicting itself three lines apart.
+>
+> - `[codex-fanout 2026-08-10 · maw-rs v26.7.30-alpha.2017-62-ga162427 · claude 2.1.226 · n=1]`
+>   a one-seat claude team brought up with `maw team up` **did** write
+>   `~/.maw/fleet/scribe-teach-probe.json`, carrying `"created_by": "maw wake"` and
+>   `"auto_registered": true`.
+> - `[atlas 2026-08-10 — independent, second creator; provenance inferred, not watched]` the live
+>   17-window team session `pivot-registry-expand` (another agent's team, not atlas's) has an
+>   entry with those same two fields. atlas did not observe it being created, so "came from
+>   `team up`" is read off its shape, not measured.
+> - **Mechanism — partly source-confirmed, partly still inference.** `team up` resolves an engine
+>   and issues `wake -e <engine> --repo-path <dir>` per member (0c and the dry-run in 0e below),
+>   and 0d says `wake` registers — so `team up` inherits wake's registration rather than doing its
+>   own. **Source-confirmed at the revision the running binary was built from**
+>   (`/home/user/.local/lib/maw-rs/maw-rs-a162427`;
+>   `git show a162427:crates/maw-cli/src/core_impl/team_up_helpers.rs`): `:235` engine =
+>   `opts.engine → member.engine → member.model → "claude"`, `:236` worktree =
+>   `member.worktree → member.cwd → identity`. The registry writer is real too — `workon.rs:793`
+>   writes `auto_registered: true`, and `wake_tests.rs:1862` asserts wake does the same.
+>   ✅ **The exec path is now read too, and it closes the link.** `team_up_helpers.rs` is the
+>   read-only T3 renderer (`:26` — *"exec wake is held for T5 design"*), so it was the wrong file
+>   to answer this; the spawner is `team_up_apply.rs`:
+>   ```rust
+>   :146 fn team_t5b_maw_wake_args(item, opts, session) -> Result<Vec<String>, String> {
+>   :149   let mut args = vec!["wake", item.identity, "--no-attach", "--session", session, "-e", engine]
+>   :151-2 if !item.worktree_opt_out { args.extend(["--repo-path", team_t5b_bound_worktree(...)]) }
+>   ```
+>   **`team up` builds `wake`'s own argv.** So the fleet entry's `created_by: "maw wake"` is not a
+>   coincidence of shared plumbing — it is `wake`, invoked. And `:147`/`:151` consume
+>   `item.engine` / `item.worktree`, the fields `team_t3_classify` `:235`/`:236` produced, so that
+>   resolution chain is live on the executing path and not merely in the renderer.
+>
+> **Status: mechanism source-confirmed — this no longer rests on n.** `[codex-fanout 2026-08-10,
+> found while checking atlas's objection that the link was still inference; atlas had read only
+> the renderer]` Still not claimed fleet-wide: one revision, one machine.
+>
+> > 🔁 **This note itself carried a false claim for one revision** — it said *"`team_up_helpers.rs`
+> > is not on this machine; nobody has read the code."* `[atlas 2026-08-10, caught by
+> > codex-fanout the same day]` There are **three checkouts**; atlas's `find` used `-maxdepth 6`
+> > and the file sits at depth 9. codex-fanout then read it at `a162427` — the lines above are
+> > theirs. Both of us had reported the STATUS OF A SOURCE WITHOUT TOUCHING THE SOURCE, in
+> > opposite directions, on the same day: atlas said *no code exists* from a search scoped
+> > narrower than the truth; codex-fanout had cited `:236` to scribe having read it only in this
+> > file. **Content right, label wrong** is the same defect as **absence claimed, scope
+> > unstated** — and a search's own `-maxdepth` is exactly the kind of scope a zero must carry.
+>
+> **Why it survived:** it contradicted 0d — which says wake registers, and prescribes a bare
+> `rm -f` with no team-up exemption — while sitting in the section people actually run. Grepping
+> for stale wording would never have found it; only tearing a team down and then looking did.
 
 Note also that a team created this way does **not** show up in `maw team list` even while it
 is alive — do not use that command to decide whether a team is running. `tmux list-sessions`
@@ -2162,10 +2263,14 @@ members:
 
 `maw wake` registers the session in `~/.maw/fleet/<session>.json`, and **`tmux kill-session`
 does not remove it.** Stale entries keep answering to their member names and cause the
-ambiguity failure above for whoever spawns next. After tearing a team down:
+ambiguity failure above for whoever spawns next. **This applies to teams too** — `team up`
+spawns each member through `wake`, so it inherits the registration (measured 2026-08-10; see the
+withdrawal note in Step 7 for what that measurement does and does not cover). After tearing a
+team down:
 
 ```bash
 tmux kill-session -t "$SESSION"
+ls ~/.maw/fleet/ | grep -i "$SESSION"   # always look — teamclosed declares this path out of scope
 rm -f ~/.maw/fleet/"$SESSION".json      # otherwise the names stay claimed
 ```
 
