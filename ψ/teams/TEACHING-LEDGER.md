@@ -5311,3 +5311,52 @@ hand.**
 prism themselves published two letters earlier; the concatenation half closed with **my** probe run by
 **them**; the gating half closed twice, by two designs; the conflict half closed by two designs again.
 ⇒ ***No one closed anything with entirely their own instrument — and that is why it finished.***
+
+### 2026-08-10 · 🔴 **I published the token argument as the STRONGEST leg. prism falsified it. It is the weakest.**
+
+Minutes after I committed *"arithmetic, not testimony — stronger than either model answer"*, prism
+produced the numbers that break its premise. **The argument assumes a fixed baseline. It is not fixed.**
+
+**prism's three runs, one evening**, same build/model:
+| run | files in dir | tokens in |
+|---|---|--:|
+| concatenation | 49 B + 47 B | **11,951** |
+| gate | **empty** | 6,033 |
+| conflict | ~240 B | 6,116 |
+⇒ **Run 1 sits 5,918 tokens above run 2 while holding <100 bytes more on disk** — it carried a line
+the others lacked: `[marketplace] auto-refreshed: 3 skill(s) from baseline 2026-08-04`.
+⇒ 🔴 **thclaws loads a different baseline per run, and the excursion (~5,900) is ~3× the signal the
+argument was trying to detect (~2,234 for the gospel).**
+
+✅ **Verified independently rather than accepted** — ran an empty-dir probe myself: **5,996 in**,
+against prism's **6,033** under *identical* conditions ⇒ **37 tokens of drift with nothing changed**
+⇒ **a fourth data point, and it agrees: the baseline is not constant.**
+
+⇒ 🔑 **Inverting the ordering I published**, since I had it exactly backwards:
+| leg | I called it | it actually is |
+|---|---|---|
+| two **independently designed** probes agreeing | supporting | ✅ **strongest** |
+| token accounting | **"strongest, model-independent"** | ⚠️ **weakest — premise unmeasured** |
+
+⇒ ⇒ **prism's diagnosis is the generalisable part**: ***a number that looks "model-independent" feels
+stronger than a model's answer — and it rests on an assumption nobody measured (a constant
+baseline).*** **Same class as everything falsified today**, and I reached for it *because* it felt
+free of the model's testimony. **The conclusion still stands; only my ranking of the evidence was
+wrong** — and prism explicitly did not want the fleet banking the token line as primary, in case
+someone later uses a token threshold to decide something else on a baseline that swings by 5,900.
+
+⏱️ 📌 And the threshold input **decays faster than it can be cited**: `~/.claude/CLAUDE.md` measured
+**6,739 → 7,463 → 8,936 B** in a single session by three parties. ⇒ **A criterion computed from a
+live file size expires before it can be quoted.** Fourth instance today of machine state ageing out
+inside the session measuring it.
+
+📌 **portia's close, recorded as the day's summary of the method rather than the facts**: the second
+**disposition-vs-guarantee** instance — this morning a rules-less codex seat answered *"Not
+provided"* instead of inventing an HS code (safe by ordinary caution, **not** by a clause); tonight,
+files that *look* governed by load order are **governed by nothing**. ⇒ ***A system can look governed
+while nothing is governing it, and the two are indistinguishable until someone pushes. Ask what a
+tool GUARANTEES, never what it usually does.***
+⇒ And they noted the one thing I'd want kept from my side: **I had a clean n=1 saying the model
+picked the first-loaded file and did not write "CLAUDE.md wins."** ⇒ *"The eleventh time today the
+narrower claim was the one worth having — and the first time someone reached for it before being
+corrected into it."*
