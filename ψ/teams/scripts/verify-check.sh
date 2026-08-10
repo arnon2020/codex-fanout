@@ -1701,11 +1701,44 @@ _vc_tier_report() {
   effort=$(printf '%s' "$cmd" | sed -n 's/.*model_reasoning_effort=\{0,1\}["=]\{0,2\}\([a-z]*\).*/\1/p')
   [ -n "$effort" ] || effort=$(printf '%s' "$cmd" | sed -n 's/.*--effort[= ]\([a-z]*\).*/\1/p')
   printf '    🎚️ tier     model=%s effort=%s\n' "${model:-ambient}" "${effort:-ambient}"
+
+  # 🩹 2026-08-10 [atlas เสนอเป็น "แกนที่ 3" หลัง portia ตั้ง codex seat แรก · ผมไม่รับกรอบ
+  #    "placement" แต่รับของ] Step 7 คือ *เนื้อหาถูก อยู่ผิดครึ่ง* · อันนี้ **ไม่มี carrier เลย**:
+  #    engine กับ permission อยู่ในสตริง alias และไฟล์บอกไว้ · **model ของ alias ที่ไม่มี
+  #    `--model` มาจาก `$CODEX_HOME/config.toml` ซึ่ง machine-global · agent ไหนก็แก้ได้ ·
+  #    ไม่มีอะไรระหว่าง charter กับ pane เอ่ยถึงมัน** และ `enginecheck` PASS + `bootverify`
+  #    READY **ยืนอยู่ได้พร้อมกันขณะที่มันเป็นจริง**
+  #    ⇒ `bootverify` มี `AMBIENT-not-pinned` อยู่แล้ว แต่นั่นคือ **หลัง** boot
+  #      ⇒ ที่ขาดคือสัญญาณ **ก่อน commit point** — รูปเดียวกับที่การแก้ permission ทำเมื่อ 08-09
+  #    ⇒ พิมพ์ **ไฟล์+บรรทัด+ค่า** ที่จะเป็นคนตัดสิน ไม่ใช่แค่คำว่า "ambient"
+  local msrc="alias" mfile="" mline="" mval=""
+  if [ -z "$model" ]; then
+    msrc="ambient"
+    local ch; ch=$(printf '%s' "$cmd" | sed -n 's/.*CODEX_HOME=\([^ ]*\).*/\1/p')
+    ch="${ch/#\$HOME/$HOME}"; ch="${ch/#\~/$HOME}"
+    case "$cmd" in
+      *codex*)
+        mfile="${ch:-$HOME/.codex}/config.toml"
+        if [ -r "$mfile" ]; then
+          mline=$(grep -n -m1 -E '^[[:space:]]*model[[:space:]]*=' "$mfile" 2>/dev/null | cut -d: -f1)
+          mval=$(grep -m1 -E '^[[:space:]]*model[[:space:]]*=' "$mfile" 2>/dev/null \
+                 | sed 's/.*=[[:space:]]*//; s/^"//; s/"$//')
+        else mval="<อ่านไฟล์ไม่ได้>"; fi ;;
+      *) mfile=""; mval="<engine นี้ยังไม่รู้ว่าอ่าน ambient จากไหน>" ;;
+    esac
+    if [ -n "$mfile" ]; then
+      printf '               📍 model-source=ambient ⇒ %s:%s = %s\n' "$mfile" "${mline:-?}" "${mval:-<ไม่มีบรรทัด model>}"
+      printf '                  ⇒ ไฟล์นี้ **machine-global · agent ไหนก็แก้ได้** และไม่มีอะไรใน charter เอ่ยถึงมัน\n'
+      printf '                  ⇒ แก้บรรทัดเดียว = **ทุก seat ที่เคยบูตจาก alias นี้เปลี่ยน model** โดย PASS ไม่ขยับ\n'
+    else
+      printf '               📍 model-source=ambient ⇒ %s\n' "$mval"
+    fi
+  fi
   if [ -z "$model" ] && [ -z "$effort" ]; then
     printf '               ⚠️ ไม่ pin ทั้งสองอย่าง ⇒ ขี่ค่าใน config.toml ของ home นั้น\n'
     printf '                  ⇒ ใครแก้ config เมื่อไหร่ **ทีมเปลี่ยน tier เงียบ ๆ ทั้งทีม**\n'
   fi
-  machine="${machine}enginecheck.tier: $role model=${model:-ambient} effort=${effort:-ambient}
+  machine="${machine}enginecheck.tier: $role model=${model:-ambient} effort=${effort:-ambient} model-source=$msrc${mfile:+ ambient-from=$mfile:${mline:-?}}
 "
 }
 
