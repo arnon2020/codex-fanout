@@ -2450,11 +2450,30 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
             continue ;;
         esac
         case "$mp" in /*) d="$mp" ;; *) d="$(pwd)/$mp" ;; esac
-        hit=""
+        hit=""; hits=""
         while [ "$d" != "/" ] && [ -n "$d" ]; do
-          for n in AGENTS.md CLAUDE.md; do [ -f "$d/$n" ] && { hit="$d/$n"; break 2; }; done
+          # 🔴 2026-08-10 [atlas routed · scribe's demonstration 3 · ผมพิสูจน์ว่าเครื่องมือผมตาบอด]
+          #    เดิม `break 2` = หยุดที่ carrier **ตัวแรก** ที่เจอ และผมเช็ค `AGENTS.md` ก่อน
+          #    ⇒ seat ที่มี **ทั้งสองไฟล์** ถูกรายงานแค่ตัวเดียว · อีกตัว **ไม่เคยถูกเอ่ยถึง**
+          #    เคสจริงของ scribe: แปลง claude→codex เขียน `AGENTS.md` ใหม่ **แล้วทิ้ง
+          #    `CLAUDE.md` เดิมไว้** ⇒ ของเก่ายังอยู่ และ **ยังตอบ**
+          #    🔑 ประโยคของ scribe: ***carrier ที่ค้าง อันตรายกว่า carrier ที่หายไป เพราะมันตอบ***
+          #    ⇒ และสำหรับ **claude seat** ตัวที่ engine อ่านจริงคือ `CLAUDE.md` — ตัวที่ผม
+          #      **ไม่รายงาน** ⇒ เครื่องมือชี้ไฟล์ที่ engine นั้นไม่อ่าน แล้วเงียบเรื่องไฟล์ที่มันอ่าน
+          for n in AGENTS.md CLAUDE.md; do [ -f "$d/$n" ] && hits="$hits $d/$n"; done
+          [ -n "$hits" ] && { hit=$(printf '%s' "$hits" | awk '{print $1}'); break; }
           d=$(dirname "$d")
         done
+        # รายงาน **ทุก** carrier ที่เจอ ไม่ใช่ตัวแรก — และเตือนเมื่อมีมากกว่าหนึ่ง
+        if [ "$(printf '%s' "$hits" | wc -w)" -gt 1 ]; then
+          printf '     🔴 rules-file: %-42s **carrier มากกว่าหนึ่งตัวในไดเรกทอรีเดียว**\n' "$mp"
+          for h in $hits; do printf '                    · %s (%s bytes)\n' "$h" "$(wc -c < "$h" 2>/dev/null)"; done
+          printf '        ⇒ ตัวที่ *ตอบ* ขึ้นกับ engine family: **codex อ่าน AGENTS.md · claude อ่าน CLAUDE.md**\n'
+          printf '        ⇒ การแปลง family แล้วไม่ลบของเดิม = ของเก่ายังอยู่และ **ยังตอบให้ family เดิม**\n'
+          printf '        ⇒ 🔑 **carrier ที่ค้าง อันตรายกว่า carrier ที่หายไป เพราะมันตอบ** [scribe 2026-08-10]\n'
+          machine="${machine}enginecheck.rules-file: path=$mp carriers=$(printf '%s' "$hits" | wc -w) ambiguous=yes
+"
+        fi
         if [ -z "$hit" ]; then
           printf '     🔴 rules-file: %-42s **ไม่พบ AGENTS.md/CLAUDE.md ตลอด ancestor** ⇒ seat นี้จะไม่ได้กฎเลย\n' "$mp"
           machine="${machine}enginecheck.rules-file: path=$mp file=absent attest=n/a
