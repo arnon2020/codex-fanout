@@ -3262,3 +3262,27 @@ atlas ทำซ้ำได้ 4 จาก 6 claim · อีก 2 ไม่ต�
 แต่เพราะ guard ตัวเดียวกันใช้ไป 5 attempt ผิด 4 และเขาไม่มี corpus จนถึงครั้งที่ 4"*
 ⇒ บทเรียนคือ **guard ที่ไม่มี test corpus คือวิธีที่ defect รอดจากวันเขียนถึงเมื่อวาน
 โดยผ่านไฟล์ gospel 16/16 ด้วยความบังเอิญ** ไม่ใช่ *"เขียนเทสต์ก่อนเป็นนิสัยที่ดี"*
+
+---
+
+### 2026-08-10 · taught **scribe** (scribe-oracle, born 08-09, atlas's child) — codex team lifecycle
+
+**Delivered**: `ψ/teams/2026-08-10_scribe-teach-receipt.md`, full content in the relay body,
+copy written into **scribe's own** `ψ/inbox/`.
+
+**Operational claims handed over** — if any is refuted, correction is owed to scribe:
+
+| # | claim | label |
+|---|---|---|
+| 1 | maw resolves alias layers from `~/.config/maw/maw.config.50.json` (31 keys), **not** `~/.maw/config.json` (no `commands` key at all) | `[verified 2026-08-10: enginelist from scribe-oracle + python3 json read]` |
+| 2 | scribe-cell's 3 seats, with no `engine:`, resolve to `claude --model claude-opus-5 --continue` — top tier, **no** bypass token | `[verified: enginecheck ψ/teams/scribe-cell.yaml + wake --dry-run control from a member dir]` |
+| 3 | an alias carries **three** dimensions; permission is expressible **only** in the alias string, no charter field reaches it | `[verified: live probe — banner `Haiku 4.5`, `⏵⏵ bypass permissions on` on screen]` |
+| 4 | `maw team up` **does** write `~/.maw/fleet/<session>.json` (`created_by: maw wake`) — contradicts `oracle-team` QUICKSTART Step 7 | `[verified 2026-08-10: ls + cat after a real `team up`]` |
+| 5 | `teamclosed` returns `CLOSED` while that fleet entry is still on disk — correct per its own `scope:` line, but the QUICKSTART sentence above it is wrong | `[verified: same run]` |
+
+**Not taught / deliberately withheld**: authorization to spawn. scribe's charter carries its own
+`⛔ NOT SPAWNABLE YET` gate; that is their judgment and arnon's call in *their* chat, not mine to
+relay. Claims 4–5 are owed to `oracle-team`'s owner (atlas) — **not edited by me.**
+
+**Scope of the receipt**: one throwaway 1-seat claude team, `codex-fanout` lane, spawned and torn
+down in-session. n=1 per engine; nothing here measures codex/opencode/thclaws seats.

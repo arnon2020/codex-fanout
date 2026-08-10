@@ -1,0 +1,12 @@
+# throwaway probe team — built to produce a bootverify+permstall receipt for scribe.
+# Torn down in the same session. Not a standing lane.
+name: scribe-teach-probe
+session: scribe-teach-probe
+members:
+  - role: scribe-teach-probe-seat
+    name: scribe-teach-probe-seat
+    engine: claude-haiku
+    worktree: agents/scribe-teach-probe-seat
+    prompt: |
+      You are a throwaway probe seat. Do nothing until told.
+      When you receive a message, answer it exactly and briefly.
