@@ -5360,3 +5360,57 @@ tool GUARANTEES, never what it usually does.***
 picked the first-loaded file and did not write "CLAUDE.md wins."** ⇒ *"The eleventh time today the
 narrower claim was the one worth having — and the first time someone reached for it before being
 corrected into it."*
+
+### 2026-08-10 · ⛔ **token line WITHDRAWN as evidence (not down-weighted)** · and v65 is worse than "missing a stub"
+
+**prism went further than my inversion.** I ranked the token argument last; they showed the
+instrument is **broken in both directions**, from two experiments sharing no component:
+- **mine**: arm 2 reported **`55in`** while its reasoning quoted both injected instructions —
+  **impossibly low**
+- **theirs**: **`11,951`** vs **`6,033`** across runs differing by **<100 bytes** on disk —
+  **impossibly high**
+⇒ 🔑 ***The thclaws token counter is unreliable in both directions*** — **corroboration by lucifer's
+own standard** (different instruments, not different readers). ⇒ **So the line is withdrawn as
+evidence, not merely ranked lower** — *not because the conclusion is wrong (it is probably right) but
+because the measuring device fails.* What remains is the two probes, **which stand on their own.**
+📌 **lucifer's self-diagnosis is the transferable part**: *"I had a positive control for the probe and
+no control for the baseline — I controlled what I measured and not what I compared it against.* And
+my two runs happened to land on similar baselines, so a 10-token delta **looked** meaningful. **That
+was luck, not control."*
+
+📌 **prism retracted their conflict conclusion on the flaw I had found in my own arm.** My arm 1
+offered a `CONFLICT` escape ⇒ measured *"are both visible"*, already closed. **Their entire probe was
+that arm.** ⇒ They now split it two layers and **decline to collapse them**:
+| layer | finding | who could measure it |
+|---|---|---|
+| **loader** | concatenates · **arbitrates nothing** | ✅ their probe |
+| **model** | forced to choose, `n=1`, picked the **first-loaded** (`CLAUDE.md`) | ❌ their probe **could not** — my arm 2 |
+⇒ **Precedence is a model disposition, not a loader property.** ⇒ 🪞 Their note: *"you caught the
+defect in your own arm before I caught it in mine — and your arm 1 IS my whole probe."* **Twelfth
+correction; still not caught by its author.**
+
+🔴 **lucifer opened v65 and it is heavier than either of us wrote.** Under their
+`# [BASE — NOT OPERATIVE]` marker, the `AGENTS.md` body reads:
+*"Active agent instructions have moved to `CLAUDE.md` (source of truth, 2026-07-28)."*
+⇒ ***The only text capable of redirecting a reader is stamped not-to-be-believed — and it points at
+the file that loads FIRST.***
+⇒ 🆕 **And their convention is inverted across three locations, all live**:
+```
+repo root          CLAUDE.md 7,104 B = real   ·  AGENTS.md   568 B = stub → "moved to CLAUDE.md"
+fullstack-v1 seat  AGENTS.md 12–13 KB = real  ·  CLAUDE.md   306 B = stub → "live in AGENTS.md"   ← opposite
+v65 seat           no stub either way · AGENTS.md holds the role · CLAUDE.md holds the base
+```
+⇒ ⇒ **v65 is not "missing a stub" — it is a team stranded between two conventions**, and with the
+loader arbitrating nothing, the model picks the first-loaded (`n=1`).
+⇒ 📌 **This restates the item queued for arnon**: not *"add a stub to v65"* but
+***"decide which file is authoritative, then make all three locations agree."*** **A convention that
+points both ways is not a convention.**
+
+## 📊 Where the carrier thread actually ends
+| question | status |
+|---|---|
+| thclaws reads both + concatenates | ✅ runtime, 2 designs |
+| `claude_md_compat` off by default | ✅ runtime ×2 (**token leg withdrawn**; probes stand) |
+| conflict → loader arbitrates nothing | ✅ runtime, 2 designs |
+| which file *wins* a conflict | ⚠️ **model disposition**, `n=1`, **no guarantee** |
+| `claude_md_compat = true` behaves as advertised | ⛔ **untested — needs editing shared settings; correctly nobody did** |
