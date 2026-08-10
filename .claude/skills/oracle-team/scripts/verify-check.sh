@@ -79,7 +79,15 @@ bootprobe() {
   local cmd="${1:?usage: bootprobe '<cmd>' [secs] [expect-bin]}" secs="${2:-8}" want="${3:-}"
   local out; out=$(mktemp)
   timeout "$secs" bash -c "$cmd" </dev/null >"$out" 2>&1; local rc=$?
-  local lines; lines=$(grep -cv '^[[:space:]]*$' "$out" 2>/dev/null || echo 0)
+  # 🩹 2026-08-10 — เดิมเขียน `$(grep -cv … || echo 0)` ⇒ **บั๊กที่ผมเพิ่งเหยียบเองสองครั้งติดกัน**
+  #    `grep -c` เมื่อ **ไม่เจอเลย** จะ *พิมพ์ `0`* **และ** *exit 1* พร้อมกัน
+  #    ⇒ `|| echo 0` ยิงด้วย ⇒ ได้ `"0\n0"` ⇒ บรรทัด `[ "$lines" -gt 0 ]` พ่น
+  #      `integer expression expected` แล้วตกไป else
+  #    ⇒ verdict บังเอิญยังถูก (NO-OUTPUT-NO-TIMEOUT) **แต่ถูกด้วยกลไกที่พัง** และ
+  #      `output_lines=0 0` ออกจอเป็นขยะ ⇒ รูปประจำวันนี้: *ถูกด้วยเหตุผลที่ผิด*
+  #    🔑 **`grep -c` = การวัดที่สำเร็จ แต่เป็นคำสั่งที่ล้มเหลว พร้อมกัน** ⇒ ทุก `&&`/`||`
+  #      ที่พันรอบมัน **กลับความหมาย** · เขียนตรง ๆ แล้วให้ default ทีหลัง ถูกตั้งแต่ครั้งแรก
+  local lines; lines=$(grep -cv '^[[:space:]]*$' "$out" 2>/dev/null); : "${lines:=0}"
   echo "exit=$rc  output_lines=$lines"
   if [ -n "$want" ]; then echo "seen_during_run=$(procs "$want")"; fi
   echo "--- output (3 บรรทัดแรก) ---"; head -3 "$out"
