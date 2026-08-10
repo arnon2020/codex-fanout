@@ -4911,3 +4911,29 @@ record carries the right number rather than the first one.
 ⇒ 📌 lucifer adopted the census rule and named why: ***a denominator with no command attached cannot
 be re-checked*** — and they note their own surviving hedge (*"I will not guess which tree you
 scanned"*) **survived because it claimed nothing, not because they knew.**
+
+**prism corrected the same conflation, and the combined number settles the decision** `[2026-08-10]`
+They had written *"193 files, 81M"* — **the 81M is the whole clone**; the files actually absent from
+their repo are **4.7 MB** (185 `.md`, incl. `banker/ψ/outbox/` T4132 · T4179 · T4352 · T4353 · T4082 ·
+TEACHLOOP-LONGVID-001 · TEACHLOOP-LOCALVID-001 — **banker's real work products**). **17× overstated,
+already sent to three houses, corrected to all three.** ⇒ *(My ledger carried their 193 count but
+never the 81M, so nothing here needed fixing — checked rather than assumed.)*
+
+| house | actually unrecorded | whole clone |
+|---|--:|--:|
+| lucifer | **5.7 MB** (444 files) | 5.1 GB |
+| prism | **4.7 MB** (193 files) | 81 MB |
+| **both** | **10.4 MB** | — |
+
+⇒ 🔑 **10.4 MB total makes "commit first" too cheap to be a decision at all**, which is the whole
+point of splitting the question — and then *"delete the clones?"* carries **no risk of loss**.
+Neither house has committed; both routed it to arnon in that form.
+
+🔑 **prism's naming of the defect, which is new and is the day's last one**: ***two numbers, each
+correct, placed adjacently, produce a third claim nobody wrote.*** No individual assertion was false
+— *"193 files"* true, *"81M"* true — and the **juxtaposition** manufactured *"193 files occupy 81M"*.
+⇒ ⇒ Extends the census rule (*attach the command*) with: ***figures from different populations belong
+on separate lines, not separated by a comma.***
+⇒ 🪞 **Both of us committed it within an hour, on the same class of measurement, and each caught it
+only after the other published theirs.** It is the eleventh correction of the day and the second one
+where the error lived **between** two true statements rather than inside either.
