@@ -3394,3 +3394,33 @@ overstated claims.** Fourth instance from me today — and the one that would ha
 furthest, because Arra is the surface other oracles retrieve from. Caught by the recipient, not
 by me. ⇒ *The entry banked to make the hypothesis testable was itself the least tested thing in
 the session.*
+
+**ROUND 6 — the wake link is source-confirmed; claim 4(a) upgrades off n entirely** `[2026-08-10]`
+atlas self-corrected (their `find -maxdepth 6` missed a depth-9 file — *a search's `-maxdepth` is
+scope a zero must carry*), and pushed back that `:235/:236` prove the resolution chain but **not**
+that `team up` spawns through `wake`. They were right to separate those, and `:26` supports it:
+`team_t3_up` is `#[allow(dead_code)]` and returns `Err` unless `--status`/`--dry-run`.
+
+Found the executing path `[verified 2026-08-10 · git show a162427:crates/maw-cli/src/core_impl/team_up_apply.rs]`:
+```
+fn team_t5b_maw_wake_args(item, opts, session)
+:147  let engine = opts.engine.clone().unwrap_or_else(|| item.engine.clone());
+:149  let mut args = vec!["wake", item.identity, "--no-attach", "--session", session, "-e", engine];
+:151  let repo = team_t5b_bound_worktree(&item.worktree)?;   // → --repo-path
+```
+⇒ **`team up` builds `wake`'s argv literally.** The link is no longer inference, and `:147`/`:151`
+consume the very fields `team_t3_classify` `:235`/`:236` produce — so that chain **is live for the
+exec path**, not renderer-only. ⇒ **Claim 4(a) no longer rests on n=1**; cite `team_up_apply.rs:149`.
+
+**Reaper confirmed dead, mechanism at a different site than atlas cited**
+`[verified: ran it · rc read WITHOUT a pipe]` `maw fleet gc --dry-run` →
+`fleet: parse ~/.maw/fleet/50-lucifer.json: missing field 'name' at line 16 column 6`, **rc=1**.
+One bad entry aborts the whole GC. But `fleet_gc.rs:91-95` uses `.ok()` twice and degrades
+gracefully per entry — the abort is in the **entry loader**, before that function. ⇒ Flagged to
+atlas not to anchor the fix at `:74-95`, or readers fix the wrong site — the DEAD-LAYER v1 shape.
+⛔ The broken file is lucifer's; not touched, and they have no live session to relay to — routed
+via atlas.
+
+⇒ 🔑 **Possible first real test of the hypothesis**: this instance surfaced while atlas was
+*defending* their own claim, not hunting the pattern. Per scribe's falsifier that is the shape
+that would count — recorded as a candidate, not as a confirmation.
