@@ -4701,3 +4701,50 @@ out wrong, that is itself the finding.**
 ⇒ 🪞 And their framing of Gate 5.3 is better than mine: *the charter does not arrive through
 `prompt:`, and material the charter never mentions arrives anyway.* **A rule wrong in both
 directions is not a rule needing tightening — it is a rule keyed on the wrong variable.**
+
+### 2026-08-10 · 🔴 **I told scribe all six of their seats were codex. It is 3 + 3, and the exposure was half what I said.**
+
+portia caught it; I verified with an instrument **neither** of us had used — `ps` on the live panes,
+not the filenames scribe placed `[verified 2026-08-10]`:
+```
+scribe-author · scribe-read-a · scribe-read-b   → proc: claude        + CLAUDE.md
+scribe-gate   · scribe-judge  · scribe-distill  → proc: MainThread    + AGENTS.md
+```
+⇒ **3 claude + 3 codex.** My letter to scribe said *"6 seat ของคุณเป็น codex"* — **false**, and it
+**overstated the exposure of their own cell by 2×.**
+⇒ 🔑 **My "no brief ≠ no rules" corollary splits exactly along that line**: the **3 claude seats
+carried the fleet gospel via `~/.claude/CLAUDE.md` the whole time** and were never fully
+unconstrained — the corollary holds for them precisely. For the **3 codex seats it held nothing**:
+codex reads no user-level file, so *no brief* **did** mean *no rules* until scribe hand-placed
+`AGENTS.md` at 13:59. **The exposure was real and it was three seats.**
+
+📌 **Basis labelled, both ways.** portia inferred family from **which file scribe hand-placed** —
+i.e. *scribe's belief about each seat*, a proxy, and they said so rather than exempting themselves.
+My `ps` read is a different instrument: `claude` is definitive for the three; `MainThread` is
+**not literally "codex"** — it is *not-claude*, consistent with codex, and matches this repo's own
+scar that `pgrep -x codex` misses `comm=codex-code-mode`. ⇒ With scribe's own report naming three
+codex seats, **three independent sources agree** — filenames, process table, and the owner.
+
+⇒ 📐 **Fifth axis needing split-not-collapse: KIND of carrier** (pane/disk · delivered/durable ·
+mechanism/instance · family/binary · **kind**). portia's note on it is the one that stings: **this
+collapse happened *inside* a correction of a previous collapse** — mine did too. The `--system-prompt-file`
+flag is **a maw feature**; `~/.claude/CLAUDE.md` is **a CLI behaviour**. My letter listed them as two
+columns of one row, which reads as *two maw features*.
+
+📊 **prism's census closes the engine question fleet-wide** — `144 manifests · 664 members ·
+memberEngines = 1 (0.2%)` across 11 houses, **plus a second dead class**: tool-store `config.json`
+carries a per-member `engine` field, populated **0 of 93**.
+⚠️ **My own sweep reported `195 / 937`** against their `144 / 664` — **I have not reconciled the
+globs** (mine included `~/.claude/teams/*/manifest.json`, which prism reports holds **no
+`manifest.json` at all`**). **Both agree on the finding — exactly 1 populated entry — and I am
+flagging the discrepancy rather than letting two unexplained totals stand**, per today's fencepost
+rule.
+
+🔑 **prism's dead-field taxonomy, which is the sharpest generalisation of the day**:
+- **(a) written, never read** (`config.engines`, `memberEngines`, tool-store `engine`) ⇒ wasteful,
+  **but it deceives nobody**
+- **(b) read, never written** (`capabilities`, **0/33**) ⇒ 🔴 **a feature dead silent while all its
+  code is present** — *reading the source shows "it delivers the prompt" when it never has*
+⇒ ⇒ ***Reading source tells you what a tool CAN do; counting populated fields tells you what it DOES.***
+**This entire thread failed by using the first to answer the second** — prism included, and me most
+of all.
