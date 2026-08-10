@@ -2484,7 +2484,7 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
           if [ -n "$mawhdr" ]; then
             local above=$((mawhdr-1)) tl; tl=$(wc -l < "$hit")
             if [ "$above" -gt 0 ]; then
-              printf '     🔴 rules-file: %-42s **maw ต่อท้ายไฟล์ที่มีอยู่แล้ว** — %s บรรทัดเหนือหัวข้อของ maw · ต่อท้าย %s บรรทัด\n' "$mp" "$above" "$((tl-mawhdr+1))"
+              printf '     🔴 rules-file: %-42s **maw ต่อท้ายไฟล์ที่มีอยู่แล้ว** — above=%s appended=%s [นับหัวข้อของ maw เป็นบรรทัดแรกของส่วนที่ต่อท้าย]\n' "$mp" "$above" "$((tl-mawhdr+1))"
               printf '        ⇒ seat อ่านสองเอกสารต่อกัน · **ล้าง/archive ~/.maw-teams/<team>/ ก่อน recreate**\n'
               machine="${machine}enginecheck.rules-file: path=$mp maw-append=yes lines-above=$above appended=$((tl-mawhdr+1))
 "
@@ -2492,6 +2492,17 @@ print((cfg.get("commands") or {}).get(sys.argv[1],""))' "$engine" 2>/dev/null )
               machine="${machine}enginecheck.rules-file: path=$mp maw-append=created lines-above=0
 "
             fi
+          else
+            # 🔴 2026-08-10 [portia จับ] เดิมถ้าไม่เจอหัวข้อของ maw โค้ดนี้ **เงียบ**
+            #    ⇒ ผู้อ่านแยกไม่ออกระหว่าง *"ตรวจแล้ว ไม่มีการต่อท้าย"* กับ *"ไม่ได้ตรวจ"*
+            #    ⇒ และการนับของผมเองก็พลาดด้วยเหตุเดียวกัน: ผม enumerate ด้วย
+            #      `grep -rl '<หัวข้อ maw>'` ⇒ **หาได้เฉพาะไฟล์ที่โดน** ⇒ ไฟล์ที่ *ไม่* โดน
+            #      **มองไม่เห็นโดยโครงสร้าง** · portia นับ member dir ทั้งหมดแล้วเจอ 2 ไฟล์ที่เราตกไป
+            #      (`architect` 282 บรรทัด · `verifier` 246 — ไม่มีหัวข้อของ maw เลย)
+            #    ⇒ 🔑 **`grep -rl` ตอบ "มีอะไรบ้าง" ไม่เคยตอบ "ขาดอะไรบ้าง"**
+            printf '     ✅ rules-file: %-42s %s (ไม่มีหัวข้อของ maw ⇒ **ไม่ถูกต่อท้าย**)\n' "$mp" "$hit"
+            machine="${machine}enginecheck.rules-file: path=$mp maw-append=none
+"
           fi
           local nat; nat=$(grep -c 'ATTEST role=' "$hit" 2>/dev/null)
           if [ "${nat:-0}" -gt 1 ]; then
